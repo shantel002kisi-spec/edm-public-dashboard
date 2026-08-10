@@ -1,0 +1,76 @@
+{
+  "selected_model_name": "Random Forest",
+  "numeric_columns": [
+    "prior_year_total_duration_hours",
+    "prior_year_counted_spills",
+    "prior_year_long_term_average_spill_count",
+    "prior_year_edm_operational_percent",
+    "prior_year_has_bathing_water_link",
+    "prior_year_has_shellfish_water_link"
+  ],
+  "categorical_columns": [
+    "water_company_name",
+    "storm_discharge_asset_type",
+    "treatment_method",
+    "data_start_calendar_year"
+  ],
+  "numeric_defaults": {
+    "prior_year_total_duration_hours": 40.67,
+    "prior_year_counted_spills": 19.0,
+    "prior_year_long_term_average_spill_count": 17.66666666666667,
+    "prior_year_edm_operational_percent": 99.88,
+    "prior_year_has_bathing_water_link": 0.0,
+    "prior_year_has_shellfish_water_link": 0.0
+  },
+  "categorical_options": {
+    "water_company_name": [
+      "Anglian Water",
+      "Dwr Cymru Welsh Water",
+      "Northumbrian Water",
+      "Severn Trent Water",
+      "South West Water",
+      "Southern Water",
+      "Thames Water",
+      "United Utilities",
+      "Wessex Water",
+      "Yorkshire Water"
+    ],
+    "storm_discharge_asset_type": [
+      "Inlet SO at WwTW",
+      "Inlet SO at WwTW - with treatment",
+      "Other storm discharge asset type",
+      "Other storm discharge asset type - with treatment",
+      "SO on sewer network",
+      "Storm discharge at pumping station",
+      "Storm discharge at pumping station - with treatment",
+      "Storm tank at WwTW",
+      "Storm tank at WwTW - with treatment"
+    ],
+    "treatment_method": [
+      "Not Applicable",
+      "Reed bed",
+      "UV (Ultraviolet)"
+    ],
+    "data_start_calendar_year": [
+      "2010",
+      "2011",
+      "2012",
+      "2013",
+      "2014",
+      "2015",
+      "2016",
+      "2017",
+      "2018",
+      "2019",
+      "2020",
+      "2021",
+      "2022",
+      "2023",
+      "2024",
+      "Pre-2010",
+      "Pre-2013"
+    ]
+  },
+  "training_transitions": "2023->2024 and 2024->2025",
+  "forecast_transition": "2025->2026"
+}
