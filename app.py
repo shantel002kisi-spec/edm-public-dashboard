@@ -15,7 +15,7 @@ from folium.plugins import FastMarkerCluster, Fullscreen, HeatMap, MeasureContro
 from streamlit_folium import st_folium
 
 
-DASHBOARD_RELEASE = "2026-08-12-clear-site-water-quality-v7"
+DASHBOARD_RELEASE = "2026-08-12-combined-sewer-hero-v8"
 
 
 # =============================================================================
@@ -24,7 +24,7 @@ DASHBOARD_RELEASE = "2026-08-12-clear-site-water-quality-v7"
 
 st.set_page_config(
     page_title="Sewage Overflow Insights",
-    page_icon="🌊",
+    page_icon="💧",
     layout="wide",
     initial_sidebar_state="expanded",
 )
@@ -234,15 +234,286 @@ st.markdown(
       }
 
       .edm-water-art {
-        min-height: 275px;
+        min-height: 330px;
         display: flex;
         align-items: center;
         justify-content: center;
-        padding: .35rem;
+        padding: .5rem;
         border-radius: 28px;
-        background: rgba(255,255,255,.28);
-        border: 1px solid rgba(255,255,255,.54);
-        box-shadow: inset 0 0 35px rgba(255,255,255,.32);
+        background: rgba(255,255,255,.48);
+        border: 1px solid rgba(84,145,137,.18);
+        box-shadow: inset 0 0 35px rgba(255,255,255,.48), 0 12px 30px rgba(49,104,96,.10);
+      }
+
+      .edm-sewer-diagram {
+        position: relative;
+        width: 100%;
+        height: 320px;
+        overflow: hidden;
+        border: 1px solid rgba(53,112,104,.18);
+        border-radius: 22px;
+        background: linear-gradient(to bottom, #EAF8FC 0 48%, #E7DDC9 48% 100%);
+        color: #173D3A;
+      }
+
+      .edm-diagram-title {
+        position: absolute;
+        z-index: 8;
+        top: 12px;
+        left: 16px;
+        right: 16px;
+        padding: 7px 10px;
+        border-radius: 12px;
+        background: rgba(255,255,255,.88);
+        color: #204E49;
+        font-size: .78rem;
+        font-weight: 850;
+        text-align: center;
+        box-shadow: 0 4px 12px rgba(41,96,89,.08);
+      }
+
+      .edm-hero-raindrop {
+        position: absolute;
+        z-index: 4;
+        top: 56px;
+        color: #4FA9CE;
+        font-size: 18px;
+        line-height: 1;
+        animation: edmRain 1.6s ease-in-out infinite;
+      }
+
+      .edm-hero-raindrop.r1 { left: 10%; }
+      .edm-hero-raindrop.r2 { left: 20%; animation-delay: .35s; }
+      .edm-hero-raindrop.r3 { left: 34%; animation-delay: .7s; }
+      .edm-hero-raindrop.r4 { left: 48%; animation-delay: .2s; }
+      .edm-hero-raindrop.r5 { left: 61%; animation-delay: .8s; }
+
+      .edm-house {
+        position: absolute;
+        z-index: 5;
+        left: 8%;
+        top: 94px;
+        width: 84px;
+        height: 54px;
+        border: 3px solid #47766F;
+        border-radius: 5px 5px 2px 2px;
+        background: #FFF8E8;
+      }
+
+      .edm-house::before {
+        content: "";
+        position: absolute;
+        left: 7px;
+        top: -34px;
+        width: 62px;
+        height: 62px;
+        border-top: 3px solid #47766F;
+        border-left: 3px solid #47766F;
+        background: #D7A99D;
+        transform: rotate(45deg);
+        z-index: -1;
+      }
+
+      .edm-house::after {
+        content: "Wastewater";
+        position: absolute;
+        left: 6px;
+        bottom: 6px;
+        color: #315F5A;
+        font-size: 10px;
+        font-weight: 750;
+      }
+
+      .edm-door {
+        position: absolute;
+        right: 9px;
+        bottom: 0;
+        width: 18px;
+        height: 30px;
+        border: 2px solid #47766F;
+        background: #DCEDE5;
+      }
+
+      .edm-road {
+        position: absolute;
+        z-index: 3;
+        top: 152px;
+        left: 0;
+        right: 0;
+        height: 36px;
+        border-top: 5px solid #94B58D;
+        border-bottom: 4px solid #71817E;
+        background: #AAB7B5;
+      }
+
+      .edm-road::after {
+        content: "RAIN + WASTEWATER ENTER ONE PIPE";
+        position: absolute;
+        left: 34%;
+        top: 8px;
+        color: #FFFFFF;
+        font-size: 9px;
+        font-weight: 850;
+        letter-spacing: .05em;
+      }
+
+      .edm-drain {
+        position: absolute;
+        z-index: 6;
+        left: 46%;
+        top: 158px;
+        width: 38px;
+        height: 12px;
+        border-radius: 3px;
+        background: repeating-linear-gradient(90deg, #334E4B 0 3px, #8CA09D 3px 7px);
+      }
+
+      .edm-house-connector,
+      .edm-drain-connector {
+        position: absolute;
+        z-index: 2;
+        width: 13px;
+        border: 3px solid #5B716D;
+        background: #9C6A48;
+      }
+
+      .edm-house-connector { left: 24%; top: 138px; height: 91px; }
+      .edm-drain-connector { left: 49%; top: 166px; height: 63px; background: #69ADBE; }
+
+      .edm-main-pipe {
+        position: absolute;
+        z-index: 5;
+        left: 8%;
+        top: 216px;
+        width: 66%;
+        height: 46px;
+        overflow: hidden;
+        border: 5px solid #5A6C69;
+        border-radius: 24px;
+        background: #EEF2EF;
+        box-shadow: 0 5px 10px rgba(62,77,73,.12);
+      }
+
+      .edm-main-flow {
+        position: absolute;
+        left: 4px;
+        right: 4px;
+        bottom: 4px;
+        height: 17px;
+        border-radius: 12px;
+        background: repeating-linear-gradient(110deg, #8B5A3C 0 20px, #A56B42 20px 38px);
+        animation: edmRiver 3s linear infinite;
+      }
+
+      .edm-main-pipe-label {
+        position: absolute;
+        z-index: 7;
+        left: 19%;
+        top: 229px;
+        color: #FFFFFF;
+        font-size: 10px;
+        font-weight: 900;
+        letter-spacing: .04em;
+        text-transform: uppercase;
+      }
+
+      .edm-overflow-chamber {
+        position: absolute;
+        z-index: 7;
+        left: 68%;
+        top: 200px;
+        width: 48px;
+        height: 76px;
+        border: 4px solid #4E6863;
+        border-radius: 8px 8px 18px 18px;
+        background: linear-gradient(to bottom, #EDF4F1 0 42%, #8B5A3C 42% 100%);
+      }
+
+      .edm-overflow-chamber span {
+        position: absolute;
+        left: 50%;
+        top: -18px;
+        width: 92px;
+        transform: translateX(-50%);
+        color: #315F5A;
+        font-size: 9px;
+        font-weight: 850;
+        text-align: center;
+      }
+
+      .edm-overflow-pipe {
+        position: absolute;
+        z-index: 6;
+        left: 74%;
+        top: 243px;
+        width: 99px;
+        height: 20px;
+        border: 4px solid #5A6C69;
+        border-radius: 12px;
+        background: #8B5A3C;
+        transform: rotate(17deg);
+        transform-origin: left center;
+      }
+
+      .edm-discharge-label {
+        position: absolute;
+        z-index: 9;
+        right: 5px;
+        top: 218px;
+        padding: 4px 7px;
+        border-radius: 8px;
+        background: #FFF5EA;
+        color: #7A452C;
+        font-size: 9px;
+        font-weight: 900;
+      }
+
+      .edm-river {
+        position: absolute;
+        z-index: 4;
+        right: -18px;
+        bottom: -20px;
+        width: 150px;
+        height: 75px;
+        border: 5px solid rgba(62,145,167,.35);
+        border-radius: 55% 45% 0 0;
+        background: repeating-linear-gradient(165deg, #8FD0DE 0 15px, #65B4C8 15px 28px);
+      }
+
+      .edm-river span {
+        position: absolute;
+        left: 28px;
+        top: 9px;
+        color: #FFFFFF;
+        font-size: 10px;
+        font-weight: 900;
+      }
+
+      .edm-treatment-route {
+        position: absolute;
+        z-index: 4;
+        left: 18%;
+        top: 257px;
+        width: 12px;
+        height: 24px;
+        border: 3px solid #4D7770;
+        background: #73B6A4;
+      }
+
+      .edm-treatment {
+        position: absolute;
+        z-index: 6;
+        left: 7%;
+        bottom: 7px;
+        width: 125px;
+        padding: 7px 8px;
+        border: 2px solid #4C8176;
+        border-radius: 11px;
+        background: #DDF0E4;
+        color: #285B54;
+        font-size: 10px;
+        font-weight: 850;
+        text-align: center;
       }
 
       .edm-hero-badges {
@@ -866,9 +1137,9 @@ def render_risk_guide():
     st.html(
         """
         <div class="edm-risk-guide" aria-label="Plain-English risk guide">
-          <div style="--risk-colour:#4A9C7D;--risk-tint:#E7F4EC;"><b>🌤️ &#9679; Low</b>Lower concern</div>
-          <div style="--risk-colour:#E2A45C;--risk-tint:#FFF1D8;"><b>🌦️ &#9670; Medium</b>Closer attention</div>
-          <div style="--risk-colour:#D66565;--risk-tint:#FBE5E6;"><b>⛈️ &#9650; High</b>Priority review</div>
+          <div style="--risk-colour:#4A9C7D;--risk-tint:#E7F4EC;"><b>💧 &#9679; Low</b>Lower concern</div>
+          <div style="--risk-colour:#E2A45C;--risk-tint:#FFF1D8;"><b>💧 &#9670; Medium</b>Closer attention</div>
+          <div style="--risk-colour:#D66565;--risk-tint:#FBE5E6;"><b>💧 &#9650; High</b>Priority review</div>
         </div>
         """
     )
@@ -900,7 +1171,7 @@ def render_hero():
         """
         <section class="edm-hero">
           <div>
-            <div class="edm-kicker">🌊 England's rivers, coasts and overflow evidence</div>
+            <div class="edm-kicker">💧 England and Wales</div>
             <h1>Sewage Overflow Insights</h1>
             <p>
               Explore mapped discharge outlets, receiving waters and recorded 2023–2025 risk,
@@ -908,53 +1179,36 @@ def render_hero():
             </p>
             <div class="edm-hero-badges" aria-label="Dashboard highlights">
               <span>💧 Mapped receiving waters</span>
-              <span>📍 Exact discharge outlets</span>
-              <span>🌈 Separate 2026 forecast</span>
+              <span>💧 Exact discharge outlets</span>
+              <span>💧 Separate 2026 forecast</span>
             </div>
           </div>
-          <div class="edm-water-art" aria-label="Animated clouds, rain and flowing river illustration">
-            <svg viewBox="0 0 520 250" width="100%" role="img" aria-label="Clouds releasing rain above a flowing river and green leaves">
-              <defs>
-                <linearGradient id="riverGradient" x1="0" y1="0" x2="1" y2="0">
-                  <stop offset="0" stop-color="#A9DCE7"/>
-                  <stop offset=".5" stop-color="#68AFC2"/>
-                  <stop offset="1" stop-color="#77C4B2"/>
-                </linearGradient>
-              </defs>
-              <circle cx="265" cy="129" r="112" fill="#FFFFFF" opacity=".40"/>
-              <circle cx="458" cy="38" r="25" fill="#FFE7A9" opacity=".88"/>
-              <path d="M0 160 C78 113 138 130 205 164 C270 197 333 182 392 144 C441 114 482 124 520 145 L520 250 L0 250Z" fill="#CBE7D2" opacity=".55"/>
-              <g class="edm-cloud-a" fill="#F9FCFC" stroke="#9CCAD3" stroke-width="3">
-                <ellipse cx="152" cy="70" rx="72" ry="30"/>
-                <circle cx="124" cy="55" r="34"/>
-                <circle cx="168" cy="46" r="42"/>
-                <circle cx="205" cy="64" r="28"/>
-              </g>
-              <g class="edm-cloud-b" fill="#F5FAF8" stroke="#A8D8D0" stroke-width="3" opacity=".95">
-                <ellipse cx="385" cy="88" rx="63" ry="27"/>
-                <circle cx="356" cy="73" r="29"/>
-                <circle cx="394" cy="64" r="37"/>
-                <circle cx="426" cy="82" r="24"/>
-              </g>
-              <g stroke="#70B9CC" stroke-width="5" stroke-linecap="round">
-                <line class="edm-rain-drop" x1="115" y1="98" x2="104" y2="120"/>
-                <line class="edm-rain-drop" x1="154" y1="100" x2="143" y2="124"/>
-                <line class="edm-rain-drop" x1="193" y1="98" x2="181" y2="122"/>
-                <line class="edm-rain-drop" x1="358" y1="114" x2="347" y2="136"/>
-                <line class="edm-rain-drop" x1="396" y1="114" x2="385" y2="138"/>
-                <line class="edm-rain-drop" x1="428" y1="111" x2="417" y2="133"/>
-              </g>
-              <path d="M15 171 C78 137 126 151 174 178 C224 207 273 205 326 173 C380 140 437 146 507 179 L507 244 L15 244Z" fill="url(#riverGradient)" opacity=".55"/>
-              <path class="edm-river-flow" d="M18 183 C81 151 129 161 176 188 C224 216 275 214 329 183 C383 151 441 156 505 189" fill="none" stroke="#F7FCFB" stroke-width="11" stroke-linecap="round"/>
-              <path class="edm-river-flow" d="M20 215 C79 188 128 195 178 220 C226 244 277 241 327 213 C379 184 437 190 501 216" fill="none" stroke="#4D9EB5" stroke-width="7" stroke-linecap="round" opacity=".72"/>
-              <path d="M55 168 C31 145 20 151 24 177 C44 184 57 178 55 168Z" fill="#7EBD91"/>
-              <path d="M56 168 C60 140 76 132 92 153 C83 173 70 179 56 168Z" fill="#B6DEBF"/>
-              <path d="M461 175 C479 147 498 149 502 173 C488 190 474 190 461 175Z" fill="#7EBD91"/>
-              <g fill="#477C78" opacity=".75">
-                <path d="M272 213 q14 -10 28 0 q-14 11 -28 0Z"/><circle cx="297" cy="211" r="2" fill="#F7FCFB"/>
-                <path d="M343 186 q11 -8 23 0 q-12 9 -23 0Z"/><circle cx="363" cy="184" r="1.7" fill="#F7FCFB"/>
-              </g>
-            </svg>
+          <div class="edm-water-art">
+            <div
+              class="edm-sewer-diagram"
+              role="img"
+              aria-label="Combined sewer diagram. Rainwater and household wastewater enter one pipe. Normal flow continues to treatment works, while excess flow is discharged through an overflow pipe into receiving water. The overflow discharge is shown in brown."
+            >
+              <div class="edm-diagram-title">How a combined sewer overflow happens</div>
+              <span class="edm-hero-raindrop r1">💧</span>
+              <span class="edm-hero-raindrop r2">💧</span>
+              <span class="edm-hero-raindrop r3">💧</span>
+              <span class="edm-hero-raindrop r4">💧</span>
+              <span class="edm-hero-raindrop r5">💧</span>
+              <div class="edm-house"><span class="edm-door"></span></div>
+              <div class="edm-road"></div>
+              <div class="edm-drain" aria-hidden="true"></div>
+              <div class="edm-house-connector" aria-hidden="true"></div>
+              <div class="edm-drain-connector" aria-hidden="true"></div>
+              <div class="edm-main-pipe"><div class="edm-main-flow"></div></div>
+              <div class="edm-main-pipe-label">Combined sewer</div>
+              <div class="edm-overflow-chamber"><span>Overflow chamber</span></div>
+              <div class="edm-overflow-pipe" aria-hidden="true"></div>
+              <div class="edm-discharge-label">Brown overflow discharge</div>
+              <div class="edm-treatment-route" aria-hidden="true"></div>
+              <div class="edm-treatment">Normal flow → treatment works</div>
+              <div class="edm-river"><span>Receiving water</span></div>
+            </div>
           </div>
         </section>
         """,
@@ -967,23 +1221,23 @@ def render_page_cards():
         """
         <div class="edm-page-grid" aria-label="Dashboard sections">
           <div class="edm-page-card" style="--page-tint:#E3F3F7;">
-            <div class="edm-page-icon">🌧️</div><h3>Interactive maps</h3>
+            <div class="edm-page-icon">💧</div><h3>Interactive maps</h3>
             <p>Recorded outlets and 2026 estimates.</p>
           </div>
           <div class="edm-page-card" style="--page-tint:#FBE4E4;">
-            <div class="edm-page-icon">⛈️</div><h3>Priority locations</h3>
+            <div class="edm-page-icon">💧</div><h3>Priority locations</h3>
             <p>High-risk places, outlets and companies.</p>
           </div>
           <div class="edm-page-card" style="--page-tint:#E5F3EA;">
-            <div class="edm-page-icon">🌦️</div><h3>Places &amp; companies</h3>
+            <div class="edm-page-icon">💧</div><h3>Places &amp; companies</h3>
             <p>Simple rankings and yearly patterns.</p>
           </div>
           <div class="edm-page-card" style="--page-tint:#F0EAF6;">
-            <div class="edm-page-icon">🌈</div><h3>2026 predictions</h3>
+            <div class="edm-page-icon">💧</div><h3>2026 predictions</h3>
             <p>Forecast risks and affected locations.</p>
           </div>
           <div class="edm-page-card" style="--page-tint:#FFF0DD;">
-            <div class="edm-page-icon">☁️💧</div><h3>Find a location</h3>
+            <div class="edm-page-icon">💧</div><h3>Find a location</h3>
             <p>Search a site and view its probabilities.</p>
           </div>
           <div class="edm-page-card" style="--page-tint:#E7F4F6;">
@@ -991,20 +1245,20 @@ def render_page_cards():
             <p>Explore linked 2025 monitoring results.</p>
           </div>
           <div class="edm-page-card" style="--page-tint:#EDF3DE;">
-            <div class="edm-page-icon">🌊</div><h3>Evidence</h3>
+            <div class="edm-page-icon">💧</div><h3>Evidence</h3>
             <p>Sources, quality checks and limitations.</p>
           </div>
         </div>
         """
     )
     destinations = [
-        ("Open map", "🌧️ Explore the map"),
-        ("Priority list", "⛈️ Priority locations"),
-        ("Compare", "🌦️ Places and companies"),
-        ("2026 forecast", "🌈 2026 predictions"),
+        ("Open map", "💧 Explore the map"),
+        ("Priority list", "💧 Priority locations"),
+        ("Compare", "💧 Places and companies"),
+        ("2026 forecast", "💧 2026 predictions"),
         ("Water quality", "💧 Water quality"),
-        ("Find a site", "☁️💧 Check one location"),
-        ("Evidence", "🌊 About the evidence"),
+        ("Find a site", "💧 Check one location"),
+        ("Evidence", "💧 About the evidence"),
     ]
     for column, (button_text, destination) in zip(st.columns(7), destinations):
         with column:
@@ -2154,7 +2408,7 @@ st.sidebar.html(
       <div style="display:flex;align-items:center;">
         <span class="edm-brand-mark">💧</span>
         <div><div style="font-size:1.12rem;font-weight:800;line-height:1.2;">Sewage Overflow<br>Insights</div>
-        <div style="font-size:.76rem;color:#5D7772;margin-top:.18rem;">England · evidence · forecast</div></div>
+        <div style="font-size:.76rem;color:#5D7772;margin-top:.18rem;">England and Wales · evidence · forecast</div></div>
       </div>
     </div>
     """,
@@ -2187,14 +2441,14 @@ if reduce_motion:
     )
 
 PAGES = [
-    "🌤️ Start here",
-    "🌧️ Explore the map",
-    "⛈️ Priority locations",
-    "🌦️ Places and companies",
-    "🌈 2026 predictions",
+    "💧 Start here",
+    "💧 Explore the map",
+    "💧 Priority locations",
+    "💧 Places and companies",
+    "💧 2026 predictions",
     "💧 Water quality",
-    "☁️💧 Check one location",
-    "🌊 About the evidence",
+    "💧 Check one location",
+    "💧 About the evidence",
 ]
 
 st.sidebar.markdown("---")
@@ -2336,7 +2590,7 @@ elif page == "Explore the map":
         else:
             banner(
                 "<b>Recorded information:</b> every marker is a mapped discharge outlet using the supplied 2023–2025 records.",
-                icon="🌊",
+                icon="💧",
                 background=PALE_MINT,
                 edge="#4A9C7D",
             )
@@ -3375,7 +3629,7 @@ elif page == "Water quality":
                 "station. Proximity does not prove that an outlet caused a result. Dissolved "
                 "oxygen is an environmental indicator, not itself a pollutant, and different "
                 "indicators require different interpretation.",
-                icon="🌊",
+                icon="💧",
                 background=PALE_BLUE,
                 edge="#68AFC2",
             )
