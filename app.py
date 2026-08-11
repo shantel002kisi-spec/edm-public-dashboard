@@ -834,8 +834,8 @@ def render_page_cards():
             <p>Simple rankings and yearly patterns.</p>
           </div>
           <div class="edm-page-card" style="--page-tint:#F0EAF6;">
-            <div class="edm-page-icon">📊</div><h3>Model results</h3>
-            <p>Accuracy shown with clear visual checks.</p>
+            <div class="edm-page-icon">🔮</div><h3>2026 predictions</h3>
+            <p>Forecast risks and affected locations.</p>
           </div>
           <div class="edm-page-card" style="--page-tint:#FFF0DD;">
             <div class="edm-page-icon">🔎</div><h3>Find a location</h3>
@@ -852,7 +852,7 @@ def render_page_cards():
         ("Open map", "🗺️ Explore the map"),
         ("Priority list", "🚨 Priority locations"),
         ("Compare", "🏙️ Places and companies"),
-        ("Model results", "📊 How accurate is it?"),
+        ("2026 forecast", "🔮 2026 predictions"),
         ("Find a site", "🔎 Check one location"),
         ("Evidence", "🌿 About the evidence"),
     ]
@@ -1207,6 +1207,7 @@ def add_colab_map_panels(
     risk_counts = plotting[risk_column].value_counts().reindex(RISK_ORDER, fill_value=0)
     map_title = "Predicted 2026 risk" if prediction else "Observed spill risk"
     period_text = "Forecast - not a confirmed event" if prediction else "Recorded 2023-2025 evidence"
+    place_detail_label = "Forecast status" if prediction else "Recorded spills"
     panels = f"""
     <style>
       .edm-map-panel {{position:fixed;top:12px;z-index:9999;width:300px;max-height:86vh;
@@ -1286,8 +1287,15 @@ def add_colab_map_panels(
                 "company": plain(row.get(company_column), "Unknown company"),
                 "place": plain(row.get(place_column), "Place unavailable"),
                 "site": plain(row.get(site_column), "Spill outlet") if site_column else "Spill outlet",
-                "spills": value_text(
-                    row.get("place_total_counted_spills", row.get("total_counted_spills_in_period"))
+                "spills": (
+                    "Model-generated 2026 risk"
+                    if prediction
+                    else value_text(
+                        row.get(
+                            "place_total_counted_spills",
+                            row.get("total_counted_spills_in_period"),
+                        )
+                    )
                 ),
             }
         )
@@ -1319,7 +1327,7 @@ def add_colab_map_panels(
       var centre=coords.reduce(function(t,c){{t[0]+=c[0];t[1]+=c[1];return t;}},[0,0]);
       centre=[centre[0]/coords.length,centre[1]/coords.length];
       edmFocusMarker=L.circleMarker(centre,{{radius:10,color:'#173D3A',weight:3,fillColor:'#DDEFF4',fillOpacity:.95}}).addTo(edmMap);
-      var popup='<div style="font:12px/1.45 Verdana;color:#173D3A;min-width:245px"><b style="font-size:14px">'+edmEscape(place.name)+'</b><br>'+coords.length.toLocaleString()+' mapped outlets<br><b>Risk:</b> High '+place.high+', Medium '+place.medium+', Low '+place.low+'<br><b>Companies:</b> '+edmEscape(Array.from(place.companies).sort().join(', '))+'<br><b>Recorded spills:</b> '+edmEscape(place.spills)+'</div>';
+      var popup='<div style="font:12px/1.45 Verdana;color:#173D3A;min-width:245px"><b style="font-size:14px">'+edmEscape(place.name)+'</b><br>'+coords.length.toLocaleString()+' mapped outlets<br><b>Risk:</b> High '+place.high+', Medium '+place.medium+', Low '+place.low+'<br><b>Companies:</b> '+edmEscape(Array.from(place.companies).sort().join(', '))+'<br><b>{place_detail_label}:</b> '+edmEscape(place.spills)+'</div>';
       edmFocusMarker.bindPopup(popup,{{maxWidth:330}}).openPopup();
     }}
     function edmRenderPlaces(){{
@@ -1616,7 +1624,7 @@ PAGES = [
     "🗺️ Explore the map",
     "🚨 Priority locations",
     "🏙️ Places and companies",
-    "📊 How accurate is it?",
+    "🔮 2026 predictions",
     "🔎 Check one location",
     "🌿 About the evidence",
 ]
@@ -2220,67 +2228,291 @@ elif page == "Places and companies":
 
 
 # =============================================================================
-# PAGE 4 — MODEL PERFORMANCE
+# PAGE 5 — 2026 PREDICTIONS AND AFFECTED LOCATIONS
 # =============================================================================
 
-elif page == "How accurate is it?":
+elif page == "2026 predictions":
     section_header(
-        "How well did the prediction system work?",
-        "This page shows how often the system gave a useful answer when checked against later information.",
+        "Predicted 2026 spill risks and affected locations",
+        "Explore the forecast by risk, town or city, water company and exact mapped outlet.",
     )
     banner(
-        "<b>Main check:</b> we looked at whether the system recognised Low, Medium and High fairly, "
-        "including the smaller High-risk group. Higher percentages are better.",
-        icon="🧠",
-        background=PALE_LAVENDER,
-        edge="#8F79A8",
+        "<b>2026 forecast:</b> these are model-generated risk estimates for planning and review. "
+        "They are not confirmed 2026 spill events.",
+        icon="🔮",
+        background=PALE_AMBER,
+        edge="#D59A3C",
     )
 
-    models = load_table("model_comparison")
-    metrics = load_table("validation_metrics")
-    report = load_table("classification_report")
+    forecast = load_table("forecast_map_points")
+    forecast_risk = "predicted_2026_risk"
 
-    if not models.empty:
-        model_column = first_existing(models, ["Model", "model"])
-        metric_columns = [
-            column for column in models.columns
-            if any(term in str(column).casefold() for term in ["macro f1", "balanced accuracy", "high-risk recall"])
-            and pd.api.types.is_numeric_dtype(models[column])
-        ]
-        if model_column and metric_columns:
-            long = models.melt(id_vars=model_column, value_vars=metric_columns, var_name="Metric", value_name="Score")
-            figure = px.bar(
-                long, x=model_column, y="Score", color="Metric", barmode="group",
-                title="Comparison of the four prediction methods",
-                color_discrete_sequence=["#70B7A5", "#8CBBD0", "#C4A8D5"],
-            )
-            figure.update_yaxes(range=[0, 1], tickformat=".0%")
-            st.plotly_chart(plot_style(figure, 500), use_container_width=True)
-        st.dataframe(models, use_container_width=True, hide_index=True)
+    if forecast.empty or forecast_risk not in forecast.columns:
+        st.error("The 2026 prediction information is unavailable. Please try again later.")
     else:
-        st.info("The model-comparison export is unavailable.")
+        forecast_place = first_existing(forecast, ["official_place_name", "town_or_city"])
+        forecast_company = first_existing(forecast, ["water_company_name", "company"])
+        forecast_site = first_existing(
+            forecast,
+            ["site_name", "source_site_name_ea_consents_database"],
+        )
 
-    metric_tab, class_tab = st.tabs(["Overall 2025 check", "Results for each risk level"])
-    with metric_tab:
-        if not metrics.empty:
-            st.dataframe(metrics.rename(columns=lambda value: str(value).replace("Test", "2025 validation")), use_container_width=True, hide_index=True)
-        else:
-            st.info("The validation-metric export is unavailable.")
-    with class_tab:
-        if not report.empty:
-            st.dataframe(report, use_container_width=True, hide_index=True)
-        else:
-            st.info("The classification-report export is unavailable.")
+        filter_columns = st.columns([1.05, 1.05, 1.05, 1.35])
+        with filter_columns[0]:
+            forecast_risks = st.multiselect(
+                "Predicted risk",
+                RISK_ORDER,
+                default=RISK_ORDER,
+                key="forecast_page_risks",
+            )
+        with filter_columns[1]:
+            forecast_company_choice = st.selectbox(
+                "Water company",
+                ["All companies"] + available_values(forecast, forecast_company)
+                if forecast_company
+                else ["All companies"],
+                key="forecast_page_company",
+            )
+        with filter_columns[2]:
+            forecast_place_choice = st.selectbox(
+                "Town or city",
+                ["All towns/cities"] + available_values(forecast, forecast_place)
+                if forecast_place
+                else ["All towns/cities"],
+                key="forecast_page_place",
+            )
+        with filter_columns[3]:
+            forecast_search = st.text_input(
+                "Find a location, company or receiving water",
+                key="forecast_page_search",
+            ).strip()
 
-    st.html(
-        """
-        <div class="edm-journey">
-          <div class="edm-journey-step"><span class="edm-journey-number">1</span><h4>Learn</h4><p>The system learns patterns from earlier years only.</p></div>
-          <div class="edm-journey-step"><span class="edm-journey-number">2</span><h4>Check</h4><p>It is checked against later information it did not use while learning.</p></div>
-          <div class="edm-journey-step"><span class="edm-journey-number">3</span><h4>Estimate</h4><p>The final system provides Low, Medium and High chances for 2026.</p></div>
-        </div>
-        """,
-    )
+        forecast_filtered = forecast.loc[
+            forecast[forecast_risk].isin(forecast_risks)
+        ].copy() if forecast_risks else forecast.iloc[0:0].copy()
+
+        if forecast_company and forecast_company_choice != "All companies":
+            forecast_filtered = forecast_filtered.loc[
+                forecast_filtered[forecast_company].astype(str).eq(forecast_company_choice)
+            ]
+        if forecast_place and forecast_place_choice != "All towns/cities":
+            forecast_filtered = forecast_filtered.loc[
+                forecast_filtered[forecast_place].astype(str).eq(forecast_place_choice)
+            ]
+        if forecast_search:
+            search_columns = [
+                column
+                for column in [
+                    forecast_place,
+                    forecast_company,
+                    forecast_site,
+                    "receiving_water",
+                    "source_receiving_water",
+                    "permit_reference",
+                ]
+                if column and column in forecast_filtered.columns
+            ]
+            forecast_match = pd.Series(False, index=forecast_filtered.index)
+            for column in search_columns:
+                forecast_match |= forecast_filtered[column].astype("string").str.contains(
+                    forecast_search,
+                    case=False,
+                    regex=False,
+                    na=False,
+                )
+            forecast_filtered = forecast_filtered.loc[forecast_match]
+
+        if forecast_filtered.empty:
+            st.warning("No predicted locations match these choices. Clear a filter and try again.")
+        else:
+            forecast_counts = (
+                forecast_filtered[forecast_risk]
+                .value_counts()
+                .reindex(RISK_ORDER, fill_value=0)
+            )
+            metric_cards(
+                [
+                    {
+                        "label": "Predicted locations",
+                        "value": value_text(len(forecast_filtered)),
+                        "note": "Mapped outlets in this view",
+                        "accent": "#B7DDE5",
+                    },
+                    {
+                        "label": "Predicted High",
+                        "value": value_text(forecast_counts["High"]),
+                        "note": "Priority review category",
+                        "accent": "#E9A7A7",
+                    },
+                    {
+                        "label": "Predicted Medium",
+                        "value": value_text(forecast_counts["Medium"]),
+                        "note": "Closer-attention category",
+                        "accent": "#F1D39D",
+                    },
+                    {
+                        "label": "Affected towns/cities",
+                        "value": value_text(
+                            forecast_filtered[forecast_place].nunique()
+                            if forecast_place
+                            else np.nan
+                        ),
+                        "note": "Places represented in the forecast",
+                        "accent": "#A8D8D0",
+                    },
+                ]
+            )
+
+            map_tab, place_tab, company_tab, location_tab = st.tabs(
+                [
+                    "Interactive forecast map",
+                    "Affected towns and cities",
+                    "Water companies",
+                    "Exact predicted locations",
+                ]
+            )
+
+            with map_tab:
+                with st.spinner("Drawing the 2026 prediction map..."):
+                    forecast_map = build_folium_map(
+                        forecast_filtered,
+                        forecast_risk,
+                        True,
+                        "Clustered spill locations",
+                    )
+                st_folium(
+                    forecast_map,
+                    height=860,
+                    use_container_width=True,
+                    returned_objects=[],
+                    key="dedicated_2026_prediction_map",
+                )
+                st.caption(
+                    "Select a cluster to zoom in, then select a marker for the predicted "
+                    "risk, probabilities, town/city and water company."
+                )
+
+            with place_tab:
+                if forecast_place:
+                    forecast_place_ranking = make_risk_ranking(
+                        forecast_filtered,
+                        forecast_risk,
+                        forecast_place,
+                    )
+                    place_chart = forecast_place_ranking.head(25).copy()
+                    place_long = place_chart.melt(
+                        id_vars=[forecast_place],
+                        value_vars=RISK_ORDER,
+                        var_name="Predicted risk",
+                        value_name="Mapped locations",
+                    )
+                    place_figure = px.bar(
+                        place_long,
+                        x="Mapped locations",
+                        y=forecast_place,
+                        color="Predicted risk",
+                        orientation="h",
+                        barmode="stack",
+                        color_discrete_map=RISK_COLOURS,
+                        category_orders={"Predicted risk": RISK_ORDER},
+                        title="Affected towns and cities ranked by predicted risk",
+                    )
+                    place_figure.update_yaxes(
+                        title="",
+                        categoryorder="array",
+                        categoryarray=place_chart[forecast_place].iloc[::-1].tolist(),
+                    )
+                    st.plotly_chart(
+                        plot_style(place_figure, max(520, 29 * len(place_chart))),
+                        use_container_width=True,
+                        config={"displayModeBar": False},
+                    )
+                    st.dataframe(
+                        forecast_place_ranking,
+                        use_container_width=True,
+                        hide_index=True,
+                    )
+                else:
+                    st.info("Town/city information is unavailable for these predictions.")
+
+            with company_tab:
+                if forecast_company:
+                    forecast_company_ranking = make_risk_ranking(
+                        forecast_filtered,
+                        forecast_risk,
+                        forecast_company,
+                    )
+                    company_chart = forecast_company_ranking.copy()
+                    company_long = company_chart.melt(
+                        id_vars=[forecast_company],
+                        value_vars=RISK_ORDER,
+                        var_name="Predicted risk",
+                        value_name="Mapped locations",
+                    )
+                    company_figure = px.bar(
+                        company_long,
+                        x="Mapped locations",
+                        y=forecast_company,
+                        color="Predicted risk",
+                        orientation="h",
+                        barmode="stack",
+                        color_discrete_map=RISK_COLOURS,
+                        category_orders={"Predicted risk": RISK_ORDER},
+                        title="Water companies ranked by predicted 2026 risk",
+                    )
+                    company_figure.update_yaxes(
+                        title="",
+                        categoryorder="array",
+                        categoryarray=company_chart[forecast_company].iloc[::-1].tolist(),
+                    )
+                    st.plotly_chart(
+                        plot_style(company_figure, max(450, 44 * len(company_chart))),
+                        use_container_width=True,
+                        config={"displayModeBar": False},
+                    )
+                    st.dataframe(
+                        forecast_company_ranking,
+                        use_container_width=True,
+                        hide_index=True,
+                    )
+                else:
+                    st.info("Water-company information is unavailable for these predictions.")
+
+            with location_tab:
+                prediction_columns = [
+                    column
+                    for column in [
+                        forecast_site,
+                        forecast_place,
+                        forecast_company,
+                        "receiving_water",
+                        "source_receiving_water",
+                        forecast_risk,
+                        "probability_low",
+                        "probability_medium",
+                        "probability_high",
+                        "prediction_confidence",
+                        "confidence_flag",
+                        "permit_reference",
+                        "latitude",
+                        "longitude",
+                    ]
+                    if column and column in forecast_filtered.columns
+                ]
+                prediction_records = forecast_filtered[prediction_columns].copy()
+                risk_sort = {"High": 0, "Medium": 1, "Low": 2}
+                prediction_records["_risk_order"] = prediction_records[forecast_risk].map(risk_sort)
+                prediction_records = prediction_records.sort_values(
+                    ["_risk_order", forecast_place]
+                    if forecast_place in prediction_records.columns
+                    else ["_risk_order"]
+                ).drop(columns="_risk_order")
+                st.dataframe(
+                    prediction_records,
+                    use_container_width=True,
+                    hide_index=True,
+                )
+                download_table(prediction_records, "predicted_2026_affected_locations.csv")
 
 
 # =============================================================================
