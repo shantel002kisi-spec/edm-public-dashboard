@@ -15,7 +15,7 @@ from folium.plugins import FastMarkerCluster, Fullscreen, HeatMap, MeasureContro
 from streamlit_folium import st_folium
 
 
-DASHBOARD_RELEASE = "2026-08-11-map-panels-v3"
+DASHBOARD_RELEASE = "2026-08-11-map-controls-and-spill-years-v4"
 
 
 # =============================================================================
@@ -1140,6 +1140,38 @@ def metric_cards(cards: list[dict]):
     st.html('<div class="edm-metric-grid">' + "".join(pieces) + "</div>")
 
 
+def mapped_annual_spill_totals(
+    frame: pd.DataFrame,
+    place_column: str | None,
+) -> dict[int, float]:
+    """Return annual counted spills without repeating town/city totals per outlet."""
+    years = (2023, 2024, 2025)
+    annual_columns = [f"place_counted_spills_{year}" for year in years]
+    if (
+        frame.empty
+        or not place_column
+        or place_column not in frame.columns
+        or not all(column in frame.columns for column in annual_columns)
+    ):
+        return {year: np.nan for year in years}
+
+    # Each mapped outlet carries its town/city's annual total. Keep one row per
+    # place before adding the totals so the same spills are never counted once
+    # for every outlet in that place.
+    place_totals = (
+        frame[[place_column, *annual_columns]]
+        .dropna(subset=[place_column])
+        .drop_duplicates(subset=[place_column])
+    )
+    return {
+        year: pd.to_numeric(
+            place_totals[f"place_counted_spills_{year}"],
+            errors="coerce",
+        ).sum(min_count=1)
+        for year in years
+    }
+
+
 def plot_style(figure: go.Figure, height=480):
     figure.update_layout(
         height=height,
@@ -1647,7 +1679,17 @@ def add_colab_map_panels(
     }});
     window.setTimeout(edmRenderPlaces,0);
     """
-    water_map.get_root().script.add_child(folium.Element(script))
+    # streamlit-folium does not reliably emit custom code placed in
+    # ``root.script``. Add a real script element and wait until Leaflet loads.
+    water_map.get_root().html.add_child(
+        folium.Element(
+            "<script>\n"
+            "window.addEventListener('load', function(){\n"
+            + script
+            + "\n});\n"
+            "</script>"
+        )
+    )
 
 
 def build_folium_map(
@@ -2117,14 +2159,65 @@ elif page == "Explore the map":
         render_risk_guide()
         filtered, place_column = filter_map(map_data, risk_column, prediction)
         risk_counts = filtered[risk_column].value_counts().reindex(RISK_ORDER, fill_value=0)
-        metric_cards(
-            [
-                {"label": "Locations currently shown", "value": value_text(len(filtered)), "note": "Change the choices above to narrow the map", "accent": "#B7DDE5"},
-                {"label": "Low", "value": value_text(risk_counts["Low"]), "note": "● lower concern", "accent": "#A8D8D0"},
-                {"label": "Medium", "value": value_text(risk_counts["Medium"]), "note": "◆ closer attention", "accent": "#F1D39D"},
-                {"label": "High", "value": value_text(risk_counts["High"]), "note": "▲ priority review", "accent": "#E9A7A7"},
-            ]
-        )
+        if prediction:
+            metric_cards(
+                [
+                    {
+                        "label": "2026 forecast outlets shown",
+                        "value": value_text(len(filtered)),
+                        "note": "Mapped receiving-water outlets · not confirmed spills",
+                        "accent": "#B7DDE5",
+                    },
+                    {
+                        "label": "2026 predicted Low outlets",
+                        "value": value_text(risk_counts["Low"]),
+                        "note": "Forecast receiving-water locations",
+                        "accent": "#A8D8D0",
+                    },
+                    {
+                        "label": "2026 predicted Medium outlets",
+                        "value": value_text(risk_counts["Medium"]),
+                        "note": "Forecast receiving-water locations",
+                        "accent": "#F1D39D",
+                    },
+                    {
+                        "label": "2026 predicted High outlets",
+                        "value": value_text(risk_counts["High"]),
+                        "note": "Forecast receiving-water locations",
+                        "accent": "#E9A7A7",
+                    },
+                ]
+            )
+        else:
+            annual_spills = mapped_annual_spill_totals(filtered, place_column)
+            metric_cards(
+                [
+                    {
+                        "label": "Receiving-water outlets shown",
+                        "value": value_text(len(filtered)),
+                        "note": "Mapped outlets · this is not a spill count",
+                        "accent": "#B7DDE5",
+                    },
+                    {
+                        "label": "2023 counted spills",
+                        "value": value_text(annual_spills[2023]),
+                        "note": "Recorded across the receiving-water locations shown",
+                        "accent": "#A8D8D0",
+                    },
+                    {
+                        "label": "2024 counted spills",
+                        "value": value_text(annual_spills[2024]),
+                        "note": "Recorded across the receiving-water locations shown",
+                        "accent": "#B9DCCF",
+                    },
+                    {
+                        "label": "2025 counted spills",
+                        "value": value_text(annual_spills[2025]),
+                        "note": "Recorded across the receiving-water locations shown",
+                        "accent": "#F1D39D",
+                    },
+                ]
+            )
 
         if filtered.empty:
             st.warning("No locations match those choices. Remove one or more filters and try again.")
