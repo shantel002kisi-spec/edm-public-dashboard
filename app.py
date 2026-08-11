@@ -15,7 +15,7 @@ from folium.plugins import FastMarkerCluster, Fullscreen, HeatMap, MeasureContro
 from streamlit_folium import st_folium
 
 
-DASHBOARD_RELEASE = "2026-08-11-water-quality-page-v6"
+DASHBOARD_RELEASE = "2026-08-12-clear-site-water-quality-v7"
 
 
 # =============================================================================
@@ -3455,7 +3455,43 @@ elif page == "Water quality":
                         )
                         .sort_values(["measurements", "median_result"], ascending=[False, False])
                         .head(20)
-                        .sort_values("median_result")
+                    )
+                    indicator_name = selected_parameter.casefold()
+                    lower_values_may_need_review = "dissolved oxygen" in indicator_name
+                    higher_values_may_need_review = any(
+                        term in indicator_name
+                        for term in ["ammonia", "ammoniacal", "bod", "phosphate"]
+                    )
+                    # Plotly places the final category at the top of a horizontal
+                    # bar chart. Reverse the dissolved-oxygen order so lower
+                    # values, which may merit closer review, are shown first.
+                    site_summary = site_summary.sort_values(
+                        "median_result",
+                        ascending=not lower_values_may_need_review,
+                    )
+                    if lower_values_may_need_review:
+                        reading_note = (
+                            "Site names are shown on the left. For dissolved oxygen, lower values "
+                            "are placed near the top because lower oxygen can require closer review."
+                        )
+                    elif higher_values_may_need_review:
+                        reading_note = (
+                            "Site names are shown on the left. Higher measured values are placed "
+                            "near the top for this indicator, but they are not automatically a breach."
+                        )
+                    else:
+                        reading_note = (
+                            "Site names are shown on the left. Bar length compares the median "
+                            "measurement only; it does not identify a worst site."
+                        )
+                    st.html(
+                        f"""
+                        <div style="margin:.6rem 0 .8rem;padding:.85rem 1rem;border-radius:14px;
+                          border-left:6px solid #68AFC2;background:linear-gradient(110deg,#E9F4F8,#F1ECF7);
+                          color:#315E5A;">
+                          <b>How to read the site comparison</b><br>{html.escape(reading_note)}
+                        </div>
+                        """
                     )
                     median_chart = go.Figure(
                         go.Bar(
@@ -3476,15 +3512,15 @@ elif page == "Water quality":
                             textposition="outside",
                             customdata=site_summary[["measurements"]],
                             hovertemplate=(
-                                "%{y}<br>Median: %{x:,.3f} " + html.escape(selected_unit)
+                                "<b>Linked outlet/site:</b> %{y}<br>Median: %{x:,.3f} " + html.escape(selected_unit)
                                 + "<br>Measurements: %{customdata[0]:,.0f}<extra></extra>"
                             ),
                         )
                     )
                     median_chart.update_layout(
-                        title="Site-level median · descriptive comparison only",
+                        title=f"Typical 2025 {selected_parameter} near each linked outlet",
                         xaxis_title=f"Median reported result ({selected_unit})",
-                        yaxis_title="",
+                        yaxis_title="Linked outlet/site name",
                         showlegend=False,
                     )
                     st.plotly_chart(
@@ -3494,7 +3530,8 @@ elif page == "Water quality":
                         config={"displayModeBar": False},
                     )
                     st.caption(
-                        "The site median is a descriptive summary, not a pass/fail score or a water-company ranking."
+                        "A site name identifies the outlet linked geographically to the nearby monitoring station. "
+                        "The median is a descriptive summary—not a pass/fail score, proof of causation or a confirmed ranking of water-quality issues."
                     )
 
             with st.expander("See the 2025 measurements behind the graphs"):
