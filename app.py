@@ -15,7 +15,7 @@ from folium.plugins import FastMarkerCluster, Fullscreen, HeatMap, MeasureContro
 from streamlit_folium import st_folium
 
 
-DASHBOARD_RELEASE = "2026-08-12-simple-sewer-image-v9"
+DASHBOARD_RELEASE = "2026-08-12-pastel-blue-sidebar-v10"
 
 
 # =============================================================================
@@ -1029,9 +1029,10 @@ st.markdown(
         justify-content: flex-start !important;
         padding: .42rem .55rem !important;
         margin: 0 !important;
-        border: 1px solid rgba(55,120,110,.14) !important;
+        border: 1px solid rgba(71,139,164,.24) !important;
         border-radius: 11px !important;
-        background: rgba(255,255,255,.72) !important;
+        background: linear-gradient(135deg, #E7F5FA, #D8ECF5) !important;
+        box-shadow: 0 3px 9px rgba(58,123,148,.07) !important;
         font-size: .84rem !important;
         font-weight: 720 !important;
         text-align: left !important;
@@ -1039,8 +1040,14 @@ st.markdown(
       }
 
       section[data-testid="stSidebar"] div[data-testid="stRadio"] > div[role="radiogroup"] label:hover {
-        background: rgba(255,255,255,.94) !important;
-        border-color: rgba(55,120,110,.32) !important;
+        background: linear-gradient(135deg, #DCEFF7, #CBE6F1) !important;
+        border-color: rgba(55,126,153,.42) !important;
+      }
+
+      section[data-testid="stSidebar"] div[data-testid="stRadio"] > div[role="radiogroup"] label:has(input:checked) {
+        background: linear-gradient(135deg, #CFEAF4, #BFDDEA) !important;
+        border-color: rgba(48,118,145,.48) !important;
+        box-shadow: 0 4px 12px rgba(48,118,145,.13) !important;
       }
 
       .edm-page-grid {
@@ -1355,9 +1362,9 @@ def render_hero():
               then view the separate, clearly labelled 2026 forecast.
             </p>
             <div class="edm-hero-badges" aria-label="Dashboard highlights">
-              <span>💧 Mapped receiving waters</span>
-              <span>💧 Exact discharge outlets</span>
-              <span>💧 Separate 2026 forecast</span>
+              <span>Mapped receiving waters</span>
+              <span>Exact discharge outlets</span>
+              <span>Separate 2026 forecast</span>
             </div>
           </div>
           <div class="edm-water-art">
