@@ -23,7 +23,7 @@ st.set_page_config(
     page_title="England EDM Water & Spill-Risk Observatory",
     page_icon="💧",
     layout="wide",
-    initial_sidebar_state="collapsed",
+    initial_sidebar_state="expanded",
 )
 
 ROOT = Path(__file__).resolve().parent
@@ -96,68 +96,8 @@ st.markdown(
       .block-container {
         max-width: 1540px;
         padding-top: 0.65rem;
-        padding-right: 290px;
+        padding-right: 1rem;
         padding-bottom: 3rem;
-      }
-
-      .st-key-right_navigation_panel {
-        position: fixed;
-        top: 1rem;
-        right: 1rem;
-        z-index: 100000;
-        width: 250px;
-        max-height: calc(100vh - 2rem);
-        overflow-y: auto;
-        padding: .85rem;
-        border: 1px solid rgba(55,120,110,.20);
-        border-radius: 20px;
-        background: linear-gradient(165deg, rgba(250,253,251,.98), rgba(226,242,238,.98));
-        box-shadow: 0 14px 34px rgba(31,79,72,.16);
-      }
-
-      .st-key-right_navigation_panel div[data-testid="stRadio"] > div[role="radiogroup"] {
-        display: flex;
-        flex-direction: column;
-        gap: .38rem;
-        padding: 0;
-        margin: .45rem 0;
-        border: 0;
-        background: transparent;
-        box-shadow: none;
-      }
-
-      .st-key-right_navigation_panel div[data-testid="stRadio"] > div[role="radiogroup"] label {
-        flex: none;
-        width: 100%;
-        min-height: 42px;
-        justify-content: flex-start;
-        padding: .48rem .6rem;
-        border: 1px solid rgba(55,120,110,.14);
-        border-radius: 12px;
-        background: rgba(255,255,255,.76);
-        text-align: left;
-        font-size: .84rem;
-      }
-
-      .edm-right-nav-title {
-        display: flex;
-        align-items: center;
-        gap: .55rem;
-        padding-bottom: .55rem;
-        border-bottom: 1px solid rgba(55,120,110,.14);
-        color: var(--edm-ink);
-      }
-
-      .edm-right-nav-title span { font-size: 1.55rem; }
-      .edm-right-nav-title b { font-size: .98rem; }
-      .edm-right-nav-note {
-        margin-top: .55rem;
-        padding: .55rem;
-        border-radius: 10px;
-        background: rgba(255,243,221,.78);
-        color: #6A5436;
-        font-size: .71rem;
-        line-height: 1.42;
       }
 
       #MainMenu, footer, [data-testid="stDecoration"] {
@@ -543,6 +483,43 @@ st.markdown(
         background: linear-gradient(145deg, rgba(255,255,255,.88), rgba(232,246,240,.78));
       }
 
+      /* The dashboard has one navigation menu: a compact vertical menu in
+         Streamlit's sidebar. These rules override the horizontal radio style
+         used by filters inside the main page. */
+      section[data-testid="stSidebar"] div[data-testid="stRadio"] > div[role="radiogroup"] {
+        display: flex !important;
+        flex-direction: column !important;
+        flex-wrap: nowrap !important;
+        gap: .34rem !important;
+        padding: .3rem 0 !important;
+        margin: .15rem 0 .65rem !important;
+        border: 0 !important;
+        border-radius: 0 !important;
+        background: transparent !important;
+        box-shadow: none !important;
+      }
+
+      section[data-testid="stSidebar"] div[data-testid="stRadio"] > div[role="radiogroup"] label {
+        flex: 0 0 auto !important;
+        width: 100% !important;
+        min-height: 40px !important;
+        justify-content: flex-start !important;
+        padding: .42rem .55rem !important;
+        margin: 0 !important;
+        border: 1px solid rgba(55,120,110,.14) !important;
+        border-radius: 11px !important;
+        background: rgba(255,255,255,.72) !important;
+        font-size: .84rem !important;
+        font-weight: 720 !important;
+        text-align: left !important;
+        transform: none !important;
+      }
+
+      section[data-testid="stSidebar"] div[data-testid="stRadio"] > div[role="radiogroup"] label:hover {
+        background: rgba(255,255,255,.94) !important;
+        border-color: rgba(55,120,110,.32) !important;
+      }
+
       .edm-page-grid {
         display: grid;
         grid-template-columns: repeat(6, minmax(0,1fr));
@@ -620,16 +597,6 @@ st.markdown(
 
       @media (max-width: 1050px) {
         .block-container { padding-right: 1rem; }
-        .st-key-right_navigation_panel {
-          position: static;
-          width: auto;
-          max-height: none;
-          margin-bottom: .8rem;
-        }
-        .st-key-right_navigation_panel div[data-testid="stRadio"] > div[role="radiogroup"] {
-          display: grid;
-          grid-template-columns: repeat(2, minmax(0,1fr));
-        }
         .edm-metric-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
         .edm-page-grid { grid-template-columns: repeat(3, minmax(0, 1fr)); }
         .edm-hero { grid-template-columns: 1fr; }
@@ -946,7 +913,7 @@ def render_page_cards():
                 key=f"home_{destination}",
                 use_container_width=True,
                 on_click=lambda target=destination: st.session_state.update(
-                    main_navigation=target
+                    sidebar_navigation=target
                 ),
             )
 
@@ -1814,31 +1781,20 @@ PAGES = [
     "🌊 About the evidence",
 ]
 
-with st.container(key="right_navigation_panel"):
-    st.html(
-        """
-        <div class="edm-right-nav-title">
-          <span>🌧️</span>
-          <div><b>Explore the water dashboard</b><br>
-          <small>Choose a section</small></div>
-        </div>
-        """
-    )
-    page_label = st.radio(
-        "Dashboard sections",
-        PAGES,
-        horizontal=False,
-        label_visibility="collapsed",
-        key="main_navigation",
-    )
-    st.html(
-        """
-        <div class="edm-right-nav-note">
-          <b>2026 means forecast</b><br>
-          It is an estimate, not a confirmed future spill.
-        </div>
-        """
-    )
+st.sidebar.markdown("---")
+page_label = st.sidebar.radio(
+    "Choose a section",
+    PAGES,
+    key="sidebar_navigation",
+)
+st.sidebar.html(
+    """
+    <div class="edm-access-note">
+      <b style="color:#173D3A;">2026 means forecast</b><br>
+      It is an estimate, not a confirmed future spill.
+    </div>
+    """
+)
 
 page = page_label.split(" ", 1)[1]
 
