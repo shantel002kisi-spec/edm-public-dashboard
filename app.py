@@ -504,7 +504,18 @@ st.markdown(
         box-shadow: 0 12px 24px rgba(38,91,84,.11);
       }
 
-      .edm-page-icon { font-size: 1.55rem; }
+      .edm-page-icon {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        width: 42px;
+        height: 42px;
+        border-radius: 50%;
+        font-size: 1.55rem;
+        background: linear-gradient(145deg, rgba(255,255,255,.94), var(--page-tint,#EAF6F0));
+        border: 1px solid rgba(67,126,118,.14);
+        box-shadow: 0 5px 12px rgba(38,91,84,.08);
+      }
       .edm-page-card h3 { margin: .25rem 0 .12rem; font-size: .97rem; }
       .edm-page-card p {
         margin: 0;
@@ -822,39 +833,39 @@ def render_page_cards():
         """
         <div class="edm-page-grid" aria-label="Dashboard sections">
           <div class="edm-page-card" style="--page-tint:#E3F3F7;">
-            <div class="edm-page-icon">🗺️</div><h3>Interactive maps</h3>
+            <div class="edm-page-icon">🌧️</div><h3>Interactive maps</h3>
             <p>Recorded outlets and 2026 estimates.</p>
           </div>
           <div class="edm-page-card" style="--page-tint:#FBE4E4;">
-            <div class="edm-page-icon">🚨</div><h3>Priority locations</h3>
+            <div class="edm-page-icon">⛈️</div><h3>Priority locations</h3>
             <p>High-risk places, outlets and companies.</p>
           </div>
           <div class="edm-page-card" style="--page-tint:#E5F3EA;">
-            <div class="edm-page-icon">🏙️</div><h3>Places &amp; companies</h3>
+            <div class="edm-page-icon">🌦️</div><h3>Places &amp; companies</h3>
             <p>Simple rankings and yearly patterns.</p>
           </div>
           <div class="edm-page-card" style="--page-tint:#F0EAF6;">
-            <div class="edm-page-icon">🔮</div><h3>2026 predictions</h3>
+            <div class="edm-page-icon">🌈</div><h3>2026 predictions</h3>
             <p>Forecast risks and affected locations.</p>
           </div>
           <div class="edm-page-card" style="--page-tint:#FFF0DD;">
-            <div class="edm-page-icon">🔎</div><h3>Find a location</h3>
+            <div class="edm-page-icon">☁️💧</div><h3>Find a location</h3>
             <p>Search a site and view its probabilities.</p>
           </div>
           <div class="edm-page-card" style="--page-tint:#EDF3DE;">
-            <div class="edm-page-icon">🌿</div><h3>Evidence</h3>
+            <div class="edm-page-icon">🌊</div><h3>Evidence</h3>
             <p>Sources, quality checks and limitations.</p>
           </div>
         </div>
         """
     )
     destinations = [
-        ("Open map", "🗺️ Explore the map"),
-        ("Priority list", "🚨 Priority locations"),
-        ("Compare", "🏙️ Places and companies"),
-        ("2026 forecast", "🔮 2026 predictions"),
-        ("Find a site", "🔎 Check one location"),
-        ("Evidence", "🌿 About the evidence"),
+        ("Open map", "🌧️ Explore the map"),
+        ("Priority list", "⛈️ Priority locations"),
+        ("Compare", "🌦️ Places and companies"),
+        ("2026 forecast", "🌈 2026 predictions"),
+        ("Find a site", "☁️💧 Check one location"),
+        ("Evidence", "🌊 About the evidence"),
     ]
     for column, (button_text, destination) in zip(st.columns(6), destinations):
         with column:
@@ -1190,17 +1201,55 @@ def add_colab_map_panels(
         return
 
     company_ranking = make_risk_ranking(plotting, risk_column, company_column)
+    company_trends = load_table("company_spill_trends")
+    trend_lookup = {}
+    if not company_trends.empty and {
+        "water_company_name",
+        "reporting_year",
+        "counted_spills",
+    }.issubset(company_trends.columns):
+        for company_name, company_rows in company_trends.groupby("water_company_name"):
+            company_rows = company_rows.copy()
+            company_rows["reporting_year"] = pd.to_numeric(
+                company_rows["reporting_year"], errors="coerce"
+            )
+            yearly = []
+            for year in (2023, 2024, 2025):
+                match = company_rows.loc[company_rows["reporting_year"].eq(year)]
+                count_value = (
+                    pd.to_numeric(match["counted_spills"], errors="coerce").iloc[0]
+                    if not match.empty
+                    else np.nan
+                )
+                duration_value = (
+                    pd.to_numeric(match["spill_duration_hours"], errors="coerce").iloc[0]
+                    if not match.empty and "spill_duration_hours" in match.columns
+                    else np.nan
+                )
+                yearly.append(
+                    {
+                        "year": year,
+                        "count": None if pd.isna(count_value) else round(float(count_value), 1),
+                        "duration": None if pd.isna(duration_value) else round(float(duration_value), 1),
+                    }
+                )
+            trend_lookup[str(company_name)] = yearly
+
     ranking_rows = []
     for _, row in company_ranking.head(12).iterrows():
+        company_name = str(row[company_column])
         ranking_rows.append(
             f"""
-            <div class="edm-map-rank">
+            <button type="button" class="edm-map-rank edm-company-trend-button"
+                    data-company="{html.escape(company_name, quote=True)}"
+                    aria-label="Show the 2023 to 2025 spill trend for {html.escape(company_name, quote=True)}">
               <span class="edm-map-rank-number">{int(row['Rank'])}</span>
-              <b>{html.escape(str(row[company_column]))}</b>
+              <b>{html.escape(company_name)}</b>
               <div><span class="risk-high">&#9650; {int(row.get('High', 0)):,}</span>
               <span class="risk-medium">&#9670; {int(row.get('Medium', 0)):,}</span>
               <span class="risk-low">&#9679; {int(row.get('Low', 0)):,}</span></div>
-            </div>
+              <small>View 2023–2025 spill trend</small>
+            </button>
             """
         )
 
@@ -1237,11 +1286,30 @@ def add_colab_map_panels(
       .edm-place-button:hover,.edm-place-button:focus {{background:#EDF8F5;transform:translateX(2px);}}
       .edm-place-name {{display:block;font-size:13px;font-weight:800;margin-bottom:2px;}}
       .edm-place-detail {{color:#5D7772;font-size:11px;}}
-      .edm-map-rank {{margin:5px 0;padding:7px;border-radius:9px;background:#FFFFFF;
-        border-left:5px solid #68AFC2;}}
+      .edm-map-rank {{display:block;width:100%;margin:5px 0;padding:7px;text-align:left;color:#173D3A;
+        border:1px solid #D5E5E0;border-left:5px solid #68AFC2;border-radius:9px;background:#FFFFFF;
+        cursor:pointer;font:12px/1.38 'Atkinson Hyperlegible',Verdana,Arial,sans-serif;}}
+      .edm-map-rank:hover,.edm-map-rank:focus {{background:#EAF6F0;transform:translateX(-2px);
+        box-shadow:0 4px 10px rgba(35,89,81,.12);}}
       .edm-map-rank-number {{display:inline-flex;align-items:center;justify-content:center;width:23px;
         height:23px;margin-right:5px;border-radius:50%;background:#DDEFF4;color:#245B61;font-weight:800;}}
       .edm-map-rank div {{margin:3px 0 0 29px;font-size:11px;word-spacing:5px;}}
+      .edm-map-rank small {{display:block;margin:4px 0 0 29px;color:#47716A;font-weight:700;}}
+      #edm-company-trend {{display:none;margin:7px 0 9px;padding:9px;border:1px solid #BFD8D0;
+        border-radius:11px;background:linear-gradient(160deg,#F7FCFA,#EAF6F0);}}
+      #edm-company-trend h4 {{margin:0 0 3px;font-size:13px;color:#173D3A;}}
+      .edm-trend-status {{display:inline-block;margin:2px 0 7px;padding:3px 7px;border-radius:999px;
+        background:#FFFFFF;color:#365F5B;font-size:11px;font-weight:800;}}
+      .edm-trend-bars {{display:flex;align-items:flex-end;justify-content:space-around;height:126px;
+        padding:7px 3px 0;border-bottom:1px solid #9BBDB4;}}
+      .edm-trend-year {{display:flex;flex-direction:column;align-items:center;justify-content:flex-end;
+        width:30%;height:100%;font-size:10px;color:#365F5B;}}
+      .edm-trend-value {{margin-bottom:3px;font-weight:800;color:#173D3A;}}
+      .edm-trend-bar {{width:34px;min-height:3px;border-radius:7px 7px 2px 2px;
+        background:linear-gradient(180deg,#68AFC2,#4A9C7D);}}
+      .edm-trend-year-label {{margin-top:4px;font-weight:800;}}
+      .edm-trend-duration {{margin-top:7px;padding:6px;border-radius:7px;background:#FFFFFF;
+        color:#52716C;font-size:10px;line-height:1.55;}}
       .risk-high {{color:#A84B4B;font-weight:800;}} .risk-medium {{color:#93611D;font-weight:800;}}
       .risk-low {{color:#357A63;font-weight:800;}}
       @media(max-width:1000px) {{.edm-map-panel{{width:235px;max-height:86vh;}}
@@ -1270,6 +1338,8 @@ def add_colab_map_panels(
     <aside id="edm-map-right" class="edm-map-panel" aria-label="Water company ranking">
       <div class="edm-map-title">Water-company ranking</div>
       <div class="edm-map-period">High-risk locations first</div>
+      <div class="edm-place-detail" style="margin-bottom:6px;">Select a company to view its recorded spill trend.</div>
+      <div id="edm-company-trend" aria-live="polite"></div>
       {''.join(ranking_rows)}
     </aside>
     """
@@ -1300,12 +1370,52 @@ def add_colab_map_panels(
             }
         )
     directory_json = json.dumps(directory, ensure_ascii=True, separators=(",", ":")).replace("</", "<\\/")
+    company_trend_json = json.dumps(
+        trend_lookup,
+        ensure_ascii=True,
+        separators=(",", ":"),
+    ).replace("</", "<\\/")
     map_name = water_map.get_name()
     script = f"""
     var edmSites={directory_json};
+    var edmCompanyTrends={company_trend_json};
     var edmMap={map_name};
     var edmFocusMarker=null;
     function edmEscape(value){{var n=document.createElement('div');n.textContent=value||'';return n.innerHTML;}}
+    function edmNumber(value,decimals){{
+      if(value===null||value===undefined||Number.isNaN(Number(value)))return 'Not reported';
+      return Number(value).toLocaleString(undefined,{{minimumFractionDigits:decimals,maximumFractionDigits:decimals}});
+    }}
+    function edmShowCompanyTrend(company){{
+      var root=document.getElementById('edm-company-trend');
+      var rows=edmCompanyTrends[company];
+      root.style.display='block';
+      if(!rows||!rows.length){{
+        root.innerHTML='<h4>'+edmEscape(company)+'</h4><div class="edm-place-detail">The annual spill-count export is not available for this company.</div>';
+        root.scrollIntoView({{block:'nearest',behavior:'smooth'}});
+        return;
+      }}
+      var valid=rows.filter(function(row){{return row.count!==null;}});
+      var maximum=Math.max.apply(null,valid.map(function(row){{return Number(row.count);}}).concat([1]));
+      var status='Annual direction unavailable';
+      if(valid.length>1){{
+        var change=Number(valid[valid.length-1].count)-Number(valid[0].count);
+        status=change>0?'Increased by '+edmNumber(change,0)+' counted spills':
+          (change<0?'Decreased by '+edmNumber(Math.abs(change),0)+' counted spills':'No overall change');
+      }}
+      var bars=rows.map(function(row){{
+        var height=row.count===null?3:Math.max(3,Math.round(100*Number(row.count)/maximum));
+        return '<div class="edm-trend-year"><span class="edm-trend-value">'+edmNumber(row.count,0)+
+          '</span><span class="edm-trend-bar" style="height:'+height+'%"></span><span class="edm-trend-year-label">'+
+          row.year+'</span></div>';
+      }}).join('');
+      var durations=rows.map(function(row){{return '<b>'+row.year+':</b> '+edmNumber(row.duration,1)+' hours';}}).join(' &nbsp; ');
+      root.innerHTML='<h4>'+edmEscape(company)+'</h4><div class="edm-place-detail">Recorded counted spills</div>'+ 
+        '<div class="edm-trend-status">'+edmEscape(status)+'</div><div class="edm-trend-bars">'+bars+'</div>'+ 
+        '<div class="edm-trend-duration"><b>Recorded duration</b><br>'+durations+'</div>'+ 
+        '<div class="edm-place-detail" style="margin-top:5px">The 2023–2025 trend is recorded evidence; any 2026 category remains a forecast.</div>';
+      root.scrollIntoView({{block:'nearest',behavior:'smooth'}});
+    }}
     function edmBuildPlaces(){{
       var query=document.getElementById('edm-place-search').value.toLowerCase().trim();
       var risk=document.getElementById('edm-risk-filter').value;
@@ -1350,6 +1460,9 @@ def add_colab_map_panels(
     document.getElementById('edm-place-search').addEventListener('input',edmRenderPlaces);
     document.getElementById('edm-risk-filter').addEventListener('change',edmRenderPlaces);
     document.getElementById('edm-company-filter').addEventListener('change',edmRenderPlaces);
+    document.querySelectorAll('.edm-company-trend-button').forEach(function(button){{
+      button.addEventListener('click',function(){{edmShowCompanyTrend(button.dataset.company);}});
+    }});
     window.setTimeout(edmRenderPlaces,0);
     """
     water_map.get_root().script.add_child(folium.Element(script))
@@ -1620,13 +1733,13 @@ if reduce_motion:
     )
 
 PAGES = [
-    "🏡 Start here",
-    "🗺️ Explore the map",
-    "🚨 Priority locations",
-    "🏙️ Places and companies",
-    "🔮 2026 predictions",
-    "🔎 Check one location",
-    "🌿 About the evidence",
+    "🌤️ Start here",
+    "🌧️ Explore the map",
+    "⛈️ Priority locations",
+    "🌦️ Places and companies",
+    "🌈 2026 predictions",
+    "☁️💧 Check one location",
+    "🌊 About the evidence",
 ]
 
 page_label = st.sidebar.radio("Choose a page", PAGES)
@@ -1637,7 +1750,7 @@ page = page_label.split(" ", 1)[1]
 st.html(
     """
     <div style="display:flex;align-items:center;gap:.65rem;margin:.1rem 0 .25rem;">
-      <span class="edm-brand-mark" style="width:36px;height:36px;font-size:19px;margin:0;">💧</span>
+      <span class="edm-brand-mark" style="width:36px;height:36px;font-size:19px;margin:0;">🌧️</span>
       <div><b style="font-size:1.02rem;">EDM Water &amp; Spill-Risk Observatory</b>
       <div style="font-size:.76rem;color:#5D7772;">England · recorded evidence · 2026 forecast</div></div>
     </div>
