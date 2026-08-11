@@ -484,7 +484,7 @@ st.markdown(
 
       .edm-page-grid {
         display: grid;
-        grid-template-columns: repeat(5, minmax(0,1fr));
+        grid-template-columns: repeat(6, minmax(0,1fr));
         gap: .62rem;
         margin: .5rem 0 .9rem;
       }
@@ -825,6 +825,10 @@ def render_page_cards():
             <div class="edm-page-icon">🗺️</div><h3>Interactive maps</h3>
             <p>Recorded outlets and 2026 estimates.</p>
           </div>
+          <div class="edm-page-card" style="--page-tint:#FBE4E4;">
+            <div class="edm-page-icon">🚨</div><h3>Priority locations</h3>
+            <p>High-risk places, outlets and companies.</p>
+          </div>
           <div class="edm-page-card" style="--page-tint:#E5F3EA;">
             <div class="edm-page-icon">🏙️</div><h3>Places &amp; companies</h3>
             <p>Simple rankings and yearly patterns.</p>
@@ -846,12 +850,13 @@ def render_page_cards():
     )
     destinations = [
         ("Open map", "🗺️ Explore the map"),
+        ("Priority list", "🚨 Priority locations"),
         ("Compare", "🏙️ Places and companies"),
         ("Model results", "📊 How accurate is it?"),
         ("Find a site", "🔎 Check one location"),
         ("Evidence", "🌿 About the evidence"),
     ]
-    for column, (button_text, destination) in zip(st.columns(5), destinations):
+    for column, (button_text, destination) in zip(st.columns(6), destinations):
         with column:
             st.button(
                 button_text,
@@ -1208,17 +1213,21 @@ def add_colab_map_panels(
         overflow:auto;padding:12px;background:rgba(251,253,249,.96);color:#173D3A;
         border:1px solid #AFCFC6;border-radius:14px;box-shadow:0 7px 25px rgba(28,77,70,.19);
         font:12px/1.38 'Atkinson Hyperlegible',Verdana,Arial,sans-serif;}}
-      #edm-map-left {{left:12px;}} #edm-map-right {{right:12px;}}
+      #edm-map-left {{left:12px;height:calc(86vh - 24px);overflow:hidden;display:flex;flex-direction:column;}}
+      #edm-map-right {{right:12px;top:12px;bottom:auto;}}
       .edm-map-title {{margin:-12px -12px 8px;padding:10px 12px;border-radius:13px 13px 0 0;
         color:#173D3A;background:linear-gradient(120deg,#CFEAE3,#DDEFF4);font-size:16px;font-weight:800;}}
       .edm-map-period {{margin:5px 0 8px;padding:5px 7px;border-radius:8px;background:#FFFFFF;
         color:#446862;font-size:11px;font-weight:700;}}
       .edm-map-legend {{display:grid;grid-template-columns:repeat(3,1fr);gap:4px;margin:7px 0;}}
       .edm-map-legend div {{padding:6px 3px;border-radius:8px;text-align:center;background:#FFFFFF;font-weight:700;}}
-      .edm-map-panel label {{display:block;margin:7px 0 2px;font-weight:700;color:#365F5B;}}
+      .edm-map-panel label {{display:block;margin:5px 0 2px;font-weight:700;color:#365F5B;}}
       .edm-map-panel input,.edm-map-panel select {{width:100%;box-sizing:border-box;padding:7px 8px;
         border:1px solid #B7CEC8;border-radius:8px;background:#FFFFFF;color:#173D3A;font-size:12px;}}
-      #edm-place-results {{max-height:42vh;overflow:auto;margin-top:7px;padding-right:2px;}}
+      .edm-map-filter-row {{display:grid;grid-template-columns:1fr 1fr;gap:6px;}}
+      #edm-place-count {{padding:6px 1px 3px;font-weight:700;}}
+      #edm-place-results {{flex:1;min-height:230px;overflow:auto;margin-top:2px;padding-right:2px;
+        border-top:1px solid #D4E5DF;}}
       .edm-place-letter {{position:sticky;top:0;padding:3px 7px;background:#DDEFF4;color:#245B61;
         font-weight:800;border-radius:6px;}}
       .edm-place-button {{display:block;width:100%;margin:5px 0;padding:7px 8px;text-align:left;
@@ -1234,8 +1243,9 @@ def add_colab_map_panels(
       .edm-map-rank div {{margin:3px 0 0 29px;font-size:11px;word-spacing:5px;}}
       .risk-high {{color:#A84B4B;font-weight:800;}} .risk-medium {{color:#93611D;font-weight:800;}}
       .risk-low {{color:#357A63;font-weight:800;}}
-      @media(max-width:1000px) {{.edm-map-panel{{width:235px;max-height:39vh;}}
-        #edm-map-right{{top:auto;bottom:12px;}}}}
+      @media(max-width:1000px) {{.edm-map-panel{{width:235px;max-height:86vh;}}
+        #edm-map-left{{height:calc(86vh - 24px);}}
+        #edm-map-right{{top:12px;bottom:auto;}}}}
     </style>
     <aside id="edm-map-left" class="edm-map-panel" aria-label="Town and city directory">
       <div class="edm-map-title">{map_title}</div>
@@ -1246,12 +1256,14 @@ def add_colab_map_panels(
         <div style="color:#A84B4B;">&#9650; High<br>{int(risk_counts['High']):,}</div>
       </div>
       <label for="edm-place-search">Find a town or city</label>
-      <input id="edm-place-search" type="search" placeholder="Start typing...">
-      <label for="edm-risk-filter">Risk</label>
-      <select id="edm-risk-filter"><option value="">All risks</option><option>High</option><option>Medium</option><option>Low</option></select>
-      <label for="edm-company-filter">Water company</label>
-      <select id="edm-company-filter"><option value="">All companies</option></select>
-      <div id="edm-place-count" class="edm-place-detail" style="margin-top:7px;"></div>
+      <input id="edm-place-search" type="search" placeholder="Type a name or browse below">
+      <div class="edm-map-filter-row">
+        <div><label for="edm-risk-filter">Risk</label>
+        <select id="edm-risk-filter"><option value="">All risks</option><option>High</option><option>Medium</option><option>Low</option></select></div>
+        <div><label for="edm-company-filter">Water company</label>
+        <select id="edm-company-filter"><option value="">All companies</option></select></div>
+      </div>
+      <div id="edm-place-count" class="edm-place-detail">Loading the complete place list...</div>
       <div id="edm-place-results"></div>
     </aside>
     <aside id="edm-map-right" class="edm-map-panel" aria-label="Water company ranking">
@@ -1313,6 +1325,10 @@ def add_colab_map_panels(
     function edmRenderPlaces(){{
       var places=edmBuildPlaces();document.getElementById('edm-place-count').textContent=places.length.toLocaleString()+' places shown';
       var root=document.getElementById('edm-place-results');root.replaceChildren();var previous='';
+      if(!places.length){{
+        root.innerHTML='<div style="margin:8px 0;padding:10px;border-radius:9px;background:#FFF0DD;color:#704C1D">No matching town or city. Clear the search or change the filters.</div>';
+        return;
+      }}
       places.forEach(function(place){{
         var letter=(place.name.charAt(0)||'#').toUpperCase();if(letter!==previous){{var h=document.createElement('div');h.className='edm-place-letter';h.textContent=letter;root.appendChild(h);previous=letter;}}
         var button=document.createElement('button');button.type='button';button.className='edm-place-button';
@@ -1326,7 +1342,7 @@ def add_colab_map_panels(
     document.getElementById('edm-place-search').addEventListener('input',edmRenderPlaces);
     document.getElementById('edm-risk-filter').addEventListener('change',edmRenderPlaces);
     document.getElementById('edm-company-filter').addEventListener('change',edmRenderPlaces);
-    edmRenderPlaces();
+    window.setTimeout(edmRenderPlaces,0);
     """
     water_map.get_root().script.add_child(folium.Element(script))
 
@@ -1598,6 +1614,7 @@ if reduce_motion:
 PAGES = [
     "🏡 Start here",
     "🗺️ Explore the map",
+    "🚨 Priority locations",
     "🏙️ Places and companies",
     "📊 How accurate is it?",
     "🔎 Check one location",
@@ -1812,7 +1829,257 @@ elif page == "Explore the map":
 
 
 # =============================================================================
-# PAGE 3 — PLACES, COMPANIES AND CHANGE
+# PAGE 3 — HIGH-RISK PRIORITY LOCATIONS
+# =============================================================================
+
+elif page == "Priority locations":
+    section_header(
+        "High-risk locations requiring priority review",
+        "See the exact towns, mapped outlets and water companies linked to the High category.",
+    )
+
+    priority_view = st.radio(
+        "Choose the evidence",
+        ["Recorded 2023–2025", "Predicted 2026"],
+        horizontal=True,
+        key="priority_evidence_view",
+    )
+    priority_prediction = priority_view.startswith("Predicted")
+    priority_table = "forecast_map_points" if priority_prediction else "observed_locations"
+    priority_risk_column = "predicted_2026_risk" if priority_prediction else "period_risk_category"
+    priority_data = load_table(priority_table)
+
+    if priority_data.empty or priority_risk_column not in priority_data.columns:
+        st.error("The priority-location information is unavailable. Please try again later.")
+    else:
+        priority_data = priority_data.loc[
+            priority_data[priority_risk_column].astype(str).eq("High")
+        ].copy()
+        priority_place = first_existing(priority_data, ["official_place_name", "town_or_city"])
+        priority_company = first_existing(priority_data, ["water_company_name", "company"])
+        priority_site = first_existing(
+            priority_data,
+            ["site_name", "source_site_name_ea_consents_database"],
+        )
+
+        if priority_prediction:
+            banner(
+                "<b>Predicted 2026:</b> these are model-generated High categories, not confirmed events.",
+                icon="🔮",
+                background=PALE_AMBER,
+                edge="#D59A3C",
+            )
+        else:
+            banner(
+                "<b>Recorded priority review:</b> High means the strongest concern category in this dashboard. "
+                "It is not proof of environmental harm or an emergency declaration.",
+                icon="🚨",
+                background="#FBE8E8",
+                edge="#D66565",
+            )
+
+        if not priority_place or not priority_company:
+            st.error("Town/city or water-company fields are missing from the priority data.")
+        elif priority_data.empty:
+            st.info("No High-risk locations are available for this selection.")
+        else:
+            filter_one, filter_two, filter_three = st.columns([1, 1, 1.35])
+            with filter_one:
+                selected_priority_company = st.selectbox(
+                    "Water company",
+                    ["All companies"] + available_values(priority_data, priority_company),
+                    key="priority_company_filter",
+                )
+            with filter_two:
+                selected_priority_place = st.selectbox(
+                    "Town or city",
+                    ["All towns/cities"] + available_values(priority_data, priority_place),
+                    key="priority_place_filter",
+                )
+            with filter_three:
+                priority_search = st.text_input(
+                    "Find a town, outlet, company or receiving water",
+                    key="priority_search",
+                ).strip()
+
+            priority_filtered = priority_data.copy()
+            if selected_priority_company != "All companies":
+                priority_filtered = priority_filtered.loc[
+                    priority_filtered[priority_company].astype(str).eq(selected_priority_company)
+                ]
+            if selected_priority_place != "All towns/cities":
+                priority_filtered = priority_filtered.loc[
+                    priority_filtered[priority_place].astype(str).eq(selected_priority_place)
+                ]
+            if priority_search:
+                searchable_columns = [
+                    column
+                    for column in [
+                        priority_place,
+                        priority_company,
+                        priority_site,
+                        "receiving_water",
+                        "source_receiving_water",
+                        "permit_reference",
+                    ]
+                    if column and column in priority_filtered.columns
+                ]
+                priority_match = pd.Series(False, index=priority_filtered.index)
+                for column in searchable_columns:
+                    priority_match |= priority_filtered[column].astype("string").str.contains(
+                        priority_search,
+                        case=False,
+                        regex=False,
+                        na=False,
+                    )
+                priority_filtered = priority_filtered.loc[priority_match]
+
+            if priority_filtered.empty:
+                st.warning("No High-risk locations match these choices. Clear a filter and try again.")
+            else:
+                place_summary = (
+                    priority_filtered.groupby(
+                        [priority_place, priority_company],
+                        dropna=False,
+                    )
+                    .size()
+                    .reset_index(name="High-risk mapped outlets")
+                    .sort_values(
+                        ["High-risk mapped outlets", priority_place],
+                        ascending=[False, True],
+                    )
+                    .reset_index(drop=True)
+                )
+                place_summary.insert(0, "Priority rank", np.arange(1, len(place_summary) + 1))
+
+                company_summary = (
+                    priority_filtered.groupby(priority_company, dropna=False)
+                    .agg(
+                        **{
+                            "High-risk mapped outlets": (priority_risk_column, "size"),
+                            "Towns/cities represented": (priority_place, "nunique"),
+                        }
+                    )
+                    .reset_index()
+                    .sort_values("High-risk mapped outlets", ascending=False)
+                    .reset_index(drop=True)
+                )
+                company_summary.insert(0, "Company rank", np.arange(1, len(company_summary) + 1))
+
+                top_place = str(place_summary.iloc[0][priority_place]) if not place_summary.empty else "Not available"
+                metric_cards(
+                    [
+                        {
+                            "label": "High-risk mapped outlets",
+                            "value": value_text(len(priority_filtered)),
+                            "note": priority_view,
+                            "accent": "#E9A7A7",
+                        },
+                        {
+                            "label": "Towns and cities",
+                            "value": value_text(priority_filtered[priority_place].nunique()),
+                            "note": "Places with at least one High location",
+                            "accent": "#F1D39D",
+                        },
+                        {
+                            "label": "Water companies",
+                            "value": value_text(priority_filtered[priority_company].nunique()),
+                            "note": "Companies represented in this view",
+                            "accent": "#B7DDE5",
+                        },
+                        {
+                            "label": "Highest-ranked place",
+                            "value": top_place,
+                            "note": "Ranked by High-risk mapped outlets",
+                            "accent": "#A8D8D0",
+                        },
+                    ]
+                )
+
+                place_tab, company_tab, outlet_tab = st.tabs(
+                    ["Towns and cities", "Water companies", "Exact mapped outlets"]
+                )
+
+                with place_tab:
+                    chart_data = place_summary.head(20).sort_values("High-risk mapped outlets")
+                    chart_data = chart_data.copy()
+                    chart_data["Place and company"] = (
+                        chart_data[priority_place].astype(str)
+                        + " · "
+                        + chart_data[priority_company].astype(str)
+                    )
+                    place_figure = px.bar(
+                        chart_data,
+                        x="High-risk mapped outlets",
+                        y="Place and company",
+                        orientation="h",
+                        color="High-risk mapped outlets",
+                        color_continuous_scale=["#F9DEDE", "#E9A7A7", "#C85D5D"],
+                        text="High-risk mapped outlets",
+                        title="Towns and cities with the most High-risk mapped outlets",
+                    )
+                    place_figure.update_traces(textposition="outside")
+                    place_figure.update_layout(coloraxis_showscale=False)
+                    place_figure.update_yaxes(title="")
+                    st.plotly_chart(
+                        plot_style(place_figure, max(480, 34 * len(chart_data))),
+                        use_container_width=True,
+                        config={"displayModeBar": False},
+                    )
+                    st.dataframe(place_summary, use_container_width=True, hide_index=True)
+
+                with company_tab:
+                    company_figure = px.bar(
+                        company_summary.sort_values("High-risk mapped outlets"),
+                        x="High-risk mapped outlets",
+                        y=priority_company,
+                        orientation="h",
+                        color="High-risk mapped outlets",
+                        color_continuous_scale=["#DDEFF4", "#9FCAD5", "#4E9FB6"],
+                        text="High-risk mapped outlets",
+                        title="Water companies linked to High-risk mapped outlets",
+                    )
+                    company_figure.update_traces(textposition="outside")
+                    company_figure.update_layout(coloraxis_showscale=False)
+                    company_figure.update_yaxes(title="")
+                    st.plotly_chart(
+                        plot_style(company_figure, max(430, 45 * len(company_summary))),
+                        use_container_width=True,
+                        config={"displayModeBar": False},
+                    )
+                    st.dataframe(company_summary, use_container_width=True, hide_index=True)
+
+                with outlet_tab:
+                    outlet_columns = [
+                        column
+                        for column in [
+                            priority_site,
+                            priority_place,
+                            priority_company,
+                            "receiving_water",
+                            "source_receiving_water",
+                            "permit_reference",
+                            priority_risk_column,
+                            "total_counted_spills_in_period",
+                            "total_spill_duration_hours_in_period",
+                            "prediction_confidence",
+                            "latitude",
+                            "longitude",
+                        ]
+                        if column and column in priority_filtered.columns
+                    ]
+                    outlet_records = priority_filtered[outlet_columns].copy()
+                    st.dataframe(outlet_records, use_container_width=True, hide_index=True)
+                    download_table(
+                        outlet_records,
+                        "predicted_2026_high_risk_locations.csv"
+                        if priority_prediction
+                        else "recorded_high_risk_locations.csv",
+                    )
+
+
+# =============================================================================
+# PAGE 4 — PLACES, COMPANIES AND CHANGE
 # =============================================================================
 
 elif page == "Places and companies":
