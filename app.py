@@ -15,7 +15,7 @@ from folium.plugins import FastMarkerCluster, Fullscreen, HeatMap, MeasureContro
 from streamlit_folium import st_folium
 
 
-DASHBOARD_RELEASE = "2026-08-11-map-controls-and-spill-years-v4"
+DASHBOARD_RELEASE = "2026-08-11-water-quality-page-v6"
 
 
 # =============================================================================
@@ -986,6 +986,10 @@ def render_page_cards():
             <div class="edm-page-icon">☁️💧</div><h3>Find a location</h3>
             <p>Search a site and view its probabilities.</p>
           </div>
+          <div class="edm-page-card" style="--page-tint:#E7F4F6;">
+            <div class="edm-page-icon">💧</div><h3>Water quality</h3>
+            <p>Explore linked 2025 monitoring results.</p>
+          </div>
           <div class="edm-page-card" style="--page-tint:#EDF3DE;">
             <div class="edm-page-icon">🌊</div><h3>Evidence</h3>
             <p>Sources, quality checks and limitations.</p>
@@ -998,10 +1002,11 @@ def render_page_cards():
         ("Priority list", "⛈️ Priority locations"),
         ("Compare", "🌦️ Places and companies"),
         ("2026 forecast", "🌈 2026 predictions"),
+        ("Water quality", "💧 Water quality"),
         ("Find a site", "☁️💧 Check one location"),
         ("Evidence", "🌊 About the evidence"),
     ]
-    for column, (button_text, destination) in zip(st.columns(6), destinations):
+    for column, (button_text, destination) in zip(st.columns(7), destinations):
         with column:
             st.button(
                 button_text,
@@ -1170,6 +1175,185 @@ def mapped_annual_spill_totals(
         ).sum(min_count=1)
         for year in years
     }
+
+
+def normalised_record_key(value) -> str:
+    """Create a stable key for IDs read from compressed CSV files."""
+    if value is None or pd.isna(value):
+        return ""
+    text = str(value).strip()
+    if not text:
+        return ""
+    numeric = pd.to_numeric(pd.Series([text]), errors="coerce").iloc[0]
+    if pd.notna(numeric) and float(numeric).is_integer():
+        return str(int(numeric))
+    return text.casefold()
+
+
+def water_quality_site_key(company, site) -> str:
+    company_key = "" if company is None or pd.isna(company) else str(company).strip().casefold()
+    site_key = "" if site is None or pd.isna(site) else str(site).strip().casefold()
+    return f"{company_key}||{site_key}" if company_key and site_key else ""
+
+
+def water_quality_popup_panel(records: pd.DataFrame) -> str:
+    """Summarise linked 2025 nearby-station observations for one outlet."""
+    if records.empty:
+        return ""
+
+    parameter_column = first_existing(
+        records,
+        ["project_parameter_name", "determinand_name", "parameter"],
+    )
+    result_column = first_existing(
+        records,
+        ["result_as_reported", "result_numeric", "exact_numeric_result"],
+    )
+    if not parameter_column or not result_column:
+        return ""
+
+    working = records.copy()
+    date_column = first_existing(
+        working,
+        ["measurement_datetime", "measurement_date", "sample_date"],
+    )
+    if date_column:
+        working["_measurement_date"] = pd.to_datetime(
+            working[date_column],
+            errors="coerce",
+        )
+        dated = working.loc[working["_measurement_date"].dt.year.eq(2025)]
+        if not dated.empty:
+            working = dated
+    elif "measurement_year" in working.columns:
+        year_values = pd.to_numeric(working["measurement_year"], errors="coerce")
+        dated = working.loc[year_values.eq(2025)]
+        if not dated.empty:
+            working = dated
+        working["_measurement_date"] = pd.NaT
+    else:
+        working["_measurement_date"] = pd.NaT
+
+    working = working.loc[working[parameter_column].notna()].copy()
+    if working.empty:
+        return ""
+
+    station_column = first_existing(
+        working,
+        ["sampling_point_name", "monitoring_station_name", "sampling_point_id"],
+    )
+    distance_column = first_existing(
+        working,
+        ["station_distance_km", "monitoring_station_distance_km"],
+    )
+    unit_column = first_existing(working, ["reported_unit", "unit"])
+    observation_column = first_existing(working, ["observation_id", "measurement_id"])
+
+    station_text = "Nearby Environment Agency monitoring station"
+    if station_column:
+        station_values = (
+            working[station_column]
+            .dropna()
+            .astype(str)
+            .str.strip()
+            .loc[lambda values: values.ne("")]
+            .unique()
+            .tolist()
+        )
+        if station_values:
+            station_text = ", ".join(station_values[:2])
+            if len(station_values) > 2:
+                station_text += f" and {len(station_values) - 2} more"
+
+    distance_text = ""
+    if distance_column:
+        distances = pd.to_numeric(working[distance_column], errors="coerce").dropna()
+        if not distances.empty:
+            distance_text = f" · nearest station {float(distances.min()):.2f} km from outlet"
+
+    indicator_rows = []
+    for parameter, parameter_records in working.groupby(parameter_column, dropna=False):
+        parameter_records = parameter_records.sort_values(
+            "_measurement_date",
+            ascending=False,
+            na_position="last",
+        )
+        reported = parameter_records.loc[
+            parameter_records[result_column].notna()
+            & parameter_records[result_column].astype(str).str.strip().ne("")
+        ]
+        latest = reported.iloc[0] if not reported.empty else parameter_records.iloc[0]
+        result = safe_text(latest.get(result_column))
+        unit = safe_text(latest.get(unit_column), "") if unit_column else ""
+        measured_on = latest.get("_measurement_date")
+        date_text = (
+            pd.Timestamp(measured_on).strftime("%d %b %Y")
+            if pd.notna(measured_on)
+            else "2025 date not reported"
+        )
+        observation_count = (
+            int(parameter_records[observation_column].nunique())
+            if observation_column
+            else int(len(parameter_records))
+        )
+        value_with_unit = f"{result} {unit}".strip()
+        indicator_rows.append(
+            "<div style='padding:6px 7px;margin:4px 0;background:#FFFFFF;"
+            "border:1px solid #C8DDD7;border-radius:7px'>"
+            f"<b>{safe_text(parameter)}</b><br>"
+            f"Latest reported result: {value_with_unit}<br>"
+            f"<span style='font-size:11px;color:#5D7772'>{date_text} · "
+            f"{observation_count:,} measurement{'s' if observation_count != 1 else ''}</span>"
+            "</div>"
+        )
+
+    return f"""
+      <div style="margin-top:8px;padding:9px;background:#E9F4F8;border-radius:9px;">
+        <b>2025 nearby water-quality measurements</b><br>
+        <span style="font-size:11px;color:#456F73">{safe_text(station_text)}{distance_text}</span>
+        <div style="max-height:220px;overflow:auto;margin-top:5px">{''.join(indicator_rows)}</div>
+        <div style="margin-top:6px;font-size:10px;color:#5D7772">
+          These are measurements at a nearby monitoring station. Proximity does not prove
+          that this outlet caused the result. Dissolved oxygen is a water-quality indicator,
+          not itself a pollutant.
+        </div>
+      </div>
+    """
+
+
+@st.cache_data(show_spinner=False)
+def water_quality_popup_lookups() -> dict[str, dict[str, str]]:
+    """Build fast popup lookups from the public 2025 water-quality export."""
+    quality = load_table("water_quality_records")
+    empty = {"by_location": {}, "by_site": {}}
+    if quality.empty:
+        return empty
+
+    by_location: dict[str, str] = {}
+    if "location_id" in quality.columns:
+        quality["_location_key"] = quality["location_id"].map(normalised_record_key)
+        for key, records in quality.loc[quality["_location_key"].ne("")].groupby("_location_key"):
+            panel = water_quality_popup_panel(records)
+            if panel:
+                by_location[str(key)] = panel
+
+    company_column = first_existing(quality, ["company", "water_company_name"])
+    site_column = first_existing(
+        quality,
+        ["site_name", "source_site_name_ea_consents_database"],
+    )
+    by_site: dict[str, str] = {}
+    if company_column and site_column:
+        quality["_site_key"] = [
+            water_quality_site_key(company, site)
+            for company, site in zip(quality[company_column], quality[site_column])
+        ]
+        for key, records in quality.loc[quality["_site_key"].ne("")].groupby("_site_key"):
+            panel = water_quality_popup_panel(records)
+            if panel:
+                by_site[str(key)] = panel
+
+    return {"by_location": by_location, "by_site": by_site}
 
 
 def plot_style(figure: go.Figure, height=480):
@@ -2008,6 +2192,7 @@ PAGES = [
     "⛈️ Priority locations",
     "🌦️ Places and companies",
     "🌈 2026 predictions",
+    "💧 Water quality",
     "☁️💧 Check one location",
     "🌊 About the evidence",
 ]
@@ -2963,7 +3148,388 @@ elif page == "2026 predictions":
 
 
 # =============================================================================
-# PAGE 5 — INDIVIDUAL PREDICTION
+# PAGE 5 — 2025 WATER-QUALITY MEASUREMENTS
+# =============================================================================
+
+elif page == "Water quality":
+    st.html(
+        """
+        <section style="position:relative;overflow:hidden;margin:.15rem 0 1.1rem;
+          padding:1.7rem 2rem;border:1px solid rgba(77,151,152,.22);border-radius:28px;
+          background:linear-gradient(125deg,#E5F6F1 0%,#DFF2F7 55%,#EEEAF8 100%);
+          box-shadow:0 20px 48px rgba(43,104,99,.13);">
+          <div style="position:relative;z-index:2;max-width:850px">
+            <div style="display:inline-block;padding:.35rem .8rem;border-radius:999px;
+              background:rgba(255,255,255,.76);color:#326E70;font-weight:800;letter-spacing:.08em;">
+              💧 OFFICIAL 2025 MONITORING EVIDENCE
+            </div>
+            <h1 style="margin:.75rem 0 .35rem;color:#173D3A;font-size:clamp(2rem,4vw,3.5rem);">
+              Water-quality measurements near selected outlets
+            </h1>
+            <p style="max-width:760px;margin:0;color:#4F706C;font-size:1.08rem;">
+              Explore what nearby Environment Agency stations measured, when it was measured,
+              and which mapped site the monitoring evidence was geographically linked to.
+            </p>
+          </div>
+          <svg aria-hidden="true" viewBox="0 0 520 180" style="position:absolute;right:-25px;
+            bottom:-24px;width:min(38vw,520px);opacity:.73">
+            <path d="M0 118 C75 72 135 158 212 112 C290 65 350 154 520 88 L520 180 L0 180Z"
+              fill="#91CDD4"/>
+            <path d="M0 139 C85 96 145 173 230 132 C319 89 405 165 520 121"
+              fill="none" stroke="#F8FFFF" stroke-width="12" stroke-linecap="round"/>
+            <circle cx="355" cy="52" r="28" fill="#F9E7A8"/>
+            <g fill="#FFFFFF" opacity=".9"><circle cx="410" cy="55" r="23"/>
+              <circle cx="440" cy="42" r="31"/><circle cx="474" cy="58" r="22"/>
+              <rect x="400" y="55" width="92" height="25" rx="13"/></g>
+          </svg>
+        </section>
+        """
+    )
+
+    quality = load_table("water_quality_records")
+    coverage = load_table("water_quality_coverage")
+
+    if quality.empty:
+        st.info("The public 2025 water-quality measurements are not available yet.")
+    else:
+        quality = quality.copy()
+        date_column = first_existing(
+            quality,
+            ["measurement_datetime", "measurement_date", "sample_date"],
+        )
+        if date_column:
+            quality["_measurement_datetime"] = pd.to_datetime(
+                quality[date_column],
+                errors="coerce",
+            )
+            records_2025 = quality.loc[
+                quality["_measurement_datetime"].dt.year.eq(2025)
+            ].copy()
+            if not records_2025.empty:
+                quality = records_2025
+        else:
+            quality["_measurement_datetime"] = pd.NaT
+            if "measurement_year" in quality.columns:
+                year_values = pd.to_numeric(
+                    quality["measurement_year"],
+                    errors="coerce",
+                )
+                records_2025 = quality.loc[year_values.eq(2025)].copy()
+                if not records_2025.empty:
+                    quality = records_2025
+
+        company_column = first_existing(quality, ["company", "water_company_name"])
+        site_column = first_existing(
+            quality,
+            ["site_name", "source_site_name_ea_consents_database"],
+        )
+        station_column = first_existing(
+            quality,
+            ["sampling_point_name", "sampling_point_id"],
+        )
+        parameter_column = first_existing(
+            quality,
+            ["project_parameter_name", "determinand_name", "parameter"],
+        )
+        unit_column = first_existing(quality, ["reported_unit", "unit"])
+        reported_result_column = first_existing(
+            quality,
+            ["result_as_reported", "result_numeric", "exact_numeric_result"],
+        )
+
+        if not parameter_column or not reported_result_column:
+            st.warning("The water-quality export is missing its parameter or result column.")
+        else:
+            first_filters = st.columns(3)
+            with first_filters[0]:
+                company_options = (
+                    ["All water companies"] + available_values(quality, company_column)
+                    if company_column
+                    else ["All water companies"]
+                )
+                selected_company = st.selectbox(
+                    "Water company",
+                    company_options,
+                    key="quality_page_company",
+                )
+
+            company_filtered = quality.copy()
+            if company_column and selected_company != "All water companies":
+                company_filtered = company_filtered.loc[
+                    company_filtered[company_column].astype(str).eq(selected_company)
+                ]
+
+            with first_filters[1]:
+                site_options = (
+                    ["All linked outlets"] + available_values(company_filtered, site_column)
+                    if site_column
+                    else ["All linked outlets"]
+                )
+                selected_site = st.selectbox(
+                    "Linked outlet",
+                    site_options,
+                    key="quality_page_site",
+                )
+
+            site_filtered = company_filtered.copy()
+            if site_column and selected_site != "All linked outlets":
+                site_filtered = site_filtered.loc[
+                    site_filtered[site_column].astype(str).eq(selected_site)
+                ]
+
+            parameter_options = available_values(site_filtered, parameter_column)
+            if not parameter_options:
+                st.warning("No 2025 water-quality indicators match those choices.")
+                st.stop()
+            default_parameter_index = next(
+                (
+                    index
+                    for index, option in enumerate(parameter_options)
+                    if "dissolved oxygen" in option.casefold()
+                ),
+                0,
+            )
+            with first_filters[2]:
+                selected_parameter = st.selectbox(
+                    "Water-quality indicator",
+                    parameter_options,
+                    index=default_parameter_index,
+                    key="quality_page_parameter",
+                )
+
+            filtered = site_filtered.loc[
+                site_filtered[parameter_column].astype(str).eq(selected_parameter)
+            ].copy()
+
+            if unit_column:
+                unit_options = available_values(filtered, unit_column)
+                if len(unit_options) > 1:
+                    selected_unit = st.selectbox(
+                        "Measurement unit",
+                        unit_options,
+                        key="quality_page_unit",
+                    )
+                    filtered = filtered.loc[
+                        filtered[unit_column].astype(str).eq(selected_unit)
+                    ]
+                else:
+                    selected_unit = unit_options[0] if unit_options else "Unit not reported"
+            else:
+                selected_unit = "Unit not reported"
+
+            numeric_column = first_existing(
+                filtered,
+                ["exact_numeric_result", "result_numeric"],
+            )
+            if numeric_column:
+                filtered["_result_numeric"] = pd.to_numeric(
+                    filtered[numeric_column],
+                    errors="coerce",
+                )
+            else:
+                numeric_text = filtered[reported_result_column].astype(str).str.extract(
+                    r"([-+]?\d*\.?\d+(?:[eE][-+]?\d+)?)",
+                    expand=False,
+                )
+                filtered["_result_numeric"] = pd.to_numeric(
+                    numeric_text,
+                    errors="coerce",
+                )
+
+            observation_column = first_existing(
+                filtered,
+                ["observation_id", "measurement_id"],
+            )
+            observations = (
+                int(filtered[observation_column].nunique())
+                if observation_column
+                else int(len(filtered))
+            )
+            linked_sites = (
+                int(filtered["location_id"].nunique())
+                if "location_id" in filtered.columns
+                else int(filtered[site_column].nunique()) if site_column else 0
+            )
+            monitoring_stations = (
+                int(filtered["sampling_point_id"].nunique())
+                if "sampling_point_id" in filtered.columns
+                else int(filtered[station_column].nunique()) if station_column else 0
+            )
+            exact_results = int(filtered["_result_numeric"].notna().sum())
+
+            metric_cards(
+                [
+                    {"label": "2025 measurements", "value": value_text(observations),
+                     "note": selected_parameter, "accent": "#A8D8D0"},
+                    {"label": "Linked outlets", "value": value_text(linked_sites),
+                     "note": "Geographically linked sites", "accent": "#B7DDE5"},
+                    {"label": "Monitoring stations", "value": value_text(monitoring_stations),
+                     "note": "Environment Agency stations", "accent": "#CDBDDE"},
+                    {"label": "Numeric results plotted", "value": value_text(exact_results),
+                     "note": selected_unit, "accent": "#F1D39D"},
+                ]
+            )
+
+            banner(
+                "<b>How to read this:</b> measurements describe conditions at a nearby monitoring "
+                "station. Proximity does not prove that an outlet caused a result. Dissolved "
+                "oxygen is an environmental indicator, not itself a pollutant, and different "
+                "indicators require different interpretation.",
+                icon="🌊",
+                background=PALE_BLUE,
+                edge="#68AFC2",
+            )
+
+            chart_data = filtered.loc[
+                filtered["_result_numeric"].notna()
+                & filtered["_measurement_datetime"].notna()
+            ].copy()
+
+            section_header(
+                "2025 measurement results over time",
+                f"Interactive results for {selected_parameter}; hover over a point for its site, station and reported value.",
+            )
+
+            if chart_data.empty:
+                st.info(
+                    "No exact numeric dated results are available for these choices. "
+                    "The original reported results remain available in the table below."
+                )
+            else:
+                colour_column = (
+                    company_column
+                    if company_column and chart_data[company_column].nunique() > 1
+                    else site_column if site_column and chart_data[site_column].nunique() > 1
+                    else station_column
+                )
+                hover_columns = [
+                    column
+                    for column in [
+                        company_column,
+                        site_column,
+                        station_column,
+                        "station_distance_km",
+                        reported_result_column,
+                        unit_column,
+                    ]
+                    if column and column in chart_data.columns
+                ]
+                pastel_palette = [
+                    "#65B7C5", "#79BEAB", "#A8A6D8", "#E4AFC3", "#EBC27A",
+                    "#94CFA4", "#8FBCE2", "#C8A8DD", "#EFA79E", "#A7D8D2",
+                ]
+                timeline = px.scatter(
+                    chart_data,
+                    x="_measurement_datetime",
+                    y="_result_numeric",
+                    color=colour_column,
+                    hover_data=hover_columns,
+                    color_discrete_sequence=pastel_palette,
+                    title=f"{selected_parameter} · official 2025 observations",
+                    labels={
+                        "_measurement_datetime": "Measurement date",
+                        "_result_numeric": f"Reported result ({selected_unit})",
+                    },
+                )
+                timeline.update_traces(
+                    marker=dict(size=11, opacity=.86, line=dict(color="#FFFFFF", width=1.4))
+                )
+                timeline.update_layout(
+                    legend_title_text=(pretty(colour_column) if colour_column else "Series"),
+                    hovermode="closest",
+                )
+                st.plotly_chart(
+                    plot_style(timeline, 590),
+                    use_container_width=True,
+                    key="water_quality_2025_timeline",
+                    config={"displayModeBar": False},
+                )
+
+                summary_group = site_column or station_column
+                if summary_group:
+                    site_summary = (
+                        chart_data.groupby(summary_group, as_index=False)
+                        .agg(
+                            median_result=("_result_numeric", "median"),
+                            measurements=("_result_numeric", "size"),
+                        )
+                        .sort_values(["measurements", "median_result"], ascending=[False, False])
+                        .head(20)
+                        .sort_values("median_result")
+                    )
+                    median_chart = go.Figure(
+                        go.Bar(
+                            x=site_summary["median_result"],
+                            y=site_summary[summary_group],
+                            orientation="h",
+                            marker=dict(
+                                color=site_summary["median_result"],
+                                colorscale=[
+                                    [0.0, "#DDF3ED"],
+                                    [0.50, "#88C8D0"],
+                                    [1.0, "#B8A9DD"],
+                                ],
+                                line=dict(color="#FFFFFF", width=1),
+                                showscale=False,
+                            ),
+                            text=[f"{value:,.2f}" for value in site_summary["median_result"]],
+                            textposition="outside",
+                            customdata=site_summary[["measurements"]],
+                            hovertemplate=(
+                                "%{y}<br>Median: %{x:,.3f} " + html.escape(selected_unit)
+                                + "<br>Measurements: %{customdata[0]:,.0f}<extra></extra>"
+                            ),
+                        )
+                    )
+                    median_chart.update_layout(
+                        title="Site-level median · descriptive comparison only",
+                        xaxis_title=f"Median reported result ({selected_unit})",
+                        yaxis_title="",
+                        showlegend=False,
+                    )
+                    st.plotly_chart(
+                        plot_style(median_chart, max(480, 31 * len(site_summary) + 170)),
+                        use_container_width=True,
+                        key="water_quality_site_medians",
+                        config={"displayModeBar": False},
+                    )
+                    st.caption(
+                        "The site median is a descriptive summary, not a pass/fail score or a water-company ranking."
+                    )
+
+            with st.expander("See the 2025 measurements behind the graphs"):
+                display_columns = [
+                    column
+                    for column in [
+                        company_column,
+                        site_column,
+                        station_column,
+                        "station_distance_km",
+                        date_column,
+                        parameter_column,
+                        reported_result_column,
+                        unit_column,
+                    ]
+                    if column and column in filtered.columns
+                ]
+                st.dataframe(
+                    filtered[display_columns].sort_values(
+                        date_column,
+                        ascending=False,
+                        na_position="last",
+                    ) if date_column else filtered[display_columns],
+                    use_container_width=True,
+                    hide_index=True,
+                )
+                download_table(filtered[display_columns], "filtered_2025_water_quality_measurements.csv")
+
+            if not coverage.empty:
+                with st.expander("See water-quality monitoring coverage by company"):
+                    st.dataframe(coverage, use_container_width=True, hide_index=True)
+
+
+# =============================================================================
+# PAGE 6 — INDIVIDUAL PREDICTION
 # =============================================================================
 
 elif page == "Check one location":
@@ -3062,58 +3628,18 @@ elif page == "Check one location":
 
 
 # =============================================================================
-# PAGE 6 — WATER QUALITY, AUDIT, SEARCH AND LIMITATIONS
+# PAGE 7 — AUDIT, SEARCH AND LIMITATIONS
 # =============================================================================
 
 else:
     section_header(
         "About the evidence",
-        "Explore nearby water measurements, find a record and understand what this website can and cannot show.",
+        "See how the records were checked, find source information and understand what this website can and cannot show.",
     )
 
-    water_tab, audit_tab, search_tab, method_tab = st.tabs(
-        ["Water and rivers", "How the data was checked", "Find a record", "How it works"]
+    audit_tab, search_tab, method_tab = st.tabs(
+        ["How the data was checked", "Find a record", "How it works"]
     )
-
-    with water_tab:
-        water_kpis = load_table("water_quality_kpis")
-        quality = load_table("water_quality_records")
-        coverage = load_table("water_quality_coverage")
-
-        banner(
-            "Nearby Environment Agency monitoring records provide environmental context. "
-            "Geographic proximity does not prove that an EDM outlet caused a measured result.",
-            icon="🌱",
-            background=PALE_MINT,
-            edge="#4A9C7D",
-        )
-        if not water_kpis.empty and {"KPI", "Value"}.issubset(water_kpis.columns):
-            cards = []
-            for position, (_, row) in enumerate(water_kpis.head(4).iterrows()):
-                cards.append({"label": str(row["KPI"]), "value": value_text(row["Value"]), "note": str(row.get("Meaning", "Official nearby-station evidence")), "accent": ["#A8D8D0", "#B7DDE5", "#CDBDDE", "#F1D39D"][position % 4]})
-            metric_cards(cards)
-
-        if not coverage.empty:
-            with st.expander("Water-quality coverage by company"):
-                st.dataframe(coverage, use_container_width=True, hide_index=True)
-
-        if quality.empty:
-            st.info("No public water-quality export is available.")
-        else:
-            filters = st.columns(2)
-            filtered = quality.copy()
-            with filters[0]:
-                company_options = ["All companies"] + available_values(filtered, "company")
-                company = st.selectbox("Company", company_options, key="water_company")
-            with filters[1]:
-                parameter_options = ["All parameters"] + available_values(filtered, "project_parameter_name")
-                parameter = st.selectbox("Measured parameter", parameter_options)
-            if company != "All companies" and "company" in filtered.columns:
-                filtered = filtered.loc[filtered["company"].astype(str).eq(company)]
-            if parameter != "All parameters" and "project_parameter_name" in filtered.columns:
-                filtered = filtered.loc[filtered["project_parameter_name"].astype(str).eq(parameter)]
-            st.dataframe(filtered.head(5000), use_container_width=True, hide_index=True)
-            download_table(filtered, "filtered_water_quality_evidence.csv")
 
     with audit_tab:
         audit_tables = [
