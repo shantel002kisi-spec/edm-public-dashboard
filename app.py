@@ -23,7 +23,7 @@ st.set_page_config(
     page_title="England EDM Water & Spill-Risk Observatory",
     page_icon="💧",
     layout="wide",
-    initial_sidebar_state="expanded",
+    initial_sidebar_state="collapsed",
 )
 
 ROOT = Path(__file__).resolve().parent
@@ -70,15 +70,15 @@ st.markdown(
       html, body, [class*="css"] {
         font-family: "Atkinson Hyperlegible", Verdana, Tahoma, Arial, sans-serif;
         color: var(--edm-ink);
-        font-size: 17px;
-        line-height: 1.68;
-        letter-spacing: 0.012em;
+        font-size: 15.5px;
+        line-height: 1.52;
+        letter-spacing: 0.01em;
       }
 
       p, li, label, input, button, select, textarea {
         font-family: "Atkinson Hyperlegible", Verdana, Tahoma, Arial, sans-serif !important;
-        line-height: 1.68 !important;
-        letter-spacing: 0.012em;
+        line-height: 1.52 !important;
+        letter-spacing: 0.01em;
       }
 
       h1, h2, h3, h4 {
@@ -94,9 +94,9 @@ st.markdown(
       }
 
       .block-container {
-        max-width: 1450px;
-        padding-top: 1.1rem;
-        padding-bottom: 4rem;
+        max-width: 1540px;
+        padding-top: 0.65rem;
+        padding-bottom: 3rem;
       }
 
       #MainMenu, footer, [data-testid="stDecoration"] {
@@ -156,11 +156,11 @@ st.markdown(
         position: relative;
         overflow: hidden;
         display: grid;
-        grid-template-columns: minmax(0, 1.6fr) minmax(260px, 0.7fr);
-        gap: 1.4rem;
+        grid-template-columns: minmax(0, 1.45fr) minmax(250px, 0.62fr);
+        gap: 1rem;
         align-items: center;
-        padding: 1.7rem 2rem;
-        margin: 0.1rem 0 1.2rem;
+        padding: 1.2rem 1.5rem;
+        margin: 0.1rem 0 0.85rem;
         border: 1px solid rgba(61, 129, 118, 0.18);
         border-radius: 24px;
         background:
@@ -172,17 +172,17 @@ st.markdown(
         margin: 0;
         max-width: 880px;
         color: var(--edm-ink);
-        font-size: clamp(2rem, 4.2vw, 3.65rem);
-        line-height: 1.03;
+        font-size: clamp(1.85rem, 3vw, 2.8rem);
+        line-height: 1.08;
         letter-spacing: 0;
       }
 
       .edm-hero p {
         max-width: 850px;
-        margin: 0.8rem 0 0;
+        margin: 0.55rem 0 0;
         color: var(--edm-muted);
-        font-size: 1.07rem;
-        line-height: 1.65;
+        font-size: 0.98rem;
+        line-height: 1.48;
       }
 
       .edm-kicker {
@@ -201,7 +201,7 @@ st.markdown(
       }
 
       .edm-water-art {
-        min-height: 220px;
+        min-height: 170px;
         display: flex;
         align-items: center;
         justify-content: center;
@@ -238,9 +238,9 @@ st.markdown(
       }
 
       .edm-section-header {
-        margin: 0.2rem 0 0.9rem;
-        padding: 1rem 1.2rem;
-        border-left: 7px solid #4A9C7D;
+        margin: 0.15rem 0 0.65rem;
+        padding: 0.72rem 1rem;
+        border-left: 6px solid #4A9C7D;
         border-radius: 0 16px 16px 0;
         background: linear-gradient(90deg, rgba(234,246,240,0.95), rgba(255,255,255,0.50));
       }
@@ -248,28 +248,29 @@ st.markdown(
       .edm-section-header h2 {
         margin: 0;
         color: var(--edm-ink);
-        font-size: 1.75rem;
+        font-size: 1.42rem;
         line-height: 1.15;
       }
 
       .edm-section-header p {
-        margin: 0.38rem 0 0;
+        margin: 0.22rem 0 0;
         color: var(--edm-muted);
-        line-height: 1.5;
+        line-height: 1.4;
+        font-size: .91rem;
       }
 
       .edm-metric-grid {
         display: grid;
         grid-template-columns: repeat(4, minmax(0, 1fr));
-        gap: 0.85rem;
-        margin: 0.7rem 0 1.2rem;
+        gap: 0.65rem;
+        margin: 0.5rem 0 0.85rem;
       }
 
       .edm-metric-card {
         position: relative;
         overflow: hidden;
-        min-height: 132px;
-        padding: 1rem 1.05rem;
+        min-height: 104px;
+        padding: 0.78rem 0.9rem;
         border: 1px solid rgba(48, 112, 103, 0.14);
         border-radius: 18px;
         background: rgba(255,255,255,0.72);
@@ -299,7 +300,7 @@ st.markdown(
       .edm-metric-value {
         margin: 0.28rem 0 0.2rem;
         color: var(--edm-ink);
-        font-size: 2rem;
+        font-size: 1.62rem;
         font-weight: 750;
         line-height: 1.05;
       }
@@ -397,13 +398,14 @@ st.markdown(
         display: flex;
         gap: 0.75rem;
         align-items: flex-start;
-        padding: 0.9rem 1rem;
-        margin: 0.6rem 0 1rem;
+        padding: 0.65rem 0.82rem;
+        margin: 0.45rem 0 0.75rem;
         border-radius: 14px;
         color: var(--edm-ink);
         background: var(--banner-bg, #E9F4F8);
         border-left: 6px solid var(--banner-edge, #68AFC2);
-        line-height: 1.55;
+        line-height: 1.42;
+        font-size: .91rem;
       }
 
       .edm-journey {
@@ -456,14 +458,104 @@ st.markdown(
         background: linear-gradient(145deg, #F8FCFA, #E9F5F1);
       }
 
+      div[data-testid="stRadio"] > div[role="radiogroup"] {
+        display: flex;
+        flex-wrap: wrap;
+        gap: .38rem;
+        padding: .42rem;
+        margin: .15rem 0 .75rem;
+        border: 1px solid rgba(55,120,110,.16);
+        border-radius: 16px;
+        background: rgba(255,255,255,.62);
+        box-shadow: 0 6px 18px rgba(38,91,84,.05);
+      }
+
+      div[data-testid="stRadio"] > div[role="radiogroup"] label {
+        flex: 1 1 145px;
+        justify-content: center;
+        min-height: 38px;
+        padding: .38rem .55rem;
+        margin: 0;
+        font-size: .86rem;
+        font-weight: 750;
+        text-align: center;
+        background: linear-gradient(145deg, rgba(255,255,255,.88), rgba(232,246,240,.78));
+      }
+
+      .edm-page-grid {
+        display: grid;
+        grid-template-columns: repeat(5, minmax(0,1fr));
+        gap: .62rem;
+        margin: .5rem 0 .9rem;
+      }
+
+      .edm-page-card {
+        min-height: 105px;
+        padding: .8rem;
+        border: 1px solid rgba(52,114,105,.14);
+        border-radius: 17px;
+        background: linear-gradient(145deg, rgba(255,255,255,.88), var(--page-tint,#EAF6F0));
+        box-shadow: 0 8px 20px rgba(38,91,84,.06);
+        transition: transform .18s ease, box-shadow .18s ease;
+      }
+
+      .edm-page-card:hover {
+        transform: translateY(-3px);
+        box-shadow: 0 12px 24px rgba(38,91,84,.11);
+      }
+
+      .edm-page-icon { font-size: 1.55rem; }
+      .edm-page-card h3 { margin: .25rem 0 .12rem; font-size: .97rem; }
+      .edm-page-card p {
+        margin: 0;
+        color: var(--edm-muted);
+        font-size: .79rem;
+        line-height: 1.35 !important;
+      }
+
+      .edm-sewer-story {
+        overflow: hidden;
+        padding: .6rem .7rem .35rem;
+        margin: .5rem 0 .85rem;
+        border: 1px solid rgba(52,114,105,.15);
+        border-radius: 20px;
+        background: linear-gradient(180deg,#EDF8FA 0%,#EAF6F0 55%,#E7F2E9 100%);
+        box-shadow: 0 10px 26px rgba(38,91,84,.07);
+      }
+
+      .edm-sewer-story svg { width: 100%; height: auto; display: block; }
+      .edm-flow-water {
+        stroke-dasharray: 18 11;
+        animation: edmPipeFlow 2.2s linear infinite;
+      }
+      .edm-flow-node {
+        transition: transform .18s ease, filter .18s ease;
+        transform-origin: center;
+      }
+      .edm-flow-node:hover {
+        transform: translateY(-4px);
+        filter: drop-shadow(0 5px 5px rgba(32,90,82,.18));
+      }
+      @keyframes edmPipeFlow { to { stroke-dashoffset: -58; } }
+
+      div[data-testid="stPlotlyChart"] {
+        padding: .35rem;
+        border: 1px solid rgba(52,114,105,.12);
+        border-radius: 18px;
+        background: rgba(255,255,255,.58);
+        box-shadow: 0 8px 22px rgba(38,91,84,.055);
+      }
+
       @media (max-width: 1050px) {
         .edm-metric-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+        .edm-page-grid { grid-template-columns: repeat(3, minmax(0, 1fr)); }
         .edm-hero { grid-template-columns: 1fr; }
         .edm-water-art { min-height: 135px; }
       }
 
       @media (max-width: 680px) {
         .edm-metric-grid, .edm-journey, .edm-risk-guide { grid-template-columns: 1fr; }
+        .edm-page-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
         .edm-hero { padding: 1.25rem; border-radius: 18px; }
         .block-container { padding-left: 0.75rem; padding-right: 0.75rem; }
       }
@@ -641,12 +733,9 @@ def render_risk_guide():
     st.html(
         """
         <div class="edm-risk-guide" aria-label="Plain-English risk guide">
-          <div style="--risk-colour:#4A9C7D;"><b>● Low</b><br>
-            Lower recorded risk compared with other locations in this dashboard.</div>
-          <div style="--risk-colour:#E2A45C;"><b>◆ Medium</b><br>
-            More evidence of concern. The location may need closer attention.</div>
-          <div style="--risk-colour:#D66565;"><b>▲ High</b><br>
-            Highest concern group. This is a priority for review, not proof of harm.</div>
+          <div style="--risk-colour:#4A9C7D;"><b>&#9679; Low</b><br>Lower concern</div>
+          <div style="--risk-colour:#E2A45C;"><b>&#9670; Medium</b><br>Closer attention</div>
+          <div style="--risk-colour:#D66565;"><b>&#9650; High</b><br>Priority review</div>
         </div>
         """
     )
@@ -679,11 +768,9 @@ def render_hero():
         <section class="edm-hero">
           <div>
             <div class="edm-kicker">💧 England's water and spill information</div>
-            <h1>Explore sewage-spill risk near rivers and communities</h1>
+            <h1>England's water and spill-risk story</h1>
             <p>
-              See recorded spill-risk locations from 2023–2025, compare towns and water
-              companies, and explore what the system suggests may happen in 2026.
-              Recorded information and forecasts are always labelled separately.
+              Explore recorded locations, compare places and see the separate 2026 forecast.
             </p>
           </div>
           <div class="edm-water-art" aria-label="Animated clouds, rain and flowing river illustration">
@@ -729,6 +816,142 @@ def render_hero():
     )
 
 
+def render_page_cards():
+    """Show every dashboard area on the landing page without long instructions."""
+    st.html(
+        """
+        <div class="edm-page-grid" aria-label="Dashboard sections">
+          <div class="edm-page-card" style="--page-tint:#E3F3F7;">
+            <div class="edm-page-icon">🗺️</div><h3>Interactive maps</h3>
+            <p>Recorded outlets and 2026 estimates.</p>
+          </div>
+          <div class="edm-page-card" style="--page-tint:#E5F3EA;">
+            <div class="edm-page-icon">🏙️</div><h3>Places &amp; companies</h3>
+            <p>Simple rankings and yearly patterns.</p>
+          </div>
+          <div class="edm-page-card" style="--page-tint:#F0EAF6;">
+            <div class="edm-page-icon">📊</div><h3>Model results</h3>
+            <p>Accuracy shown with clear visual checks.</p>
+          </div>
+          <div class="edm-page-card" style="--page-tint:#FFF0DD;">
+            <div class="edm-page-icon">🔎</div><h3>Find a location</h3>
+            <p>Search a site and view its probabilities.</p>
+          </div>
+          <div class="edm-page-card" style="--page-tint:#EDF3DE;">
+            <div class="edm-page-icon">🌿</div><h3>Evidence</h3>
+            <p>Sources, quality checks and limitations.</p>
+          </div>
+        </div>
+        """
+    )
+    destinations = [
+        ("Open map", "🗺️ Explore the map"),
+        ("Compare", "🏙️ Places and companies"),
+        ("Model results", "📊 How accurate is it?"),
+        ("Find a site", "🔎 Check one location"),
+        ("Evidence", "🌿 About the evidence"),
+    ]
+    for column, (button_text, destination) in zip(st.columns(5), destinations):
+        with column:
+            st.button(
+                button_text,
+                key=f"home_{destination}",
+                use_container_width=True,
+                on_click=lambda target=destination: st.session_state.update(
+                    main_navigation=target
+                ),
+            )
+
+
+def render_sewer_story():
+    """Compact animated explanation of a combined sewer and overflow route."""
+    st.html(
+        """
+        <div class="edm-sewer-story">
+          <svg viewBox="0 0 1200 355" role="img" aria-labelledby="sewer-title sewer-desc">
+            <title id="sewer-title">How water moves through a combined sewer system</title>
+            <desc id="sewer-desc">Rain and household wastewater enter one combined sewer. Normal flows travel to treatment. During heavy rain an overflow can release excess mixed water to a river.</desc>
+            <defs>
+              <linearGradient id="sky" x1="0" y1="0" x2="0" y2="1">
+                <stop offset="0" stop-color="#DDF2F7"/><stop offset="1" stop-color="#F8FCFA"/>
+              </linearGradient>
+              <linearGradient id="river" x1="0" y1="0" x2="1" y2="0">
+                <stop offset="0" stop-color="#B8E1EA"/><stop offset="1" stop-color="#74B8C9"/>
+              </linearGradient>
+              <marker id="arrowBlue" markerWidth="9" markerHeight="9" refX="8" refY="4.5" orient="auto">
+                <path d="M0,0 L9,4.5 L0,9 z" fill="#4E9FB6"/>
+              </marker>
+              <marker id="arrowCoral" markerWidth="9" markerHeight="9" refX="8" refY="4.5" orient="auto">
+                <path d="M0,0 L9,4.5 L0,9 z" fill="#D27670"/>
+              </marker>
+            </defs>
+            <rect width="1200" height="355" rx="20" fill="url(#sky)"/>
+            <path d="M0 175 Q160 150 330 177 T650 172 T950 177 T1200 164 V355 H0Z" fill="#DCEEDB"/>
+
+            <g class="edm-flow-node" transform="translate(35,18)">
+              <g fill="#FAFDFD" stroke="#8EBFCC" stroke-width="3">
+                <ellipse cx="105" cy="50" rx="75" ry="29"/><circle cx="72" cy="39" r="31"/>
+                <circle cx="114" cy="30" r="39"/><circle cx="153" cy="45" r="27"/>
+              </g>
+              <g stroke="#68AFC2" stroke-width="5" stroke-linecap="round">
+                <line class="edm-rain-drop" x1="67" y1="79" x2="56" y2="106"/>
+                <line class="edm-rain-drop" x1="108" y1="80" x2="97" y2="108"/>
+                <line class="edm-rain-drop" x1="150" y1="78" x2="139" y2="105"/>
+              </g>
+              <text x="105" y="132" text-anchor="middle" fill="#245B61" font-size="17" font-weight="700">Heavy rain</text>
+            </g>
+
+            <g class="edm-flow-node" transform="translate(230,82)">
+              <path d="M0 80 L70 20 L140 80Z" fill="#D88477"/><rect x="18" y="78" width="105" height="90" rx="5" fill="#FFF7E8" stroke="#A98D72" stroke-width="3"/>
+              <rect x="59" y="110" width="28" height="58" fill="#9FC7CE"/><rect x="28" y="98" width="25" height="25" fill="#B7DDE5"/>
+              <path d="M105 102 Q138 114 126 148" fill="none" stroke="#68AFC2" stroke-width="6"/>
+              <text x="70" y="194" text-anchor="middle" fill="#245B61" font-size="17" font-weight="700">Homes</text>
+              <text x="70" y="214" text-anchor="middle" fill="#5D7772" font-size="13">wastewater + roof water</text>
+            </g>
+
+            <g class="edm-flow-node" transform="translate(410,154)">
+              <rect x="0" y="34" width="118" height="62" rx="10" fill="#C7D2D3" stroke="#6E8585" stroke-width="3"/>
+              <g stroke="#5B7070" stroke-width="6"><line x1="20" y1="44" x2="20" y2="86"/><line x1="48" y1="44" x2="48" y2="86"/><line x1="76" y1="44" x2="76" y2="86"/><line x1="104" y1="44" x2="104" y2="86"/></g>
+              <text x="59" y="121" text-anchor="middle" fill="#245B61" font-size="17" font-weight="700">Road drains</text>
+            </g>
+
+            <path class="edm-flow-water" d="M350 245 C430 245 485 260 555 272" fill="none" stroke="#4E9FB6" stroke-width="8" marker-end="url(#arrowBlue)"/>
+            <path class="edm-flow-water" d="M470 250 C510 252 535 260 565 272" fill="none" stroke="#4E9FB6" stroke-width="8"/>
+
+            <g class="edm-flow-node" transform="translate(545,205)">
+              <rect width="205" height="106" rx="20" fill="#D8E7E4" stroke="#4A837B" stroke-width="4"/>
+              <path d="M18 54 C55 35 86 70 120 50 C151 32 171 61 190 49" fill="none" stroke="#4E9FB6" stroke-width="8"/>
+              <text x="103" y="31" text-anchor="middle" fill="#173D3A" font-size="18" font-weight="800">Combined sewer</text>
+              <text x="103" y="88" text-anchor="middle" fill="#5D7772" font-size="13">one pipe carries both flows</text>
+            </g>
+
+            <path class="edm-flow-water" d="M750 262 C805 262 835 234 875 219" fill="none" stroke="#4E9FB6" stroke-width="9" marker-end="url(#arrowBlue)"/>
+            <g class="edm-flow-node" transform="translate(856,117)">
+              <rect x="0" y="46" width="145" height="118" rx="14" fill="#F4F1E4" stroke="#7B9B87" stroke-width="4"/>
+              <circle cx="42" cy="86" r="25" fill="#B7D9C6" stroke="#5C9076" stroke-width="3"/><circle cx="103" cy="86" r="25" fill="#B7D9C6" stroke="#5C9076" stroke-width="3"/>
+              <rect x="27" y="120" width="91" height="27" rx="6" fill="#DDEADF"/>
+              <text x="72" y="24" text-anchor="middle" fill="#245B61" font-size="17" font-weight="800">Treatment works</text>
+              <text x="72" y="184" text-anchor="middle" fill="#5D7772" font-size="13">normal route</text>
+            </g>
+
+            <path d="M648 206 C710 140 785 122 1020 242" fill="none" stroke="#D27670" stroke-width="8" stroke-dasharray="15 10" marker-end="url(#arrowCoral)"/>
+            <g class="edm-flow-node" transform="translate(714,67)">
+              <rect width="155" height="63" rx="14" fill="#FFF0DD" stroke="#D09B58" stroke-width="3"/>
+              <text x="78" y="26" text-anchor="middle" fill="#7A4C16" font-size="16" font-weight="800">Storm overflow</text>
+              <text x="78" y="47" text-anchor="middle" fill="#7A6041" font-size="12">only when capacity is exceeded</text>
+            </g>
+
+            <path d="M994 251 C1058 221 1112 231 1200 255 V355 H972Z" fill="url(#river)"/>
+            <path class="edm-river-flow" d="M992 275 C1052 248 1118 259 1190 284" fill="none" stroke="#EFFBFC" stroke-width="9"/>
+            <g transform="translate(1080,292)" fill="none" stroke="#3C7F8F" stroke-width="3"><path d="M0 8 Q18 -8 36 8 Q18 26 0 8Z"/><circle cx="27" cy="6" r="2" fill="#3C7F8F"/></g>
+            <text x="1090" y="215" text-anchor="middle" fill="#245B61" font-size="18" font-weight="800">River</text>
+            <text x="1090" y="235" text-anchor="middle" fill="#5D7772" font-size="13">treated water or overflow route</text>
+          </svg>
+        </div>
+        """
+    )
+
+
 def section_header(title: str, subtitle: str):
     st.html(
         f"""
@@ -770,16 +993,41 @@ def metric_cards(cards: list[dict]):
 def plot_style(figure: go.Figure, height=480):
     figure.update_layout(
         height=height,
-        margin=dict(l=28, r=20, t=65, b=45),
+        margin=dict(l=34, r=22, t=58, b=42),
         paper_bgcolor="rgba(0,0,0,0)",
-        plot_bgcolor="rgba(255,255,255,0.45)",
-        font=dict(color=INK, size=13),
-        title_font=dict(color=INK, size=18),
+        plot_bgcolor="rgba(255,255,255,0.35)",
+        font=dict(
+            family="Atkinson Hyperlegible, Verdana, Arial, sans-serif",
+            color=INK,
+            size=12,
+        ),
+        title=dict(font=dict(color=INK, size=16), x=0.02, xanchor="left"),
         legend_title_text="",
-        hoverlabel=dict(bgcolor="#FFFFFF", font_color=INK),
+        colorway=["#73B7AA", "#86BBD8", "#D2B6DD", "#F0C987", "#E7A3A3"],
+        hoverlabel=dict(
+            bgcolor="#FFFFFF",
+            bordercolor="#B8D6CE",
+            font_color=INK,
+            font_size=12,
+        ),
+        legend=dict(
+            bgcolor="rgba(255,255,255,.58)",
+            bordercolor="rgba(55,120,110,.12)",
+            borderwidth=1,
+        ),
     )
-    figure.update_xaxes(gridcolor="rgba(68,120,110,0.12)", zeroline=False)
-    figure.update_yaxes(gridcolor="rgba(68,120,110,0.12)", zeroline=False)
+    figure.update_xaxes(
+        gridcolor="rgba(68,120,110,0.10)",
+        linecolor="rgba(68,120,110,0.18)",
+        zeroline=False,
+        automargin=True,
+    )
+    figure.update_yaxes(
+        gridcolor="rgba(68,120,110,0.10)",
+        linecolor="rgba(68,120,110,0.18)",
+        zeroline=False,
+        automargin=True,
+    )
     return figure
 
 
@@ -828,6 +1076,19 @@ def popup_for_row(row: pd.Series, risk_column: str, prediction: bool) -> str:
     years_observed = row.get("years_observed", "2023–2025")
     risk_history = row.get("risk_history", "Not available")
     risk = row.get(risk_column, "Not available")
+    relationship = safe_text(row.get("official_place_relationship"))
+    distance = value_text(row.get("distance_to_official_place_km"), 2, " km")
+    x_coordinate = value_text(row.get("easting_x"), 1)
+    y_coordinate = value_text(row.get("northing_y"), 1)
+    annual_boxes = []
+    for year in (2023, 2024, 2025):
+        annual_value = row.get(f"place_counted_spills_{year}")
+        annual_boxes.append(
+            f"<div style='padding:5px;text-align:center;background:#F4FAF8;"
+            f"border:1px solid #C8DDD7;border-radius:6px'><b>{year}</b><br>"
+            f"{value_text(annual_value)} spills</div>"
+        )
+    annual_spills = "".join(annual_boxes)
 
     if prediction:
         observed = row.get("observed_2025_risk", row.get("actual_2025_risk_label", "Not available"))
@@ -871,7 +1132,9 @@ def popup_for_row(row: pd.Series, risk_column: str, prediction: bool) -> str:
             <b>Years covered:</b> {safe_text(years_observed)}<br>
             <b>Counted spills for this outlet:</b> {value_text(spills)}<br>
             <b>Recorded duration:</b> {value_text(duration, 1, ' hours')}<br>
-            <b>Town/city counted spills:</b> {value_text(place_spills)}
+            <div style="margin:6px 0 3px"><b>Town/city counted spills by year</b></div>
+            <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:4px">{annual_spills}</div>
+            <b>Town/city total:</b> {value_text(place_spills)}
             {place_summary}
           </div>
         """
@@ -881,6 +1144,7 @@ def popup_for_row(row: pd.Series, risk_column: str, prediction: bool) -> str:
         <div style="font-size:16px;font-weight:800;margin:-1px -1px 8px;padding:9px 10px;
                     border-radius:8px;background:#E9F4F8;">{safe_text(site)}</div>
         <b>Town/city:</b> {safe_text(place)}<br>
+        <b>Place match:</b> {relationship} · {distance}<br>
         <b>Water company:</b> {safe_text(company)}<br>
         <b>Receiving water:</b> {safe_text(receiving)}<br>
         <b>Catchment:</b> {safe_text(catchment)}<br>
@@ -889,10 +1153,182 @@ def popup_for_row(row: pd.Series, risk_column: str, prediction: bool) -> str:
         <b>Grid reference:</b> {safe_text(grid)}
         {evidence_rows}
         <div style="margin-top:7px;font-size:11px;color:#5D7772;">
-          Coordinates: {float(row['latitude']):.5f}, {float(row['longitude']):.5f}
+          Coordinates: {float(row['latitude']):.5f}, {float(row['longitude']):.5f}<br>
+          National Grid X/Y: {x_coordinate}, {y_coordinate}
         </div>
       </div>
     """
+
+
+def add_colab_map_panels(
+    water_map: folium.Map,
+    plotting: pd.DataFrame,
+    risk_column: str,
+    prediction: bool,
+) -> None:
+    """Add the same directory-and-ranking experience used by the Colab map."""
+    if plotting.empty:
+        return
+
+    def plain(value, fallback="Not available"):
+        if value is None or pd.isna(value) or str(value).strip() == "":
+            return fallback
+        return str(value).strip()
+
+    place_column = first_existing(plotting, ["official_place_name", "town_or_city"])
+    company_column = first_existing(plotting, ["water_company_name", "company"])
+    site_column = first_existing(
+        plotting,
+        ["site_name", "source_site_name_ea_consents_database"],
+    )
+    if not place_column or not company_column:
+        return
+
+    company_ranking = make_risk_ranking(plotting, risk_column, company_column)
+    ranking_rows = []
+    for _, row in company_ranking.head(12).iterrows():
+        ranking_rows.append(
+            f"""
+            <div class="edm-map-rank">
+              <span class="edm-map-rank-number">{int(row['Rank'])}</span>
+              <b>{html.escape(str(row[company_column]))}</b>
+              <div><span class="risk-high">&#9650; {int(row.get('High', 0)):,}</span>
+              <span class="risk-medium">&#9670; {int(row.get('Medium', 0)):,}</span>
+              <span class="risk-low">&#9679; {int(row.get('Low', 0)):,}</span></div>
+            </div>
+            """
+        )
+
+    risk_counts = plotting[risk_column].value_counts().reindex(RISK_ORDER, fill_value=0)
+    map_title = "Predicted 2026 risk" if prediction else "Observed spill risk"
+    period_text = "Forecast - not a confirmed event" if prediction else "Recorded 2023-2025 evidence"
+    panels = f"""
+    <style>
+      .edm-map-panel {{position:fixed;top:12px;z-index:9999;width:300px;max-height:86vh;
+        overflow:auto;padding:12px;background:rgba(251,253,249,.96);color:#173D3A;
+        border:1px solid #AFCFC6;border-radius:14px;box-shadow:0 7px 25px rgba(28,77,70,.19);
+        font:12px/1.38 'Atkinson Hyperlegible',Verdana,Arial,sans-serif;}}
+      #edm-map-left {{left:12px;}} #edm-map-right {{right:12px;}}
+      .edm-map-title {{margin:-12px -12px 8px;padding:10px 12px;border-radius:13px 13px 0 0;
+        color:#173D3A;background:linear-gradient(120deg,#CFEAE3,#DDEFF4);font-size:16px;font-weight:800;}}
+      .edm-map-period {{margin:5px 0 8px;padding:5px 7px;border-radius:8px;background:#FFFFFF;
+        color:#446862;font-size:11px;font-weight:700;}}
+      .edm-map-legend {{display:grid;grid-template-columns:repeat(3,1fr);gap:4px;margin:7px 0;}}
+      .edm-map-legend div {{padding:6px 3px;border-radius:8px;text-align:center;background:#FFFFFF;font-weight:700;}}
+      .edm-map-panel label {{display:block;margin:7px 0 2px;font-weight:700;color:#365F5B;}}
+      .edm-map-panel input,.edm-map-panel select {{width:100%;box-sizing:border-box;padding:7px 8px;
+        border:1px solid #B7CEC8;border-radius:8px;background:#FFFFFF;color:#173D3A;font-size:12px;}}
+      #edm-place-results {{max-height:42vh;overflow:auto;margin-top:7px;padding-right:2px;}}
+      .edm-place-letter {{position:sticky;top:0;padding:3px 7px;background:#DDEFF4;color:#245B61;
+        font-weight:800;border-radius:6px;}}
+      .edm-place-button {{display:block;width:100%;margin:5px 0;padding:7px 8px;text-align:left;
+        color:#173D3A;background:#FFFFFF;border:1px solid #D1E1DC;border-left:6px solid var(--place-risk);
+        border-radius:9px;cursor:pointer;font-size:12px;}}
+      .edm-place-button:hover,.edm-place-button:focus {{background:#EDF8F5;transform:translateX(2px);}}
+      .edm-place-name {{display:block;font-size:13px;font-weight:800;margin-bottom:2px;}}
+      .edm-place-detail {{color:#5D7772;font-size:11px;}}
+      .edm-map-rank {{margin:5px 0;padding:7px;border-radius:9px;background:#FFFFFF;
+        border-left:5px solid #68AFC2;}}
+      .edm-map-rank-number {{display:inline-flex;align-items:center;justify-content:center;width:23px;
+        height:23px;margin-right:5px;border-radius:50%;background:#DDEFF4;color:#245B61;font-weight:800;}}
+      .edm-map-rank div {{margin:3px 0 0 29px;font-size:11px;word-spacing:5px;}}
+      .risk-high {{color:#A84B4B;font-weight:800;}} .risk-medium {{color:#93611D;font-weight:800;}}
+      .risk-low {{color:#357A63;font-weight:800;}}
+      @media(max-width:1000px) {{.edm-map-panel{{width:235px;max-height:39vh;}}
+        #edm-map-right{{top:auto;bottom:12px;}}}}
+    </style>
+    <aside id="edm-map-left" class="edm-map-panel" aria-label="Town and city directory">
+      <div class="edm-map-title">{map_title}</div>
+      <div class="edm-map-period">{period_text}</div>
+      <div class="edm-map-legend">
+        <div style="color:#357A63;">&#9679; Low<br>{int(risk_counts['Low']):,}</div>
+        <div style="color:#93611D;">&#9670; Medium<br>{int(risk_counts['Medium']):,}</div>
+        <div style="color:#A84B4B;">&#9650; High<br>{int(risk_counts['High']):,}</div>
+      </div>
+      <label for="edm-place-search">Find a town or city</label>
+      <input id="edm-place-search" type="search" placeholder="Start typing...">
+      <label for="edm-risk-filter">Risk</label>
+      <select id="edm-risk-filter"><option value="">All risks</option><option>High</option><option>Medium</option><option>Low</option></select>
+      <label for="edm-company-filter">Water company</label>
+      <select id="edm-company-filter"><option value="">All companies</option></select>
+      <div id="edm-place-count" class="edm-place-detail" style="margin-top:7px;"></div>
+      <div id="edm-place-results"></div>
+    </aside>
+    <aside id="edm-map-right" class="edm-map-panel" aria-label="Water company ranking">
+      <div class="edm-map-title">Water-company ranking</div>
+      <div class="edm-map-period">High-risk locations first</div>
+      {''.join(ranking_rows)}
+    </aside>
+    """
+    water_map.get_root().html.add_child(folium.Element(panels))
+
+    directory = []
+    for _, row in plotting.iterrows():
+        risk = plain(row.get(risk_column), "Uncategorised")
+        directory.append(
+            {
+                "lat": round(float(row["latitude"]), 6),
+                "lon": round(float(row["longitude"]), 6),
+                "risk": risk,
+                "colour": RISK_COLOURS.get(risk, "#78909C"),
+                "company": plain(row.get(company_column), "Unknown company"),
+                "place": plain(row.get(place_column), "Place unavailable"),
+                "site": plain(row.get(site_column), "Spill outlet") if site_column else "Spill outlet",
+                "spills": value_text(
+                    row.get("place_total_counted_spills", row.get("total_counted_spills_in_period"))
+                ),
+            }
+        )
+    directory_json = json.dumps(directory, ensure_ascii=True, separators=(",", ":")).replace("</", "<\\/")
+    map_name = water_map.get_name()
+    script = f"""
+    var edmSites={directory_json};
+    var edmMap={map_name};
+    var edmFocusMarker=null;
+    function edmEscape(value){{var n=document.createElement('div');n.textContent=value||'';return n.innerHTML;}}
+    function edmBuildPlaces(){{
+      var query=document.getElementById('edm-place-search').value.toLowerCase().trim();
+      var risk=document.getElementById('edm-risk-filter').value;
+      var company=document.getElementById('edm-company-filter').value;
+      var groups=new Map();
+      edmSites.forEach(function(site){{
+        if((risk&&site.risk!==risk)||(company&&site.company!==company))return;
+        if(query&&site.place.toLowerCase().indexOf(query)===-1)return;
+        if(!groups.has(site.place))groups.set(site.place,{{name:site.place,sites:[],companies:new Set(),high:0,medium:0,low:0,spills:site.spills}});
+        var place=groups.get(site.place);place.sites.push(site);place.companies.add(site.company);
+        if(site.risk==='High')place.high++;else if(site.risk==='Medium')place.medium++;else if(site.risk==='Low')place.low++;
+      }});
+      return Array.from(groups.values()).sort(function(a,b){{return a.name.localeCompare(b.name);}});
+    }}
+    function edmFocusPlace(place){{
+      var coords=place.sites.map(function(s){{return[s.lat,s.lon];}});
+      if(coords.length===1)edmMap.setView(coords[0],14);else edmMap.fitBounds(L.latLngBounds(coords).pad(.16),{{maxZoom:13}});
+      if(edmFocusMarker)edmMap.removeLayer(edmFocusMarker);
+      var centre=coords.reduce(function(t,c){{t[0]+=c[0];t[1]+=c[1];return t;}},[0,0]);
+      centre=[centre[0]/coords.length,centre[1]/coords.length];
+      edmFocusMarker=L.circleMarker(centre,{{radius:10,color:'#173D3A',weight:3,fillColor:'#DDEFF4',fillOpacity:.95}}).addTo(edmMap);
+      var popup='<div style="font:12px/1.45 Verdana;color:#173D3A;min-width:245px"><b style="font-size:14px">'+edmEscape(place.name)+'</b><br>'+coords.length.toLocaleString()+' mapped outlets<br><b>Risk:</b> High '+place.high+', Medium '+place.medium+', Low '+place.low+'<br><b>Companies:</b> '+edmEscape(Array.from(place.companies).sort().join(', '))+'<br><b>Recorded spills:</b> '+edmEscape(place.spills)+'</div>';
+      edmFocusMarker.bindPopup(popup,{{maxWidth:330}}).openPopup();
+    }}
+    function edmRenderPlaces(){{
+      var places=edmBuildPlaces();document.getElementById('edm-place-count').textContent=places.length.toLocaleString()+' places shown';
+      var root=document.getElementById('edm-place-results');root.replaceChildren();var previous='';
+      places.forEach(function(place){{
+        var letter=(place.name.charAt(0)||'#').toUpperCase();if(letter!==previous){{var h=document.createElement('div');h.className='edm-place-letter';h.textContent=letter;root.appendChild(h);previous=letter;}}
+        var button=document.createElement('button');button.type='button';button.className='edm-place-button';
+        button.style.setProperty('--place-risk',place.high?'#D66565':(place.medium?'#E2A45C':'#4A9C7D'));
+        button.innerHTML='<span class="edm-place-name">'+edmEscape(place.name)+'</span><span class="edm-place-detail">&#9650; '+place.high+' &nbsp; &#9670; '+place.medium+' &nbsp; &#9679; '+place.low+' · '+place.sites.length+' outlets</span>';
+        button.addEventListener('click',function(){{edmFocusPlace(place);}});root.appendChild(button);
+      }});
+    }}
+    var companySelect=document.getElementById('edm-company-filter');
+    Array.from(new Set(edmSites.map(function(s){{return s.company;}}))).sort().forEach(function(company){{var o=document.createElement('option');o.value=company;o.textContent=company;companySelect.appendChild(o);}});
+    document.getElementById('edm-place-search').addEventListener('input',edmRenderPlaces);
+    document.getElementById('edm-risk-filter').addEventListener('change',edmRenderPlaces);
+    document.getElementById('edm-company-filter').addEventListener('change',edmRenderPlaces);
+    edmRenderPlaces();
+    """
+    water_map.get_root().script.add_child(folium.Element(script))
 
 
 def build_folium_map(
@@ -995,20 +1431,27 @@ def build_folium_map(
     MiniMap(toggle_display=True, minimized=True, position="bottomright").add_to(water_map)
     folium.LayerControl(collapsed=True, position="topright").add_to(water_map)
 
-    risk_counts = plotting[risk_column].value_counts().reindex(RISK_ORDER, fill_value=0)
-    legend = f"""
-    <div style="position:fixed;left:18px;bottom:28px;z-index:9999;
-                background:rgba(255,255,255,.94);border:1px solid #BFD6CF;
-                border-radius:12px;padding:10px 13px;color:#173D3A;
-                box-shadow:0 5px 18px rgba(34,82,75,.16);font:13px Arial;">
-      <div style="font-weight:700;margin-bottom:6px;">Risk category</div>
-      <div><span style="color:#4A9C7D;font-size:17px;">●</span> Low · {int(risk_counts['Low']):,}</div>
-      <div><span style="color:#E2A45C;font-size:16px;">◆</span> Medium · {int(risk_counts['Medium']):,}</div>
-      <div><span style="color:#D66565;font-size:15px;">▲</span> High · {int(risk_counts['High']):,}</div>
-      <div style="margin-top:6px;font-size:11px;color:#5D7772;">Select a cluster to zoom.<br>Choose a marker for details.</div>
-    </div>
-    """
-    water_map.get_root().html.add_child(folium.Element(legend))
+    if display_style == "Clustered spill locations":
+        add_colab_map_panels(
+            water_map,
+            plotting,
+            risk_column,
+            prediction,
+        )
+    else:
+        risk_counts = plotting[risk_column].value_counts().reindex(RISK_ORDER, fill_value=0)
+        legend = f"""
+        <div style="position:fixed;left:18px;bottom:28px;z-index:9999;
+                    background:rgba(255,255,255,.94);border:1px solid #BFD6CF;
+                    border-radius:12px;padding:10px 13px;color:#173D3A;
+                    box-shadow:0 5px 18px rgba(34,82,75,.16);font:12px Arial;">
+          <div style="font-weight:700;margin-bottom:6px;">Risk category</div>
+          <div><span style="color:#4A9C7D;font-size:17px;">●</span> Low · {int(risk_counts['Low']):,}</div>
+          <div><span style="color:#E2A45C;font-size:16px;">◆</span> Medium · {int(risk_counts['Medium']):,}</div>
+          <div><span style="color:#D66565;font-size:15px;">▲</span> High · {int(risk_counts['High']):,}</div>
+        </div>
+        """
+        water_map.get_root().html.add_child(folium.Element(legend))
 
     if len(plotting) > 1:
         water_map.fit_bounds(
@@ -1164,6 +1607,26 @@ PAGES = [
 page_label = st.sidebar.radio("Choose a page", PAGES)
 page = page_label.split(" ", 1)[1]
 
+# Every area is visible in a compact top navigation row. The sidebar remains
+# available for optional reading controls and is collapsed by default.
+st.html(
+    """
+    <div style="display:flex;align-items:center;gap:.65rem;margin:.1rem 0 .25rem;">
+      <span class="edm-brand-mark" style="width:36px;height:36px;font-size:19px;margin:0;">💧</span>
+      <div><b style="font-size:1.02rem;">EDM Water &amp; Spill-Risk Observatory</b>
+      <div style="font-size:.76rem;color:#5D7772;">England · recorded evidence · 2026 forecast</div></div>
+    </div>
+    """
+)
+page_label = st.radio(
+    "Dashboard sections",
+    PAGES,
+    horizontal=True,
+    label_visibility="collapsed",
+    key="main_navigation",
+)
+page = page_label.split(" ", 1)[1]
+
 st.sidebar.markdown("---")
 st.sidebar.html(
     """
@@ -1182,6 +1645,7 @@ st.sidebar.html(
 
 if page == "Start here":
     render_hero()
+    render_page_cards()
 
     observed = load_table("observed_locations")
     forecast = load_table("forecast_map_points")
@@ -1210,7 +1674,7 @@ if page == "Start here":
         edge="#D59A3C",
     )
 
-    section_header("What the risk colours mean", "The colours compare locations within this dashboard.")
+    section_header("Risk at a glance", "Recorded evidence and forecasts always remain separate.")
     render_risk_guide()
 
     left, right = st.columns([1, 1])
@@ -1229,19 +1693,11 @@ if page == "Start here":
                 config={"displayModeBar": False},
             )
 
-    section_header("How to use this website", "Three simple steps help you move from the map to the supporting information.")
-    st.html(
-        """
-        <div class="edm-journey">
-          <div class="edm-journey-step"><span class="edm-journey-number">1</span>
-            <h4>Open the map</h4><p>See every mapped outlet and choose a cluster to zoom into an area.</p></div>
-          <div class="edm-journey-step"><span class="edm-journey-number">2</span>
-            <h4>Choose a location</h4><p>Select a marker to read its risk, water company, nearby place and receiving water.</p></div>
-          <div class="edm-journey-step"><span class="edm-journey-number">3</span>
-            <h4>Compare carefully</h4><p>Use the rankings and evidence pages to understand patterns, not to assume cause or blame.</p></div>
-        </div>
-        """,
+    section_header(
+        "How a combined sewer works",
+        "Hover over the illustrated stages. Normal flow goes to treatment; heavy rain can use the overflow route.",
     )
+    render_sewer_story()
 
 
 # =============================================================================
@@ -1310,32 +1766,31 @@ elif page == "Explore the map":
             place_ranking = make_risk_ranking(filtered, risk_column, place_column)
             company_ranking = make_risk_ranking(filtered, risk_column, company_column)
 
-            map_column, ranking_column = st.columns([3.15, 1.05], gap="large")
-            with map_column:
-                with st.spinner("Drawing the map and grouping nearby locations…"):
-                    map_object = build_folium_map(filtered, risk_column, prediction, display_style)
-                st_folium(
-                    map_object,
-                    height=760,
-                    use_container_width=True,
-                    returned_objects=[],
-                    key=f"edm_{'forecast' if prediction else 'recorded'}_{display_style}",
-                )
-                st.caption(
-                    "The number inside a cluster is the number of nearby outlets. Select a cluster to zoom in, "
-                    "then select a coloured marker to read the location details."
+            # The full-width map contains the same place directory and water-
+            # company ranking used by the detailed Colab map.
+            with st.spinner("Drawing the interactive map and grouping nearby locations..."):
+                map_object = build_folium_map(
+                    filtered,
+                    risk_column,
+                    prediction,
+                    display_style,
                 )
 
-            with ranking_column:
-                st.html(
-                    """
-                    <div class="edm-plain-card">
-                      <h3>📍 Risk ranking in this view</h3>
-                      <div>Places and companies are ranked first by High-risk locations, then by Medium-risk locations.</div>
-                    </div>
-                    """
-                )
-                place_tab, company_tab = st.tabs(["Places", "Companies"])
+            st_folium(
+                map_object,
+                height=900,
+                use_container_width=True,
+                returned_objects=[],
+                key=f"edm_{'forecast' if prediction else 'recorded'}_{display_style}",
+            )
+            st.caption(
+                "Select a numbered cluster to zoom in. Select a coloured marker "
+                "for its site, place, company and risk details."
+            )
+
+            # Compact lists are retained as an accessible alternative.
+            with st.expander("Compact rankings for the current map view"):
+                place_tab, company_tab = st.tabs(["Places", "Water companies"])
                 with place_tab:
                     render_rank_list(
                         place_ranking,
