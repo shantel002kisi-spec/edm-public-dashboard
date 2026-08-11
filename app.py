@@ -96,7 +96,68 @@ st.markdown(
       .block-container {
         max-width: 1540px;
         padding-top: 0.65rem;
+        padding-right: 290px;
         padding-bottom: 3rem;
+      }
+
+      .st-key-right_navigation_panel {
+        position: fixed;
+        top: 1rem;
+        right: 1rem;
+        z-index: 100000;
+        width: 250px;
+        max-height: calc(100vh - 2rem);
+        overflow-y: auto;
+        padding: .85rem;
+        border: 1px solid rgba(55,120,110,.20);
+        border-radius: 20px;
+        background: linear-gradient(165deg, rgba(250,253,251,.98), rgba(226,242,238,.98));
+        box-shadow: 0 14px 34px rgba(31,79,72,.16);
+      }
+
+      .st-key-right_navigation_panel div[data-testid="stRadio"] > div[role="radiogroup"] {
+        display: flex;
+        flex-direction: column;
+        gap: .38rem;
+        padding: 0;
+        margin: .45rem 0;
+        border: 0;
+        background: transparent;
+        box-shadow: none;
+      }
+
+      .st-key-right_navigation_panel div[data-testid="stRadio"] > div[role="radiogroup"] label {
+        flex: none;
+        width: 100%;
+        min-height: 42px;
+        justify-content: flex-start;
+        padding: .48rem .6rem;
+        border: 1px solid rgba(55,120,110,.14);
+        border-radius: 12px;
+        background: rgba(255,255,255,.76);
+        text-align: left;
+        font-size: .84rem;
+      }
+
+      .edm-right-nav-title {
+        display: flex;
+        align-items: center;
+        gap: .55rem;
+        padding-bottom: .55rem;
+        border-bottom: 1px solid rgba(55,120,110,.14);
+        color: var(--edm-ink);
+      }
+
+      .edm-right-nav-title span { font-size: 1.55rem; }
+      .edm-right-nav-title b { font-size: .98rem; }
+      .edm-right-nav-note {
+        margin-top: .55rem;
+        padding: .55rem;
+        border-radius: 10px;
+        background: rgba(255,243,221,.78);
+        color: #6A5436;
+        font-size: .71rem;
+        line-height: 1.42;
       }
 
       #MainMenu, footer, [data-testid="stDecoration"] {
@@ -558,6 +619,17 @@ st.markdown(
       }
 
       @media (max-width: 1050px) {
+        .block-container { padding-right: 1rem; }
+        .st-key-right_navigation_panel {
+          position: static;
+          width: auto;
+          max-height: none;
+          margin-bottom: .8rem;
+        }
+        .st-key-right_navigation_panel div[data-testid="stRadio"] > div[role="radiogroup"] {
+          display: grid;
+          grid-template-columns: repeat(2, minmax(0,1fr));
+        }
         .edm-metric-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
         .edm-page-grid { grid-template-columns: repeat(3, minmax(0, 1fr)); }
         .edm-hero { grid-template-columns: 1fr; }
@@ -1742,39 +1814,33 @@ PAGES = [
     "🌊 About the evidence",
 ]
 
-page_label = st.sidebar.radio("Choose a page", PAGES)
-page = page_label.split(" ", 1)[1]
+with st.container(key="right_navigation_panel"):
+    st.html(
+        """
+        <div class="edm-right-nav-title">
+          <span>🌧️</span>
+          <div><b>Explore the water dashboard</b><br>
+          <small>Choose a section</small></div>
+        </div>
+        """
+    )
+    page_label = st.radio(
+        "Dashboard sections",
+        PAGES,
+        horizontal=False,
+        label_visibility="collapsed",
+        key="main_navigation",
+    )
+    st.html(
+        """
+        <div class="edm-right-nav-note">
+          <b>2026 means forecast</b><br>
+          It is an estimate, not a confirmed future spill.
+        </div>
+        """
+    )
 
-# Every area is visible in a compact top navigation row. The sidebar remains
-# available for optional reading controls and is collapsed by default.
-st.html(
-    """
-    <div style="display:flex;align-items:center;gap:.65rem;margin:.1rem 0 .25rem;">
-      <span class="edm-brand-mark" style="width:36px;height:36px;font-size:19px;margin:0;">🌧️</span>
-      <div><b style="font-size:1.02rem;">EDM Water &amp; Spill-Risk Observatory</b>
-      <div style="font-size:.76rem;color:#5D7772;">England · recorded evidence · 2026 forecast</div></div>
-    </div>
-    """
-)
-page_label = st.radio(
-    "Dashboard sections",
-    PAGES,
-    horizontal=True,
-    label_visibility="collapsed",
-    key="main_navigation",
-)
 page = page_label.split(" ", 1)[1]
-
-st.sidebar.markdown("---")
-st.sidebar.html(
-    """
-    <div class="edm-access-note">
-      <b style="color:#173D3A;">What does “2026 forecast” mean?</b><br>
-      It is the system's best estimate from earlier information. It is not a known
-      result and does not prove that a spill will happen.
-    </div>
-    """,
-)
 
 
 # =============================================================================
@@ -1783,59 +1849,8 @@ st.sidebar.html(
 
 if page == "Start here":
     render_hero()
-    render_page_cards()
-
-    observed = load_table("observed_locations")
-    forecast = load_table("forecast_map_points")
-    observed_kpis = load_table("observed_kpis")
-    forecast_kpis = load_table("forecast_kpis")
-
-    observed_high = int(observed.get("period_risk_category", pd.Series(dtype=str)).eq("High").sum())
-    predicted_high = int(forecast.get("predicted_2026_risk", pd.Series(dtype=str)).eq("High").sum())
-    review_count = int(forecast.get("confidence_flag", pd.Series(dtype=str)).ne("Higher confidence").sum()) if "confidence_flag" in forecast.columns else 0
-
-    metric_cards(
-        [
-            {"label": "Locations on the map", "value": value_text(len(observed)), "note": "Recorded information from 2023–2025", "accent": "#A8D8D0"},
-            {"label": "Highest-concern locations", "value": value_text(observed_high), "note": "Places currently shown as High risk", "accent": "#E9A7A7"},
-            {"label": "Locations with a 2026 estimate", "value": value_text(len(forecast)), "note": "Known sites the system could assess", "accent": "#B7DDE5"},
-            {"label": "Estimates needing a closer look", "value": value_text(review_count), "note": "The answer was less certain", "accent": "#F1D39D"},
-        ]
-    )
-
-    banner(
-        "<b>Recorded 2023–2025</b> means information already supplied for those years. "
-        "<b>2026 forecast</b> means what the system estimates may happen next. "
-        "A forecast is never presented as a known event.",
-        icon="🛟",
-        background=PALE_AMBER,
-        edge="#D59A3C",
-    )
-
-    section_header("Risk at a glance", "Recorded evidence and forecasts always remain separate.")
+    section_header("Risk categories", "")
     render_risk_guide()
-
-    left, right = st.columns([1, 1])
-    with left:
-        if not observed.empty and "period_risk_category" in observed.columns:
-            st.plotly_chart(
-                risk_donut(observed, "period_risk_category", "Observed location categories"),
-                use_container_width=True,
-                config={"displayModeBar": False},
-            )
-    with right:
-        if not forecast.empty and "predicted_2026_risk" in forecast.columns:
-            st.plotly_chart(
-                risk_donut(forecast, "predicted_2026_risk", "Predicted 2026 categories"),
-                use_container_width=True,
-                config={"displayModeBar": False},
-            )
-
-    section_header(
-        "How a combined sewer works",
-        "Hover over the illustrated stages. Normal flow goes to treatment; heavy rain can use the overflow route.",
-    )
-    render_sewer_story()
 
 
 # =============================================================================
@@ -2827,6 +2842,11 @@ else:
                 st.warning("No verified dashboard records matched that search.")
 
     with method_tab:
+        section_header(
+            "How a combined sewer works",
+            "Normal flow goes to treatment; heavy rain can use the overflow route.",
+        )
+        render_sewer_story()
         st.html(
             """
             <div class="edm-journey">
