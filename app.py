@@ -15,13 +15,16 @@ from folium.plugins import FastMarkerCluster, Fullscreen, HeatMap, MeasureContro
 from streamlit_folium import st_folium
 
 
+DASHBOARD_RELEASE = "2026-08-11-full-redesign-v2"
+
+
 # =============================================================================
 # PAGE AND PROJECT CONFIGURATION
 # =============================================================================
 
 st.set_page_config(
-    page_title="England EDM Water & Spill-Risk Observatory",
-    page_icon="💧",
+    page_title="Sewage Overflow Insights",
+    page_icon="🌊",
     layout="wide",
     initial_sidebar_state="expanded",
 )
@@ -94,8 +97,10 @@ st.markdown(
       }
 
       .block-container {
-        max-width: 1540px;
+        width: 100%;
+        max-width: 1900px;
         padding-top: 0.65rem;
+        padding-left: 1rem;
         padding-right: 1rem;
         padding-bottom: 3rem;
       }
@@ -157,33 +162,60 @@ st.markdown(
         position: relative;
         overflow: hidden;
         display: grid;
-        grid-template-columns: minmax(0, 1.45fr) minmax(250px, 0.62fr);
-        gap: 1rem;
+        grid-template-columns: minmax(0, 1.1fr) minmax(360px, 0.9fr);
+        gap: 1.4rem;
         align-items: center;
-        padding: 1.2rem 1.5rem;
-        margin: 0.1rem 0 0.85rem;
-        border: 1px solid rgba(61, 129, 118, 0.18);
-        border-radius: 24px;
+        min-height: 345px;
+        padding: 2rem 2.2rem;
+        margin: 0.15rem 0 1.15rem;
+        border: 1px solid rgba(61, 129, 118, 0.22);
+        border-radius: 30px;
         background:
-          linear-gradient(125deg, rgba(231, 247, 239, 0.98), rgba(231, 244, 249, 0.96));
-        box-shadow: 0 16px 42px rgba(35, 91, 83, 0.10);
+          radial-gradient(circle at 9% 16%, rgba(255,255,255,.92), transparent 15rem),
+          radial-gradient(circle at 82% 14%, rgba(255,239,190,.55), transparent 13rem),
+          linear-gradient(125deg, rgba(224,245,235,.99), rgba(220,241,248,.98) 58%, rgba(235,239,249,.98));
+        box-shadow: 0 22px 55px rgba(37,92,84,.13);
+      }
+
+      .edm-hero::before,
+      .edm-hero::after {
+        content: "";
+        position: absolute;
+        border-radius: 50%;
+        pointer-events: none;
+      }
+
+      .edm-hero::before {
+        width: 170px;
+        height: 170px;
+        left: -62px;
+        bottom: -74px;
+        border: 24px solid rgba(105,185,177,.13);
+      }
+
+      .edm-hero::after {
+        width: 120px;
+        height: 120px;
+        right: 32%;
+        top: -75px;
+        border: 18px solid rgba(104,175,194,.12);
       }
 
       .edm-hero h1 {
         margin: 0;
         max-width: 880px;
         color: var(--edm-ink);
-        font-size: clamp(1.85rem, 3vw, 2.8rem);
-        line-height: 1.08;
+        font-size: clamp(2.15rem, 4vw, 4rem);
+        line-height: 1.02;
         letter-spacing: 0;
       }
 
       .edm-hero p {
         max-width: 850px;
-        margin: 0.55rem 0 0;
+        margin: 0.8rem 0 0;
         color: var(--edm-muted);
-        font-size: 0.98rem;
-        line-height: 1.48;
+        font-size: 1.08rem;
+        line-height: 1.55;
       }
 
       .edm-kicker {
@@ -202,10 +234,34 @@ st.markdown(
       }
 
       .edm-water-art {
-        min-height: 170px;
+        min-height: 275px;
         display: flex;
         align-items: center;
         justify-content: center;
+        padding: .35rem;
+        border-radius: 28px;
+        background: rgba(255,255,255,.28);
+        border: 1px solid rgba(255,255,255,.54);
+        box-shadow: inset 0 0 35px rgba(255,255,255,.32);
+      }
+
+      .edm-hero-badges {
+        display: flex;
+        flex-wrap: wrap;
+        gap: .55rem;
+        margin-top: 1.1rem;
+      }
+
+      .edm-hero-badges span {
+        display: inline-flex;
+        align-items: center;
+        padding: .42rem .68rem;
+        border: 1px solid rgba(51,117,108,.16);
+        border-radius: 999px;
+        background: rgba(255,255,255,.72);
+        color: #315F5A;
+        font-size: .78rem;
+        font-weight: 760;
       }
 
       .edm-cloud-a { animation: edmCloudA 8s ease-in-out infinite alternate; }
@@ -370,10 +426,29 @@ st.markdown(
       }
 
       .edm-risk-guide > div {
-        padding: .9rem 1rem;
-        border-radius: 15px;
-        background: rgba(255,255,255,.78);
+        min-height: 94px;
+        padding: 1rem 1.1rem;
+        border-radius: 19px;
+        background: linear-gradient(145deg, rgba(255,255,255,.94), var(--risk-tint));
         border-top: 8px solid var(--risk-colour);
+        box-shadow: 0 10px 25px rgba(38,91,84,.08);
+      }
+
+      .edm-risk-guide b {
+        display: block;
+        margin-bottom: .2rem;
+        color: var(--edm-ink);
+        font-size: 1.05rem;
+      }
+
+      .edm-home-chart-note {
+        margin: .35rem 0 .85rem;
+        padding: .78rem 1rem;
+        border: 1px solid rgba(55,120,110,.14);
+        border-radius: 15px;
+        color: #416B66;
+        background: linear-gradient(110deg, rgba(235,248,242,.88), rgba(233,245,249,.88));
+        font-size: .9rem;
       }
 
       .edm-simple-label {
@@ -595,6 +670,14 @@ st.markdown(
         box-shadow: 0 8px 22px rgba(38,91,84,.055);
       }
 
+      iframe[title="streamlit_folium.st_folium"] {
+        width: 100% !important;
+        border: 1px solid rgba(48,112,103,.20) !important;
+        border-radius: 24px !important;
+        box-shadow: 0 18px 42px rgba(34,82,75,.14) !important;
+        background: linear-gradient(145deg,#DDF2F5,#E8F3EA) !important;
+      }
+
       @media (max-width: 1050px) {
         .block-container { padding-right: 1rem; }
         .edm-metric-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
@@ -783,9 +866,9 @@ def render_risk_guide():
     st.html(
         """
         <div class="edm-risk-guide" aria-label="Plain-English risk guide">
-          <div style="--risk-colour:#4A9C7D;"><b>&#9679; Low</b><br>Lower concern</div>
-          <div style="--risk-colour:#E2A45C;"><b>&#9670; Medium</b><br>Closer attention</div>
-          <div style="--risk-colour:#D66565;"><b>&#9650; High</b><br>Priority review</div>
+          <div style="--risk-colour:#4A9C7D;--risk-tint:#E7F4EC;"><b>🌤️ &#9679; Low</b>Lower concern</div>
+          <div style="--risk-colour:#E2A45C;--risk-tint:#FFF1D8;"><b>🌦️ &#9670; Medium</b>Closer attention</div>
+          <div style="--risk-colour:#D66565;--risk-tint:#FBE5E6;"><b>⛈️ &#9650; High</b>Priority review</div>
         </div>
         """
     )
@@ -817,11 +900,17 @@ def render_hero():
         """
         <section class="edm-hero">
           <div>
-            <div class="edm-kicker">💧 England's water and spill information</div>
-            <h1>England's water and spill-risk story</h1>
+            <div class="edm-kicker">🌊 England's rivers, coasts and overflow evidence</div>
+            <h1>Sewage Overflow Insights</h1>
             <p>
-              Explore recorded locations, compare places and see the separate 2026 forecast.
+              Explore mapped discharge outlets, receiving waters and recorded 2023–2025 risk,
+              then view the separate, clearly labelled 2026 forecast.
             </p>
+            <div class="edm-hero-badges" aria-label="Dashboard highlights">
+              <span>💧 Mapped receiving waters</span>
+              <span>📍 Exact discharge outlets</span>
+              <span>🌈 Separate 2026 forecast</span>
+            </div>
           </div>
           <div class="edm-water-art" aria-label="Animated clouds, rain and flowing river illustration">
             <svg viewBox="0 0 520 250" width="100%" role="img" aria-label="Clouds releasing rain above a flowing river and green leaves">
@@ -833,6 +922,8 @@ def render_hero():
                 </linearGradient>
               </defs>
               <circle cx="265" cy="129" r="112" fill="#FFFFFF" opacity=".40"/>
+              <circle cx="458" cy="38" r="25" fill="#FFE7A9" opacity=".88"/>
+              <path d="M0 160 C78 113 138 130 205 164 C270 197 333 182 392 144 C441 114 482 124 520 145 L520 250 L0 250Z" fill="#CBE7D2" opacity=".55"/>
               <g class="edm-cloud-a" fill="#F9FCFC" stroke="#9CCAD3" stroke-width="3">
                 <ellipse cx="152" cy="70" rx="72" ry="30"/>
                 <circle cx="124" cy="55" r="34"/>
@@ -859,6 +950,10 @@ def render_hero():
               <path d="M55 168 C31 145 20 151 24 177 C44 184 57 178 55 168Z" fill="#7EBD91"/>
               <path d="M56 168 C60 140 76 132 92 153 C83 173 70 179 56 168Z" fill="#B6DEBF"/>
               <path d="M461 175 C479 147 498 149 502 173 C488 190 474 190 461 175Z" fill="#7EBD91"/>
+              <g fill="#477C78" opacity=".75">
+                <path d="M272 213 q14 -10 28 0 q-14 11 -28 0Z"/><circle cx="297" cy="211" r="2" fill="#F7FCFB"/>
+                <path d="M343 186 q11 -8 23 0 q-12 9 -23 0Z"/><circle cx="363" cy="184" r="1.7" fill="#F7FCFB"/>
+              </g>
             </svg>
           </div>
         </section>
@@ -1097,22 +1192,35 @@ def risk_donut(frame: pd.DataFrame, risk_column: str, title: str) -> go.Figure:
         go.Pie(
             labels=counts.index,
             values=counts.values,
-            hole=0.58,
+            hole=0.61,
             sort=False,
+            direction="clockwise",
+            rotation=-92,
             marker=dict(
                 colors=[RISK_COLOURS[label] for label in counts.index],
-                line=dict(color="#FBFDF9", width=3),
+                line=dict(color="#FBFDF9", width=4),
             ),
             textinfo="label+percent",
-            hovertemplate="%{label}<br>%{value:,} locations<br>%{percent}<extra></extra>",
+            textfont=dict(size=14, color=INK),
+            insidetextorientation="horizontal",
+            pull=[0, 0.012, 0.035],
+            hovertemplate="%{label}<br>%{value:,} mapped outlets<br>%{percent}<extra></extra>",
         )
     )
     figure.update_layout(
         title=title,
-        annotations=[dict(text=f"{int(counts.sum()):,}<br><span style='font-size:12px'>locations</span>", x=0.5, y=0.5, showarrow=False, font=dict(size=18, color=INK))],
+        annotations=[
+            dict(
+                text=f"<b>{int(counts.sum()):,}</b><br><span style='font-size:12px'>mapped outlets</span>",
+                x=0.5,
+                y=0.5,
+                showarrow=False,
+                font=dict(size=20, color=INK),
+            )
+        ],
         showlegend=False,
     )
-    return plot_style(figure, height=420)
+    return plot_style(figure, height=455)
 
 
 # =============================================================================
@@ -1532,9 +1640,18 @@ def build_folium_map(
     )
 
     folium.TileLayer(
-        tiles="CartoDB positron",
-        name="Pastel light map",
+        tiles="https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png",
+        attr="&copy; OpenStreetMap contributors &copy; CARTO",
+        name="Pastel rivers and places",
         show=True,
+        control=True,
+        subdomains="abcd",
+        max_zoom=20,
+    ).add_to(water_map)
+    folium.TileLayer(
+        tiles="CartoDB positron",
+        name="Soft contrast map",
+        show=False,
         control=True,
     ).add_to(water_map)
     folium.TileLayer(
@@ -1543,6 +1660,43 @@ def build_folium_map(
         show=False,
         control=True,
     ).add_to(water_map)
+
+    water_map.get_root().header.add_child(
+        folium.Element(
+            """
+            <style>
+              .leaflet-container {
+                background: linear-gradient(145deg,#CFEAF1 0%,#E1F2EE 55%,#EFF6E8 100%) !important;
+                font-family: "Atkinson Hyperlegible", Verdana, Arial, sans-serif !important;
+              }
+              .leaflet-tile-pane {
+                filter: saturate(1.14) contrast(.97) brightness(1.025);
+              }
+              .leaflet-control-zoom a,
+              .leaflet-control-layers,
+              .leaflet-control-scale-line {
+                border-color: rgba(39,106,97,.28) !important;
+                color: #173D3A !important;
+                background: rgba(251,253,249,.94) !important;
+              }
+              .marker-cluster-small,
+              .marker-cluster-medium,
+              .marker-cluster-large {
+                background-color: rgba(104,175,194,.30) !important;
+              }
+              .marker-cluster div {
+                background: linear-gradient(145deg,#74C6BE,#5BA6C1) !important;
+                color: #FFFFFF !important;
+                box-shadow: 0 5px 14px rgba(28,83,78,.24);
+              }
+              .leaflet-popup-content-wrapper,
+              .leaflet-popup-tip {
+                background: rgba(251,253,249,.98) !important;
+              }
+            </style>
+            """
+        )
+    )
 
     if display_style == "Risk concentration":
         heat_values = plotting[["latitude", "longitude", risk_column]].copy()
@@ -1738,8 +1892,8 @@ st.sidebar.html(
     <div class="edm-brand">
       <div style="display:flex;align-items:center;">
         <span class="edm-brand-mark">💧</span>
-        <div><div style="font-size:1.18rem;font-weight:800;">EDM Observatory</div>
-        <div style="font-size:.78rem;color:#5D7772;">England · evidence · forecast</div></div>
+        <div><div style="font-size:1.12rem;font-weight:800;line-height:1.2;">Sewage Overflow<br>Insights</div>
+        <div style="font-size:.76rem;color:#5D7772;margin-top:.18rem;">England · evidence · forecast</div></div>
       </div>
     </div>
     """,
@@ -1808,12 +1962,81 @@ if page == "Start here":
     section_header("Risk categories", "")
     render_risk_guide()
 
+    section_header(
+        "Spill-risk percentages",
+        "Compare the recorded evidence with the separately labelled 2026 forecast.",
+    )
+    st.html(
+        """
+        <div class="edm-home-chart-note">
+          Each percentage is the share of <b>mapped discharge outlets</b> in a risk category.
+          Recorded 2023–2025 evidence and predicted 2026 risk are deliberately kept separate.
+        </div>
+        """
+    )
+
+    observed_overview = load_table("observed_locations")
+    forecast_overview = load_table("forecast_map_points")
+    overview_charts = []
+    if (
+        not observed_overview.empty
+        and "period_risk_category" in observed_overview.columns
+    ):
+        overview_charts.append(
+            (
+                observed_overview,
+                "period_risk_category",
+                "Recorded 2023–2025 risk share",
+                "home_observed_risk_share",
+            )
+        )
+    if (
+        not forecast_overview.empty
+        and "predicted_2026_risk" in forecast_overview.columns
+    ):
+        overview_charts.append(
+            (
+                forecast_overview,
+                "predicted_2026_risk",
+                "Predicted 2026 risk share",
+                "home_predicted_risk_share",
+            )
+        )
+
+    if overview_charts:
+        for chart_column, chart_details in zip(
+            st.columns(len(overview_charts)),
+            overview_charts,
+        ):
+            chart_frame, chart_risk, chart_title, chart_key = chart_details
+            with chart_column:
+                st.plotly_chart(
+                    risk_donut(chart_frame, chart_risk, chart_title),
+                    use_container_width=True,
+                    key=chart_key,
+                    config={"displayModeBar": False},
+                )
+    else:
+        st.info("The risk-percentage charts will appear when the dashboard data is available.")
+
 
 # =============================================================================
 # PAGE 2 — COMBINED OBSERVED/PREDICTED MAP EXPERIENCE
 # =============================================================================
 
 elif page == "Explore the map":
+    st.html(
+        """
+        <style>
+          .block-container {
+            width:100% !important;
+            max-width:none !important;
+            padding-left:.55rem !important;
+            padding-right:.55rem !important;
+          }
+        </style>
+        """
+    )
     section_header(
         "Explore spill locations across England",
         "Start with every mapped outlet, then choose a cluster, town, water company or risk level.",
@@ -1887,7 +2110,7 @@ elif page == "Explore the map":
 
             st_folium(
                 map_object,
-                height=900,
+                height=1020,
                 use_container_width=True,
                 returned_objects=[],
                 key=f"edm_{'forecast' if prediction else 'recorded'}_{display_style}",
@@ -2316,6 +2539,18 @@ elif page == "Places and companies":
 # =============================================================================
 
 elif page == "2026 predictions":
+    st.html(
+        """
+        <style>
+          .block-container {
+            width:100% !important;
+            max-width:none !important;
+            padding-left:.55rem !important;
+            padding-right:.55rem !important;
+          }
+        </style>
+        """
+    )
     section_header(
         "Predicted 2026 spill risks and affected locations",
         "Explore the forecast by risk, town or city, water company and exact mapped outlet.",
@@ -2466,7 +2701,7 @@ elif page == "2026 predictions":
                     )
                 st_folium(
                     forecast_map,
-                    height=860,
+                    height=980,
                     use_container_width=True,
                     returned_objects=[],
                     key="dedicated_2026_prediction_map",
@@ -2835,7 +3070,7 @@ st.html(
     """
     <div style="margin-top:2.5rem;padding-top:1rem;border-top:1px solid rgba(55,120,110,.18);
                 color:#5D7772;font-size:.78rem;text-align:center;">
-      England EDM Water &amp; Spill-Risk Observatory · verified evidence, transparent forecasts and responsible interpretation
+      Sewage Overflow Insights · verified evidence, transparent forecasts and responsible interpretation
     </div>
     """,
 )
