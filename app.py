@@ -15,7 +15,7 @@ from folium.plugins import FastMarkerCluster, Fullscreen, HeatMap, MeasureContro
 from streamlit_folium import st_folium
 
 
-DASHBOARD_RELEASE = "2026-08-12-pastel-blue-sidebar-v10"
+DASHBOARD_RELEASE = "2026-08-12-icon-free-sidebar-v11"
 
 
 # =============================================================================
@@ -1432,13 +1432,13 @@ def render_page_cards():
         """
     )
     destinations = [
-        ("Open map", "💧 Explore the map"),
-        ("Priority list", "💧 Priority locations"),
-        ("Compare", "💧 Places and companies"),
-        ("2026 forecast", "💧 2026 predictions"),
-        ("Water quality", "💧 Water quality"),
-        ("Find a site", "💧 Check one location"),
-        ("Evidence", "💧 About the evidence"),
+        ("Open map", "Explore the map"),
+        ("Priority list", "Priority locations"),
+        ("Compare", "Places and companies"),
+        ("2026 forecast", "2026 predictions"),
+        ("Water quality", "Water quality"),
+        ("Find a site", "Check one location"),
+        ("Evidence", "About the evidence"),
     ]
     for column, (button_text, destination) in zip(st.columns(7), destinations):
         with column:
@@ -2621,14 +2621,14 @@ if reduce_motion:
     )
 
 PAGES = [
-    "💧 Start here",
-    "💧 Explore the map",
-    "💧 Priority locations",
-    "💧 Places and companies",
-    "💧 2026 predictions",
-    "💧 Water quality",
-    "💧 Check one location",
-    "💧 About the evidence",
+    "Start here",
+    "Explore the map",
+    "Priority locations",
+    "Places and companies",
+    "2026 predictions",
+    "Water quality",
+    "Check one location",
+    "About the evidence",
 ]
 
 st.sidebar.markdown("---")
@@ -2646,7 +2646,7 @@ st.sidebar.html(
     """
 )
 
-page = page_label.split(" ", 1)[1]
+page = page_label
 
 
 # =============================================================================
