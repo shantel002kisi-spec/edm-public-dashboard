@@ -15,7 +15,7 @@ from folium.plugins import FastMarkerCluster, Fullscreen, HeatMap, MeasureContro
 from streamlit_folium import st_folium
 
 
-DASHBOARD_RELEASE = "2026-08-11-full-redesign-v2"
+DASHBOARD_RELEASE = "2026-08-11-map-panels-v3"
 
 
 # =============================================================================
@@ -1409,11 +1409,24 @@ def add_colab_map_panels(
       .edm-map-panel {{position:fixed;top:12px;z-index:9999;width:300px;max-height:86vh;
         overflow:auto;padding:12px;background:rgba(251,253,249,.96);color:#173D3A;
         border:1px solid #AFCFC6;border-radius:14px;box-shadow:0 7px 25px rgba(28,77,70,.19);
-        font:12px/1.38 'Atkinson Hyperlegible',Verdana,Arial,sans-serif;}}
+        font:12px/1.38 'Atkinson Hyperlegible',Verdana,Arial,sans-serif;
+        transition:transform .28s ease,opacity .22s ease;}}
       #edm-map-left {{left:12px;height:calc(86vh - 24px);overflow:hidden;display:flex;flex-direction:column;}}
       #edm-map-right {{right:12px;top:12px;bottom:auto;}}
       .edm-map-title {{margin:-12px -12px 8px;padding:10px 12px;border-radius:13px 13px 0 0;
-        color:#173D3A;background:linear-gradient(120deg,#CFEAE3,#DDEFF4);font-size:16px;font-weight:800;}}
+        color:#173D3A;background:linear-gradient(120deg,#CFEAE3,#DDEFF4);font-size:16px;font-weight:800;
+        display:flex;align-items:center;justify-content:space-between;gap:8px;}}
+      .edm-panel-close {{display:inline-flex;align-items:center;justify-content:center;width:28px;height:28px;
+        flex:0 0 28px;padding:0;border:1px solid rgba(40,100,93,.20);border-radius:50%;cursor:pointer;
+        background:rgba(255,255,255,.78);color:#245B61;font-size:18px;font-weight:800;line-height:1;}}
+      .edm-panel-close:hover,.edm-panel-close:focus {{background:#FFFFFF;box-shadow:0 3px 9px rgba(28,77,70,.14);}}
+      #edm-panel-toggle {{display:none;position:fixed;top:12px;left:12px;z-index:10001;padding:9px 13px;
+        border:1px solid #8FBDB2;border-radius:999px;background:rgba(251,253,249,.97);color:#173D3A;
+        box-shadow:0 6px 18px rgba(28,77,70,.20);cursor:pointer;font:700 12px/1.2 'Atkinson Hyperlegible',Verdana,Arial,sans-serif;}}
+      #edm-panel-toggle:hover,#edm-panel-toggle:focus {{background:#EAF6F0;}}
+      body.edm-panels-hidden #edm-map-left {{transform:translateX(calc(-100% - 24px));opacity:0;pointer-events:none;}}
+      body.edm-panels-hidden #edm-map-right {{transform:translateX(calc(100% + 24px));opacity:0;pointer-events:none;}}
+      body.edm-panels-hidden #edm-panel-toggle {{display:inline-flex;align-items:center;gap:6px;}}
       .edm-map-period {{margin:5px 0 8px;padding:5px 7px;border-radius:8px;background:#FFFFFF;
         color:#446862;font-size:11px;font-weight:700;}}
       .edm-map-legend {{display:grid;grid-template-columns:repeat(3,1fr);gap:4px;margin:7px 0;}}
@@ -1463,8 +1476,12 @@ def add_colab_map_panels(
         #edm-map-left{{height:calc(86vh - 24px);}}
         #edm-map-right{{top:12px;bottom:auto;}}}}
     </style>
+    <button id="edm-panel-toggle" type="button" aria-label="Show the map filters and rankings">
+      &#9776; Show filters and rankings
+    </button>
     <aside id="edm-map-left" class="edm-map-panel" aria-label="Town and city directory">
-      <div class="edm-map-title">{map_title}</div>
+      <div class="edm-map-title"><span>{map_title}</span>
+      <button class="edm-panel-close" type="button" data-edm-hide-panels aria-label="Hide the map panels">&times;</button></div>
       <div class="edm-map-period">{period_text}</div>
       <div class="edm-map-legend">
         <div style="color:#357A63;">&#9679; Low<br>{int(risk_counts['Low']):,}</div>
@@ -1483,7 +1500,8 @@ def add_colab_map_panels(
       <div id="edm-place-results"></div>
     </aside>
     <aside id="edm-map-right" class="edm-map-panel" aria-label="Water company ranking">
-      <div class="edm-map-title">Water-company ranking</div>
+      <div class="edm-map-title"><span>Water-company ranking</span>
+      <button class="edm-panel-close" type="button" data-edm-hide-panels aria-label="Hide the map panels">&times;</button></div>
       <div class="edm-map-period">High-risk locations first</div>
       <div class="edm-place-detail" style="margin-bottom:6px;">Select a company to view its recorded spill trend.</div>
       <div id="edm-company-trend" aria-live="polite"></div>
@@ -1528,6 +1546,15 @@ def add_colab_map_panels(
     var edmCompanyTrends={company_trend_json};
     var edmMap={map_name};
     var edmFocusMarker=null;
+    var edmPanelsManuallyHidden=false;
+    function edmHidePanels(manual){{
+      document.body.classList.add('edm-panels-hidden');
+      if(manual)edmPanelsManuallyHidden=true;
+    }}
+    function edmShowPanels(){{
+      edmPanelsManuallyHidden=false;
+      document.body.classList.remove('edm-panels-hidden');
+    }}
     function edmEscape(value){{var n=document.createElement('div');n.textContent=value||'';return n.innerHTML;}}
     function edmNumber(value,decimals){{
       if(value===null||value===undefined||Number.isNaN(Number(value)))return 'Not reported';
@@ -1609,6 +1636,14 @@ def add_colab_map_panels(
     document.getElementById('edm-company-filter').addEventListener('change',edmRenderPlaces);
     document.querySelectorAll('.edm-company-trend-button').forEach(function(button){{
       button.addEventListener('click',function(){{edmShowCompanyTrend(button.dataset.company);}});
+    }});
+    document.querySelectorAll('[data-edm-hide-panels]').forEach(function(button){{
+      button.addEventListener('click',function(){{edmHidePanels(true);}});
+    }});
+    document.getElementById('edm-panel-toggle').addEventListener('click',edmShowPanels);
+    edmMap.on('popupopen',function(){{edmHidePanels(false);}});
+    edmMap.on('popupclose',function(){{
+      if(!edmPanelsManuallyHidden)window.setTimeout(edmShowPanels,120);
     }});
     window.setTimeout(edmRenderPlaces,0);
     """
