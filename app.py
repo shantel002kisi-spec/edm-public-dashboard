@@ -15,7 +15,7 @@ from folium.plugins import FastMarkerCluster, Fullscreen, HeatMap, MeasureContro
 from streamlit_folium import st_folium
 
 
-DASHBOARD_RELEASE = "2026-08-12-combined-sewer-hero-v8"
+DASHBOARD_RELEASE = "2026-08-12-simple-sewer-image-v9"
 
 
 # =============================================================================
@@ -514,6 +514,183 @@ st.markdown(
         font-size: 10px;
         font-weight: 850;
         text-align: center;
+      }
+
+      /* Static, label-free combined-sewer illustration used in the hero. */
+      .edm-simple-sewer-art {
+        position: relative;
+        width: 100%;
+        height: 310px;
+        overflow: hidden;
+        border: 1px solid rgba(53,112,104,.18);
+        border-radius: 22px;
+        background: linear-gradient(to bottom, #EAF8FC 0 46%, #E7DDC9 46% 100%);
+      }
+
+      .edm-simple-house {
+        position: absolute;
+        z-index: 5;
+        width: 78px;
+        height: 58px;
+        border: 3px solid #54746F;
+        border-radius: 5px 5px 2px 2px;
+        background: #FFF8E8;
+      }
+
+      .edm-simple-house::before {
+        content: "";
+        position: absolute;
+        left: 7px;
+        top: -31px;
+        width: 58px;
+        height: 58px;
+        border-top: 3px solid #54746F;
+        border-left: 3px solid #54746F;
+        background: #CFA99E;
+        transform: rotate(45deg);
+        z-index: -1;
+      }
+
+      .edm-simple-house-a { left: 8%; top: 75px; }
+      .edm-simple-house-b { left: 35%; top: 91px; transform: scale(.82); }
+
+      .edm-simple-window {
+        position: absolute;
+        left: 10px;
+        top: 15px;
+        width: 19px;
+        height: 18px;
+        border: 2px solid #54746F;
+        background: #C9E7ED;
+      }
+
+      .edm-simple-door {
+        position: absolute;
+        right: 9px;
+        bottom: 0;
+        width: 19px;
+        height: 32px;
+        border: 2px solid #54746F;
+        background: #DCEDE5;
+      }
+
+      .edm-simple-ground {
+        position: absolute;
+        z-index: 3;
+        top: 144px;
+        left: 0;
+        right: 0;
+        height: 34px;
+        border-top: 5px solid #94B58D;
+        border-bottom: 4px solid #768885;
+        background: #AEBBB8;
+      }
+
+      .edm-simple-drain {
+        position: absolute;
+        z-index: 7;
+        left: 54%;
+        top: 150px;
+        width: 40px;
+        height: 12px;
+        border-radius: 3px;
+        background: repeating-linear-gradient(90deg, #344D4A 0 3px, #91A39F 3px 7px);
+      }
+
+      .edm-simple-connector {
+        position: absolute;
+        z-index: 4;
+        width: 15px;
+        border: 4px solid #586B68;
+        background: #DDE6E2;
+      }
+
+      .edm-simple-connector-a { left: 22%; top: 128px; height: 94px; }
+      .edm-simple-connector-b { left: 44%; top: 137px; height: 85px; }
+      .edm-simple-connector-c { left: 57%; top: 160px; height: 62px; }
+
+      .edm-static-main-pipe {
+        position: absolute;
+        z-index: 6;
+        left: 7%;
+        top: 210px;
+        width: 68%;
+        height: 48px;
+        overflow: hidden;
+        border: 6px solid #586B68;
+        border-radius: 26px;
+        background: #ECF1EF;
+        box-shadow: 0 5px 10px rgba(62,77,73,.13);
+      }
+
+      .edm-static-main-water {
+        position: absolute;
+        left: 5px;
+        right: 5px;
+        bottom: 5px;
+        height: 13px;
+        border-radius: 9px;
+        background: #9CCFD8;
+      }
+
+      .edm-static-chamber {
+        position: absolute;
+        z-index: 8;
+        left: 69%;
+        top: 197px;
+        width: 46px;
+        height: 73px;
+        border: 5px solid #526A66;
+        border-radius: 9px 9px 19px 19px;
+        background: linear-gradient(to bottom, #EDF3F1 0 52%, #A7C9C5 52% 100%);
+      }
+
+      .edm-static-outfall-pipe {
+        position: absolute;
+        z-index: 7;
+        left: 75%;
+        top: 238px;
+        width: 118px;
+        height: 26px;
+        overflow: hidden;
+        border: 5px solid #586B68;
+        border-radius: 14px;
+        background: #E7ECEA;
+        transform: rotate(16deg);
+        transform-origin: left center;
+      }
+
+      .edm-outfall-stain {
+        position: absolute;
+        right: -4px;
+        bottom: 3px;
+        width: 65%;
+        height: 11px;
+        border-radius: 8px;
+        background: linear-gradient(90deg, rgba(139,90,60,.18), #8B5A3C 72%);
+      }
+
+      .edm-static-receiving-water {
+        position: absolute;
+        z-index: 5;
+        right: -20px;
+        bottom: -20px;
+        width: 170px;
+        height: 80px;
+        overflow: hidden;
+        border: 5px solid rgba(62,145,167,.34);
+        border-radius: 60% 40% 0 0;
+        background: repeating-linear-gradient(165deg, #A8DDE5 0 18px, #79C3D1 18px 34px);
+      }
+
+      .edm-water-stain {
+        position: absolute;
+        left: 8px;
+        top: 7px;
+        width: 74px;
+        height: 34px;
+        border-radius: 50%;
+        background: radial-gradient(ellipse at left, rgba(139,90,60,.62), rgba(139,90,60,.20) 55%, transparent 76%);
       }
 
       .edm-hero-badges {
@@ -1185,29 +1362,25 @@ def render_hero():
           </div>
           <div class="edm-water-art">
             <div
-              class="edm-sewer-diagram"
+              class="edm-simple-sewer-art"
               role="img"
-              aria-label="Combined sewer diagram. Rainwater and household wastewater enter one pipe. Normal flow continues to treatment works, while excess flow is discharged through an overflow pipe into receiving water. The overflow discharge is shown in brown."
+              aria-label="Static combined sewer illustration showing connected underground pipes, an outfall pipe and slight brown discolouration where the outfall reaches receiving water."
             >
-              <div class="edm-diagram-title">How a combined sewer overflow happens</div>
-              <span class="edm-hero-raindrop r1">💧</span>
-              <span class="edm-hero-raindrop r2">💧</span>
-              <span class="edm-hero-raindrop r3">💧</span>
-              <span class="edm-hero-raindrop r4">💧</span>
-              <span class="edm-hero-raindrop r5">💧</span>
-              <div class="edm-house"><span class="edm-door"></span></div>
-              <div class="edm-road"></div>
-              <div class="edm-drain" aria-hidden="true"></div>
-              <div class="edm-house-connector" aria-hidden="true"></div>
-              <div class="edm-drain-connector" aria-hidden="true"></div>
-              <div class="edm-main-pipe"><div class="edm-main-flow"></div></div>
-              <div class="edm-main-pipe-label">Combined sewer</div>
-              <div class="edm-overflow-chamber"><span>Overflow chamber</span></div>
-              <div class="edm-overflow-pipe" aria-hidden="true"></div>
-              <div class="edm-discharge-label">Brown overflow discharge</div>
-              <div class="edm-treatment-route" aria-hidden="true"></div>
-              <div class="edm-treatment">Normal flow → treatment works</div>
-              <div class="edm-river"><span>Receiving water</span></div>
+              <div class="edm-simple-house edm-simple-house-a">
+                <span class="edm-simple-window"></span><span class="edm-simple-door"></span>
+              </div>
+              <div class="edm-simple-house edm-simple-house-b">
+                <span class="edm-simple-window"></span><span class="edm-simple-door"></span>
+              </div>
+              <div class="edm-simple-ground"></div>
+              <div class="edm-simple-drain"></div>
+              <div class="edm-simple-connector edm-simple-connector-a"></div>
+              <div class="edm-simple-connector edm-simple-connector-b"></div>
+              <div class="edm-simple-connector edm-simple-connector-c"></div>
+              <div class="edm-static-main-pipe"><div class="edm-static-main-water"></div></div>
+              <div class="edm-static-chamber"></div>
+              <div class="edm-static-outfall-pipe"><div class="edm-outfall-stain"></div></div>
+              <div class="edm-static-receiving-water"><div class="edm-water-stain"></div></div>
             </div>
           </div>
         </section>
