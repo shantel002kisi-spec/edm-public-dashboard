@@ -15,7 +15,7 @@ from folium.plugins import FastMarkerCluster, Fullscreen, HeatMap, MeasureContro
 from streamlit_folium import st_folium
 
 
-DASHBOARD_RELEASE = "2026-08-12-icon-free-sidebar-v11"
+DASHBOARD_RELEASE = "2026-08-12-improvement-change-page-v12"
 
 
 # =============================================================================
@@ -1412,6 +1412,10 @@ def render_page_cards():
             <div class="edm-page-icon">💧</div><h3>Places &amp; companies</h3>
             <p>Simple rankings and yearly patterns.</p>
           </div>
+          <div class="edm-page-card" style="--page-tint:#FFF1D8;">
+            <div class="edm-page-icon">💧</div><h3>Improvements &amp; changes</h3>
+            <p>See where counted spills rose or fell.</p>
+          </div>
           <div class="edm-page-card" style="--page-tint:#F0EAF6;">
             <div class="edm-page-icon">💧</div><h3>2026 predictions</h3>
             <p>Forecast risks and affected locations.</p>
@@ -1435,21 +1439,26 @@ def render_page_cards():
         ("Open map", "Explore the map"),
         ("Priority list", "Priority locations"),
         ("Compare", "Places and companies"),
+        ("Changes", "Improvements and changes"),
         ("2026 forecast", "2026 predictions"),
         ("Water quality", "Water quality"),
         ("Find a site", "Check one location"),
         ("Evidence", "About the evidence"),
     ]
-    for column, (button_text, destination) in zip(st.columns(7), destinations):
-        with column:
-            st.button(
-                button_text,
-                key=f"home_{destination}",
-                use_container_width=True,
-                on_click=lambda target=destination: st.session_state.update(
-                    sidebar_navigation=target
-                ),
-            )
+    for row_start in range(0, len(destinations), 4):
+        row_destinations = destinations[row_start:row_start + 4]
+        for column, (button_text, destination) in zip(
+            st.columns(4), row_destinations
+        ):
+            with column:
+                st.button(
+                    button_text,
+                    key=f"home_{destination}",
+                    use_container_width=True,
+                    on_click=lambda target=destination: st.session_state.update(
+                        sidebar_navigation=target
+                    ),
+                )
 
 
 def render_sewer_story():
@@ -2625,6 +2634,7 @@ PAGES = [
     "Explore the map",
     "Priority locations",
     "Places and companies",
+    "Improvements and changes",
     "2026 predictions",
     "Water quality",
     "Check one location",
@@ -3282,7 +3292,577 @@ elif page == "Places and companies":
 
 
 # =============================================================================
-# PAGE 5 — 2026 PREDICTIONS AND AFFECTED LOCATIONS
+# PAGE 5 — IMPROVEMENTS AND RECORDED CHANGES
+# =============================================================================
+
+elif page == "Improvements and changes":
+    section_header(
+        "Where did recorded spills and risk improve?",
+        "Compare water companies, then explore every available town, city and receiving-water outlet.",
+    )
+    banner(
+        "A decrease means the recorded 2025 result is lower than the same-location "
+        "2023–2024 average. These figures describe recorded change; they do not prove why it happened.",
+        icon="↕",
+        background="#EDF7F3",
+        edge="#62A887",
+    )
+
+    company_change_tab, town_change_tab, water_change_tab = st.tabs(
+        [
+            "Water-company improvement",
+            "Towns and cities",
+            "Receiving-water locations",
+        ]
+    )
+
+    with company_change_tab:
+        company_changes = load_table("company_improvement_results")
+
+        # A transparent fallback keeps the page usable during deployment. The
+        # common-location Colab export replaces this descriptive annual result.
+        if company_changes.empty:
+            annual_fallback = load_table("annual_company_trends")
+            fallback_rows = []
+            required_risk_columns = {
+                "water_company_name",
+                "reporting_year",
+                "low_risk_unique_locations",
+                "medium_risk_unique_locations",
+                "high_risk_unique_locations",
+            }
+            if required_risk_columns.issubset(annual_fallback.columns):
+                annual_fallback = annual_fallback.copy()
+                annual_fallback["reporting_year"] = pd.to_numeric(
+                    annual_fallback["reporting_year"], errors="coerce"
+                )
+                for company_name, company_rows in annual_fallback.groupby(
+                    "water_company_name"
+                ):
+                    yearly_percentages = {}
+                    yearly_totals = {}
+                    for year in [2023, 2024, 2025]:
+                        row_match = company_rows.loc[
+                            company_rows["reporting_year"].eq(year)
+                        ]
+                        if row_match.empty:
+                            continue
+                        row = row_match.iloc[0]
+                        low = pd.to_numeric(row.get("low_risk_unique_locations"), errors="coerce")
+                        medium = pd.to_numeric(row.get("medium_risk_unique_locations"), errors="coerce")
+                        high = pd.to_numeric(row.get("high_risk_unique_locations"), errors="coerce")
+                        total = low + medium + high
+                        if pd.notna(total) and total > 0:
+                            yearly_percentages[year] = (medium + high) / total * 100
+                            yearly_totals[year] = total
+                    if all(year in yearly_percentages for year in [2023, 2024, 2025]):
+                        baseline = np.mean(
+                            [yearly_percentages[2023], yearly_percentages[2024]]
+                        )
+                        fallback_rows.append(
+                            {
+                                "water_company_name": company_name,
+                                "common_locations": yearly_totals[2025],
+                                "baseline_medium_high_percent": baseline,
+                                "medium_high_percent_2025": yearly_percentages[2025],
+                                "risk_improvement_percentage_points": (
+                                    baseline - yearly_percentages[2025]
+                                ),
+                            }
+                        )
+            company_changes = pd.DataFrame(fallback_rows)
+            if not company_changes.empty:
+                st.caption(
+                    "Temporary descriptive view. Re-run the Colab deployment to use the exact common-location comparison."
+                )
+
+        required_company_columns = {
+            "water_company_name",
+            "baseline_medium_high_percent",
+            "medium_high_percent_2025",
+            "risk_improvement_percentage_points",
+        }
+        if company_changes.empty or not required_company_columns.issubset(
+            company_changes.columns
+        ):
+            st.info(
+                "Run the company-improvement Colab cell and the updated dashboard installer to publish this ranking."
+            )
+        else:
+            company_changes = company_changes.copy()
+            for column in [
+                "baseline_medium_high_percent",
+                "medium_high_percent_2025",
+                "risk_improvement_percentage_points",
+                "common_locations",
+            ]:
+                if column in company_changes.columns:
+                    company_changes[column] = pd.to_numeric(
+                        company_changes[column], errors="coerce"
+                    )
+            company_changes = company_changes.dropna(
+                subset=["risk_improvement_percentage_points"]
+            ).sort_values("risk_improvement_percentage_points")
+
+            best_company = company_changes.iloc[-1]
+            smallest_company = company_changes.iloc[0]
+            metric_cards(
+                [
+                    {
+                        "label": "Greatest improvement",
+                        "value": str(best_company["water_company_name"]),
+                        "note": f"{np.ceil(best_company['risk_improvement_percentage_points']):.0f} percentage-point reduction",
+                        "accent": "#62A887",
+                    },
+                    {
+                        "label": "Smallest improvement",
+                        "value": str(smallest_company["water_company_name"]),
+                        "note": f"{np.ceil(smallest_company['risk_improvement_percentage_points']):.0f} percentage-point change",
+                        "accent": "#EBA35B",
+                    },
+                    {
+                        "label": "Companies compared",
+                        "value": f"{len(company_changes):,}",
+                        "note": "Ranked using Medium/High-risk share",
+                        "accent": "#E8CD6A",
+                    },
+                ]
+            )
+
+            maximum_value = company_changes[
+                "risk_improvement_percentage_points"
+            ].max()
+            minimum_value = company_changes[
+                "risk_improvement_percentage_points"
+            ].min()
+
+            def company_bar_colour(value):
+                if value < 0:
+                    return "#D97A76"
+                if np.isclose(value, maximum_value):
+                    return "#62A887"
+                if np.isclose(value, minimum_value):
+                    return "#EBA35B"
+                return "#E8CD6A"
+
+            company_changes["bar_colour"] = company_changes[
+                "risk_improvement_percentage_points"
+            ].map(company_bar_colour)
+            company_changes["display_change"] = company_changes[
+                "risk_improvement_percentage_points"
+            ].map(lambda value: f"{int(np.ceil(value)):+d} points")
+            company_changes["popup"] = company_changes.apply(
+                lambda row: (
+                    f"<b>{row['water_company_name']}</b><br>"
+                    "Medium/High-risk locations before 2025: "
+                    f"{int(np.ceil(row['baseline_medium_high_percent']))}%<br>"
+                    "Medium/High-risk locations in 2025: "
+                    f"{int(np.ceil(row['medium_high_percent_2025']))}%<br>"
+                    "Improvement: "
+                    f"{int(np.ceil(row['risk_improvement_percentage_points']))} percentage points"
+                ),
+                axis=1,
+            )
+
+            company_figure = go.Figure(
+                go.Bar(
+                    x=company_changes["risk_improvement_percentage_points"],
+                    y=company_changes["water_company_name"],
+                    orientation="h",
+                    marker=dict(
+                        color=company_changes["bar_colour"],
+                        line=dict(color="#FFFFFF", width=1.5),
+                    ),
+                    text=company_changes["display_change"],
+                    textposition="outside",
+                    customdata=company_changes["popup"],
+                    hovertemplate="%{customdata}<extra></extra>",
+                )
+            )
+            company_figure.update_layout(
+                title="Reduction in Medium/High-risk locations by 2025",
+                xaxis_title="Improvement from the 2023–2024 average (percentage points)",
+                yaxis_title="",
+                height=max(560, 55 * len(company_changes)),
+                margin=dict(l=175, r=100, t=85, b=85),
+                showlegend=False,
+            )
+            company_figure.add_vline(x=0, line_color="#5D7772", line_width=1)
+            st.plotly_chart(
+                plot_style(company_figure, max(560, 55 * len(company_changes))),
+                use_container_width=True,
+            )
+            st.caption(
+                "Green = greatest improvement · Yellow = improvement · Orange = smallest improvement · Red = increase."
+            )
+
+            company_table = company_changes[
+                [
+                    "water_company_name",
+                    "baseline_medium_high_percent",
+                    "medium_high_percent_2025",
+                    "risk_improvement_percentage_points",
+                ]
+            ].sort_values("risk_improvement_percentage_points", ascending=False)
+            company_table.columns = [
+                "Water company",
+                "2023–2024 Medium/High average (%)",
+                "2025 Medium/High (%)",
+                "Improvement (percentage points)",
+            ]
+            st.dataframe(
+                company_table.round(0), use_container_width=True, hide_index=True
+            )
+
+    with town_change_tab:
+        town_changes = load_table("town_trends")
+        required_town_columns = {
+            "official_place_name",
+            "counted_spills_2023",
+            "counted_spills_2024",
+            "counted_spills_2025",
+        }
+        if town_changes.empty or not required_town_columns.issubset(
+            town_changes.columns
+        ):
+            st.info("The town/city change export is unavailable.")
+        else:
+            town_changes = town_changes.copy()
+            for column in [
+                "counted_spills_2023",
+                "counted_spills_2024",
+                "counted_spills_2025",
+            ]:
+                town_changes[column] = pd.to_numeric(
+                    town_changes[column], errors="coerce"
+                )
+            town_changes["average_before_2025"] = town_changes[
+                ["counted_spills_2023", "counted_spills_2024"]
+            ].mean(axis=1)
+            town_changes["change_to_2025"] = (
+                town_changes["counted_spills_2025"]
+                - town_changes["average_before_2025"]
+            )
+            town_changes["change_percent"] = np.where(
+                town_changes["average_before_2025"].gt(0),
+                town_changes["change_to_2025"]
+                / town_changes["average_before_2025"]
+                * 100,
+                np.nan,
+            )
+            town_changes["Direction"] = np.select(
+                [
+                    town_changes["change_to_2025"].lt(0),
+                    town_changes["change_to_2025"].gt(0),
+                ],
+                ["Decreased", "Increased"],
+                default="Stayed the same",
+            )
+            direction_filter = st.segmented_control(
+                "Show towns and cities where counted spills:",
+                ["All", "Decreased", "Increased", "Stayed the same"],
+                default="All",
+                key="town_change_direction",
+            )
+            town_options_frame = town_changes
+            if direction_filter and direction_filter != "All":
+                town_options_frame = town_changes.loc[
+                    town_changes["Direction"].eq(direction_filter)
+                ]
+            town_options = available_values(
+                town_options_frame, "official_place_name"
+            )
+            if not town_options:
+                st.info("No towns or cities match that change category.")
+            else:
+                selected_town = st.selectbox(
+                    "Choose any town or city",
+                    town_options,
+                    key="town_change_place",
+                )
+                town_row = town_options_frame.loc[
+                    town_options_frame["official_place_name"]
+                    .astype(str)
+                    .eq(selected_town)
+                ].iloc[0]
+                town_direction = str(town_row["Direction"])
+                town_colour = {
+                    "Decreased": "#62A887",
+                    "Increased": "#D97A76",
+                    "Stayed the same": "#EBA35B",
+                }[town_direction]
+                if pd.notna(town_row["change_percent"]):
+                    change_size = int(np.ceil(abs(town_row["change_percent"])))
+                    town_change_text = (
+                        f"{change_size}% fewer"
+                        if town_direction == "Decreased"
+                        else f"{change_size}% more"
+                        if town_direction == "Increased"
+                        else "No change"
+                    )
+                else:
+                    town_change_text = town_direction
+                metric_cards(
+                    [
+                        {
+                            "label": "Town or city",
+                            "value": selected_town,
+                            "note": str(town_row.get("water_companies", "Company not recorded")),
+                            "accent": "#B7DDE5",
+                        },
+                        {
+                            "label": "Recorded direction",
+                            "value": town_direction,
+                            "note": town_change_text,
+                            "accent": town_colour,
+                        },
+                        {
+                            "label": "2025 counted spills",
+                            "value": value_text(town_row["counted_spills_2025"]),
+                            "note": "Counted events—not spill volume",
+                            "accent": "#E8CD6A",
+                        },
+                    ]
+                )
+                town_figure_data = pd.DataFrame(
+                    {
+                        "Year": [2023, 2024, 2025],
+                        "Counted spills": [
+                            town_row["counted_spills_2023"],
+                            town_row["counted_spills_2024"],
+                            town_row["counted_spills_2025"],
+                        ],
+                    }
+                )
+                town_figure = go.Figure(
+                    go.Scatter(
+                        x=town_figure_data["Year"],
+                        y=town_figure_data["Counted spills"],
+                        mode="lines+markers+text",
+                        text=town_figure_data["Counted spills"].map(
+                            lambda value: value_text(value)
+                        ),
+                        textposition="top center",
+                        line=dict(color=town_colour, width=6, shape="spline"),
+                        marker=dict(size=16, color=["#C9DCE5", "#B8D8D1", town_colour]),
+                        fill="tozeroy",
+                        fillcolor=f"{town_colour}22",
+                        hovertemplate="%{x}: %{y:,.0f} counted spills<extra></extra>",
+                    )
+                )
+                town_figure.update_layout(
+                    title=f"Recorded counted-spill change · {selected_town}",
+                    xaxis_title="Year",
+                    yaxis_title="Counted spills",
+                    height=470,
+                    showlegend=False,
+                )
+                town_figure.update_xaxes(dtick=1)
+                st.plotly_chart(
+                    plot_style(town_figure, 470), use_container_width=True
+                )
+
+            town_change_table = town_changes[
+                [
+                    "official_place_name",
+                    "water_companies",
+                    "counted_spills_2023",
+                    "counted_spills_2024",
+                    "counted_spills_2025",
+                    "Direction",
+                    "change_percent",
+                ]
+            ].copy()
+            town_change_table.columns = [
+                "Town or city",
+                "Water company",
+                "2023",
+                "2024",
+                "2025",
+                "Change",
+                "Change (%)",
+            ]
+            town_change_table["Change (%)"] = town_change_table[
+                "Change (%)"
+            ].round(0)
+            with st.expander("View every town and city"):
+                st.dataframe(
+                    town_change_table,
+                    use_container_width=True,
+                    hide_index=True,
+                )
+
+    with water_change_tab:
+        water_changes = load_table("receiving_water_changes")
+        required_water_columns = {
+            "location_id",
+            "water_company_name",
+            "site_name",
+            "receiving_water",
+            "official_place_name",
+            "counted_spills_2023",
+            "counted_spills_2024",
+            "counted_spills_2025",
+            "spill_direction",
+        }
+        if water_changes.empty or not required_water_columns.issubset(
+            water_changes.columns
+        ):
+            st.info(
+                "Run the updated company-improvement cell and dashboard installer to publish receiving-water changes."
+            )
+        else:
+            water_changes = water_changes.copy()
+            for column in [
+                "counted_spills_2023",
+                "counted_spills_2024",
+                "counted_spills_2025",
+                "spill_change_percent",
+            ]:
+                if column in water_changes.columns:
+                    water_changes[column] = pd.to_numeric(
+                        water_changes[column], errors="coerce"
+                    )
+            water_changes["Display location"] = water_changes.apply(
+                lambda row: (
+                    f"{safe_text(row.get('receiving_water'), 'Receiving water not recorded')} — "
+                    f"{safe_text(row.get('site_name'), 'Site not recorded')} — "
+                    f"{safe_text(row.get('official_place_name'), 'Place not recorded')}"
+                ),
+                axis=1,
+            )
+            water_direction = st.segmented_control(
+                "Show receiving-water locations where counted spills:",
+                ["All", "Decreased", "Increased", "No change"],
+                default="All",
+                key="water_change_direction",
+            )
+            water_options_frame = water_changes
+            if water_direction and water_direction != "All":
+                water_options_frame = water_changes.loc[
+                    water_changes["spill_direction"].astype(str).eq(water_direction)
+                ]
+            water_options = available_values(
+                water_options_frame, "Display location"
+            )
+            if not water_options:
+                st.info("No receiving-water locations match that change category.")
+            else:
+                selected_water = st.selectbox(
+                    "Choose a receiving-water location",
+                    water_options,
+                    key="receiving_water_change_location",
+                )
+                water_row = water_options_frame.loc[
+                    water_options_frame["Display location"]
+                    .astype(str)
+                    .eq(selected_water)
+                ].iloc[0]
+                water_result = str(water_row["spill_direction"])
+                water_colour = {
+                    "Decreased": "#62A887",
+                    "Increased": "#D97A76",
+                    "No change": "#EBA35B",
+                }.get(water_result, "#68AFC2")
+                water_change_value = pd.to_numeric(
+                    water_row.get("spill_change_percent"), errors="coerce"
+                )
+                if pd.notna(water_change_value):
+                    water_change_note = (
+                        f"{int(np.ceil(abs(water_change_value)))}% "
+                        + ("fewer" if water_change_value < 0 else "more")
+                        if not np.isclose(water_change_value, 0)
+                        else "No change"
+                    )
+                else:
+                    water_change_note = "Percentage unavailable"
+                metric_cards(
+                    [
+                        {
+                            "label": "Receiving water",
+                            "value": str(water_row["receiving_water"]),
+                            "note": str(water_row["site_name"]),
+                            "accent": "#B7DDE5",
+                        },
+                        {
+                            "label": "Nearest town or city",
+                            "value": str(water_row["official_place_name"]),
+                            "note": str(water_row["water_company_name"]),
+                            "accent": "#C9DDE8",
+                        },
+                        {
+                            "label": "Recorded direction",
+                            "value": water_result,
+                            "note": water_change_note,
+                            "accent": water_colour,
+                        },
+                    ]
+                )
+                water_figure_data = pd.DataFrame(
+                    {
+                        "Year": [2023, 2024, 2025],
+                        "Counted spills": [
+                            water_row["counted_spills_2023"],
+                            water_row["counted_spills_2024"],
+                            water_row["counted_spills_2025"],
+                        ],
+                    }
+                )
+                water_figure = go.Figure(
+                    go.Bar(
+                        x=water_figure_data["Year"],
+                        y=water_figure_data["Counted spills"],
+                        marker_color=["#C9DCE5", "#E8CD6A", water_colour],
+                        text=water_figure_data["Counted spills"].map(
+                            lambda value: value_text(value)
+                        ),
+                        textposition="outside",
+                        hovertemplate="%{x}: %{y:,.0f} counted spills<extra></extra>",
+                    )
+                )
+                water_figure.update_layout(
+                    title=f"Recorded counted spills · {water_row['receiving_water']}",
+                    xaxis_title="Year",
+                    yaxis_title="Counted spills",
+                    height=470,
+                    showlegend=False,
+                )
+                water_figure.update_xaxes(dtick=1)
+                st.plotly_chart(
+                    plot_style(water_figure, 470), use_container_width=True
+                )
+
+            water_table_columns = [
+                "receiving_water",
+                "site_name",
+                "official_place_name",
+                "water_company_name",
+                "counted_spills_2023",
+                "counted_spills_2024",
+                "counted_spills_2025",
+                "spill_direction",
+            ]
+            with st.expander("View every receiving-water location"):
+                st.dataframe(
+                    water_changes[water_table_columns].rename(
+                        columns={
+                            "receiving_water": "Receiving water",
+                            "site_name": "Outlet/site",
+                            "official_place_name": "Nearest town or city",
+                            "water_company_name": "Water company",
+                            "counted_spills_2023": "2023",
+                            "counted_spills_2024": "2024",
+                            "counted_spills_2025": "2025",
+                            "spill_direction": "Change",
+                        }
+                    ),
+                    use_container_width=True,
+                    hide_index=True,
+                )
+
+
+# =============================================================================
+# PAGE 6 — 2026 PREDICTIONS AND AFFECTED LOCATIONS
 # =============================================================================
 
 elif page == "2026 predictions":
