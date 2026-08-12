@@ -4230,6 +4230,319 @@ elif page == "Water quality":
 
     quality = load_table("water_quality_records")
     coverage = load_table("water_quality_coverage")
+    combined_quality = load_table("water_quality_combined_screening")
+    quality_profiles = load_table("water_quality_indicator_profiles")
+
+    if not combined_quality.empty:
+        combined_quality = combined_quality.copy()
+        combined_quality["combined_relative_concern_score"] = pd.to_numeric(
+            combined_quality["combined_relative_concern_score"],
+            errors="coerce",
+        )
+        combined_quality["scored_indicators"] = pd.to_numeric(
+            combined_quality["scored_indicators"],
+            errors="coerce",
+        )
+
+        section_header(
+            "Combined 2025 water-quality screening",
+            "Connect the recorded indicators for each linked outlet and monitoring station, then identify places for investigation.",
+        )
+        banner(
+            "<b>Relative screening—not a pollution verdict:</b> the score compares linked 2025 "
+            "stations with one another. Higher ammonia, phosphate and BOD, and lower dissolved "
+            "oxygen, raise the score. pH and temperature remain visible as context but are not "
+            "forced into the score.",
+            icon="i",
+            background="#EDF7F3",
+            edge="#62A887",
+        )
+
+        scored_quality = combined_quality.loc[
+            combined_quality["scored_indicators"].ge(2)
+            & combined_quality["combined_relative_concern_score"].notna()
+        ].copy()
+        priority_count = int(
+            combined_quality["screening_band"]
+            .astype(str)
+            .eq("Higher relative concern")
+            .sum()
+        )
+        metric_cards(
+            [
+                {
+                    "label": "Linked outlet/station pairs",
+                    "value": value_text(len(combined_quality)),
+                    "note": "With 2025 monitoring evidence",
+                    "accent": "#B7DDE5",
+                },
+                {
+                    "label": "Comparable combined profiles",
+                    "value": value_text(len(scored_quality)),
+                    "note": "At least two directional indicators",
+                    "accent": "#A8D8D0",
+                },
+                {
+                    "label": "Higher relative concern",
+                    "value": value_text(priority_count),
+                    "note": "Priority for investigation—not confirmed harm",
+                    "accent": "#D97A76",
+                },
+                {
+                    "label": "Water companies represented",
+                    "value": value_text(
+                        combined_quality["water_company_name"].nunique()
+                        if "water_company_name" in combined_quality.columns
+                        else 0
+                    ),
+                    "note": "Geographically linked evidence",
+                    "accent": "#CDBDDE",
+                },
+            ]
+        )
+
+        if scored_quality.empty:
+            st.info(
+                "No outlet/station pair has at least two comparable directional indicators. "
+                "The individual measurements remain available below."
+            )
+        else:
+            company_choices = ["All water companies"] + available_values(
+                scored_quality,
+                "water_company_name",
+            )
+            combined_company = st.selectbox(
+                "Filter the combined screening by water company",
+                company_choices,
+                key="combined_quality_company",
+            )
+            combined_view = scored_quality.copy()
+            if combined_company != "All water companies":
+                combined_view = combined_view.loc[
+                    combined_view["water_company_name"]
+                    .astype(str)
+                    .eq(combined_company)
+                ]
+
+            combined_view["display_location"] = combined_view.apply(
+                lambda row: (
+                    f"{safe_text(row.get('site_name'), 'Outlet not recorded')} — "
+                    f"{safe_text(row.get('monitoring_station'), 'Station not recorded')}"
+                ),
+                axis=1,
+            )
+            combined_view["screening_colour"] = combined_view[
+                "screening_band"
+            ].map(
+                {
+                    "Higher relative concern": "#D97A76",
+                    "Closer review": "#E8B867",
+                    "Lower relative concern": "#62A887",
+                }
+            ).fillna("#9AB8C3")
+
+            ranking_view = combined_view.sort_values(
+                "combined_relative_concern_score",
+                ascending=True,
+            ).tail(20)
+            combined_figure = go.Figure(
+                go.Bar(
+                    x=ranking_view["combined_relative_concern_score"],
+                    y=ranking_view["display_location"],
+                    orientation="h",
+                    marker=dict(
+                        color=ranking_view["screening_colour"],
+                        line=dict(color="#FFFFFF", width=1.2),
+                    ),
+                    text=ranking_view["combined_relative_concern_score"].map(
+                        lambda value: f"{value:.0f}/100"
+                    ),
+                    textposition="outside",
+                    customdata=ranking_view[
+                        [
+                            "water_company_name",
+                            "screening_band",
+                            "scored_indicators",
+                            "indicators_measured",
+                        ]
+                    ],
+                    hovertemplate=(
+                        "<b>%{y}</b><br>Company: %{customdata[0]}<br>"
+                        "Relative screening: %{x:.0f}/100<br>"
+                        "Band: %{customdata[1]}<br>"
+                        "Indicators scored: %{customdata[2]:.0f}<br>"
+                        "Indicators measured: %{customdata[3]:.0f}<extra></extra>"
+                    ),
+                )
+            )
+            combined_figure.update_layout(
+                title="Linked locations ranked for closer investigation",
+                xaxis_title="Relative-concern screening score (0–100)",
+                yaxis_title="Linked outlet and monitoring station",
+                height=max(580, 38 * len(ranking_view) + 180),
+                margin=dict(l=250, r=90, t=80, b=75),
+                showlegend=False,
+            )
+            combined_figure.update_xaxes(range=[0, 105])
+            st.plotly_chart(
+                plot_style(
+                    combined_figure,
+                    max(580, 38 * len(ranking_view) + 180),
+                ),
+                use_container_width=True,
+                key="combined_water_quality_ranking",
+                config={"displayModeBar": False},
+            )
+
+            location_options = available_values(
+                combined_view,
+                "display_location",
+            )
+            selected_combined_location = st.selectbox(
+                "Choose a linked location to see all of its 2025 indicators",
+                location_options,
+                key="combined_quality_location",
+            )
+            selected_combined = combined_view.loc[
+                combined_view["display_location"]
+                .astype(str)
+                .eq(selected_combined_location)
+            ].iloc[0]
+            metric_cards(
+                [
+                    {
+                        "label": "Water company",
+                        "value": str(selected_combined["water_company_name"]),
+                        "note": str(selected_combined.get("site_name", "Linked outlet")),
+                        "accent": "#B7DDE5",
+                    },
+                    {
+                        "label": "Linked spill risk",
+                        "value": str(selected_combined.get("linked_spill_risk", "Not available")),
+                        "note": "EDM evidence—not water-quality status",
+                        "accent": "#E8CD6A",
+                    },
+                    {
+                        "label": "Combined relative score",
+                        "value": f"{selected_combined['combined_relative_concern_score']:.0f}/100",
+                        "note": str(selected_combined["screening_band"]),
+                        "accent": str(selected_combined["screening_colour"]),
+                    },
+                    {
+                        "label": "Indicators measured",
+                        "value": value_text(selected_combined["indicators_measured"]),
+                        "note": "All retained in the profile",
+                        "accent": "#CDBDDE",
+                    },
+                ]
+            )
+
+            if not quality_profiles.empty:
+                location_profiles = quality_profiles.loc[
+                    quality_profiles["location_id"]
+                    .astype(str)
+                    .eq(str(selected_combined["location_id"]))
+                    & quality_profiles["monitoring_station"]
+                    .astype(str)
+                    .eq(str(selected_combined["monitoring_station"]))
+                ].copy()
+                for column in [
+                    "median_2025_result",
+                    "relative_concern_percentile",
+                    "exact_measurements",
+                ]:
+                    location_profiles[column] = pd.to_numeric(
+                        location_profiles[column],
+                        errors="coerce",
+                    )
+
+                scored_profiles = location_profiles.loc[
+                    location_profiles["relative_concern_percentile"].notna()
+                ].sort_values("relative_concern_percentile")
+                if not scored_profiles.empty:
+                    profile_figure = go.Figure(
+                        go.Bar(
+                            x=scored_profiles["relative_concern_percentile"],
+                            y=scored_profiles["water_quality_indicator"],
+                            orientation="h",
+                            marker=dict(
+                                color=scored_profiles["relative_concern_percentile"],
+                                colorscale=[
+                                    [0, "#8FC9B2"],
+                                    [.5, "#E8CD6A"],
+                                    [1, "#D97A76"],
+                                ],
+                                cmin=0,
+                                cmax=100,
+                                showscale=False,
+                            ),
+                            text=scored_profiles["relative_concern_percentile"].map(
+                                lambda value: f"{value:.0f}/100"
+                            ),
+                            textposition="outside",
+                            customdata=scored_profiles[
+                                [
+                                    "median_2025_result",
+                                    "reported_unit",
+                                    "exact_measurements",
+                                ]
+                            ],
+                            hovertemplate=(
+                                "<b>%{y}</b><br>Relative concern: %{x:.0f}/100<br>"
+                                "2025 median: %{customdata[0]:.3f} %{customdata[1]}<br>"
+                                "Measurements: %{customdata[2]:.0f}<extra></extra>"
+                            ),
+                        )
+                    )
+                    profile_figure.update_layout(
+                        title="How each directional indicator contributes",
+                        xaxis_title="Relative concern within the linked 2025 sample",
+                        yaxis_title="",
+                        height=max(440, 55 * len(scored_profiles) + 190),
+                        margin=dict(l=220, r=80, t=75, b=70),
+                        showlegend=False,
+                    )
+                    profile_figure.update_xaxes(range=[0, 105])
+                    st.plotly_chart(
+                        plot_style(
+                            profile_figure,
+                            max(440, 55 * len(scored_profiles) + 190),
+                        ),
+                        use_container_width=True,
+                        key="combined_quality_profile",
+                        config={"displayModeBar": False},
+                    )
+
+                profile_table = location_profiles[
+                    [
+                        "water_quality_indicator",
+                        "median_2025_result",
+                        "reported_unit",
+                        "exact_measurements",
+                        "screening_direction",
+                        "relative_concern_percentile",
+                    ]
+                ].rename(
+                    columns={
+                        "water_quality_indicator": "2025 indicator",
+                        "median_2025_result": "Station median",
+                        "reported_unit": "Unit",
+                        "exact_measurements": "Measurements",
+                        "screening_direction": "How it is used",
+                        "relative_concern_percentile": "Relative concern (0–100)",
+                    }
+                )
+                st.dataframe(
+                    profile_table.round(2),
+                    use_container_width=True,
+                    hide_index=True,
+                )
+
+        st.caption(
+            "Use this screening to decide where more monitoring or investigation may be useful. "
+            "It is not an official ecological-status classification, a legal breach assessment, "
+            "or evidence that a nearby outlet or water company caused a measurement."
+        )
 
     if quality.empty:
         st.info("The public 2025 water-quality measurements are not available yet.")
