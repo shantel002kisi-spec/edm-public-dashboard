@@ -15,7 +15,7 @@ from folium.plugins import FastMarkerCluster, Fullscreen, HeatMap, MeasureContro
 from streamlit_folium import st_folium
 
 
-DASHBOARD_RELEASE = "2026-08-12-improvement-change-page-v12"
+DASHBOARD_RELEASE = "2026-08-12-clear-risk-category-charts-v13"
 
 
 # =============================================================================
@@ -1868,7 +1868,12 @@ def plot_style(figure: go.Figure, height=480):
     return figure
 
 
-def risk_donut(frame: pd.DataFrame, risk_column: str, title: str) -> go.Figure:
+def risk_donut(
+    frame: pd.DataFrame,
+    risk_column: str,
+    title: str,
+    centre_label: str,
+) -> go.Figure:
     counts = (
         frame[risk_column]
         .astype("string")
@@ -1891,14 +1896,21 @@ def risk_donut(frame: pd.DataFrame, risk_column: str, title: str) -> go.Figure:
             textfont=dict(size=14, color=INK),
             insidetextorientation="horizontal",
             pull=[0, 0.012, 0.035],
-            hovertemplate="%{label}<br>%{value:,} mapped outlets<br>%{percent}<extra></extra>",
+            hovertemplate=(
+                "%{label} risk category<br>"
+                "%{value:,} discharge outlets<br>"
+                "%{percent}<extra></extra>"
+            ),
         )
     )
     figure.update_layout(
         title=title,
         annotations=[
             dict(
-                text=f"<b>{int(counts.sum()):,}</b><br><span style='font-size:12px'>mapped outlets</span>",
+                text=(
+                    f"<b>{int(counts.sum()):,}</b><br>"
+                    f"<span style='font-size:12px'>{centre_label}</span>"
+                ),
                 x=0.5,
                 y=0.5,
                 showarrow=False,
@@ -2720,7 +2732,8 @@ if page == "Start here":
             (
                 observed_overview,
                 "period_risk_category",
-                "Recorded 2023–2025 risk share",
+                "Recorded risk categories for mapped discharge outlets, 2023–2025",
+                "outlets classified",
                 "home_observed_risk_share",
             )
         )
@@ -2732,7 +2745,8 @@ if page == "Start here":
             (
                 forecast_overview,
                 "predicted_2026_risk",
-                "Predicted 2026 risk share",
+                "Predicted risk categories for mapped discharge outlets, 2026",
+                "outlets forecast",
                 "home_predicted_risk_share",
             )
         )
@@ -2742,10 +2756,21 @@ if page == "Start here":
             st.columns(len(overview_charts)),
             overview_charts,
         ):
-            chart_frame, chart_risk, chart_title, chart_key = chart_details
+            (
+                chart_frame,
+                chart_risk,
+                chart_title,
+                chart_centre_label,
+                chart_key,
+            ) = chart_details
             with chart_column:
                 st.plotly_chart(
-                    risk_donut(chart_frame, chart_risk, chart_title),
+                    risk_donut(
+                        chart_frame,
+                        chart_risk,
+                        chart_title,
+                        chart_centre_label,
+                    ),
                     use_container_width=True,
                     key=chart_key,
                     config={"displayModeBar": False},
