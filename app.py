@@ -779,6 +779,16 @@ st.markdown(
         font-size: .91rem;
       }
 
+      .edm-quality-guide {
+        display: grid;
+        grid-template-columns: repeat(3, minmax(0, 1fr));
+      }
+
+      .edm-quality-flow {
+        display: grid;
+        grid-template-columns: 1fr auto 1fr auto 1fr;
+      }
+
       .edm-metric-grid {
         display: grid;
         grid-template-columns: repeat(4, minmax(0, 1fr));
@@ -1161,6 +1171,9 @@ st.markdown(
         .edm-page-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
         .edm-hero { padding: 1.25rem; border-radius: 18px; }
         .block-container { padding-left: 0.75rem; padding-right: 0.75rem; }
+        .edm-quality-guide, .edm-quality-flow { grid-template-columns: 1fr !important; }
+        .edm-quality-flow > div:nth-child(2),
+        .edm-quality-flow > div:nth-child(4) { transform: rotate(90deg); }
       }
 
       @media (prefers-reduced-motion: reduce) {
@@ -4265,6 +4278,10 @@ elif page == "Water quality":
             quality,
             ["result_as_reported", "result_numeric", "exact_numeric_result"],
         )
+        linked_risk_column = first_existing(
+            quality,
+            ["risk_category", "period_risk_category", "observed_2025_risk"],
+        )
 
         if not parameter_column or not reported_result_column:
             st.warning("The water-quality export is missing its parameter or result column.")
@@ -4386,6 +4403,76 @@ elif page == "Water quality":
             )
             exact_results = int(filtered["_result_numeric"].notna().sum())
 
+            indicator_key = selected_parameter.casefold()
+            if "ammon" in indicator_key:
+                indicator_type = "Potential pollutant concentration"
+                indicator_meaning = (
+                    "Ammoniacal nitrogen can come from sewage, agriculture and natural decay."
+                )
+                indicator_watch = (
+                    "Higher results may need closer investigation; lower is generally preferable."
+                )
+                review_direction = "higher"
+            elif "orthophosphate" in indicator_key or "phosphate" in indicator_key:
+                indicator_type = "Nutrient concentration"
+                indicator_meaning = (
+                    "Orthophosphate is plant-available phosphorus. Too much can encourage excessive algae and plant growth."
+                )
+                indicator_watch = (
+                    "Higher results may need closer investigation; lower is generally preferable."
+                )
+                review_direction = "higher"
+            elif "bod" in indicator_key or "biochemical oxygen" in indicator_key:
+                indicator_type = "Organic-pollution pressure indicator"
+                indicator_meaning = (
+                    "BOD shows how much oxygen microorganisms use while breaking down organic material."
+                )
+                indicator_watch = "Higher BOD can indicate greater organic pollution pressure."
+                review_direction = "higher"
+            elif "dissolved oxygen" in indicator_key and "percentage" in indicator_key:
+                indicator_type = "Water-condition indicator—not a pollutant"
+                indicator_meaning = (
+                    "Oxygen saturation compares the oxygen present with the amount the water could hold."
+                )
+                indicator_watch = (
+                    "Lower saturation may need closer review; temperature and sampling conditions also matter."
+                )
+                review_direction = "lower"
+            elif "dissolved oxygen" in indicator_key:
+                indicator_type = "Water-condition indicator—not a pollutant"
+                indicator_meaning = (
+                    "Dissolved oxygen is essential for fish and other aquatic organisms."
+                )
+                indicator_watch = (
+                    "Lower oxygen may need closer review; well-oxygenated water is generally beneficial."
+                )
+                review_direction = "lower"
+            elif indicator_key.strip() == "ph" or indicator_key.startswith("ph "):
+                indicator_type = "Water-condition indicator—not a pollutant"
+                indicator_meaning = "pH describes how acidic or alkaline the water is."
+                indicator_watch = (
+                    "Both unusually low and unusually high results need local environmental context."
+                )
+                review_direction = "both"
+            elif "temperature" in indicator_key:
+                indicator_type = "Environmental context—not a pollutant"
+                indicator_meaning = (
+                    "Temperature affects aquatic life and how much oxygen water can hold."
+                )
+                indicator_watch = (
+                    "Interpret it by season, time and water-body type; it is not ranked here."
+                )
+                review_direction = "context"
+            else:
+                indicator_type = "Water-quality measurement"
+                indicator_meaning = (
+                    "This result describes a condition measured at a nearby monitoring station."
+                )
+                indicator_watch = (
+                    "Interpret it using indicator-specific environmental guidance and local context."
+                )
+                review_direction = "context"
+
             metric_cards(
                 [
                     {"label": "2025 measurements", "value": value_text(observations),
@@ -4399,20 +4486,163 @@ elif page == "Water quality":
                 ]
             )
 
-            banner(
-                "<b>How to read this:</b> measurements describe conditions at a nearby monitoring "
-                "station. Proximity does not prove that an outlet caused a result. Dissolved "
-                "oxygen is an environmental indicator, not itself a pollutant, and different "
-                "indicators require different interpretation.",
-                icon="💧",
-                background=PALE_BLUE,
-                edge="#68AFC2",
+            st.html(
+                f"""
+                <div class="edm-quality-guide" style="gap:.75rem;
+                  margin:.75rem 0 1rem;">
+                  <div style="padding:1rem;border-radius:18px;background:#E8F5F1;
+                    border-top:6px solid #68A98F;box-shadow:0 9px 22px rgba(45,102,94,.08);">
+                    <b style="color:#245F56">1. What is it?</b><br>
+                    <span style="color:#486B67">{html.escape(indicator_type)}</span>
+                  </div>
+                  <div style="padding:1rem;border-radius:18px;background:#E8F3F8;
+                    border-top:6px solid #68AFC2;box-shadow:0 9px 22px rgba(45,102,94,.08);">
+                    <b style="color:#245F56">2. What does it tell us?</b><br>
+                    <span style="color:#486B67">{html.escape(indicator_meaning)}</span>
+                  </div>
+                  <div style="padding:1rem;border-radius:18px;background:#FFF3DD;
+                    border-top:6px solid #D8A34E;box-shadow:0 9px 22px rgba(45,102,94,.08);">
+                    <b style="color:#6D5529">3. What should users notice?</b><br>
+                    <span style="color:#655A43">{html.escape(indicator_watch)}</span>
+                  </div>
+                </div>
+                """
             )
 
             chart_data = filtered.loc[
                 filtered["_result_numeric"].notna()
                 & filtered["_measurement_datetime"].notna()
             ].copy()
+
+            st.html(
+                """
+                <div class="edm-quality-flow" style="
+                  align-items:center;gap:.55rem;margin:.5rem 0 1rem;padding:1rem;
+                  border-radius:18px;background:linear-gradient(110deg,#EAF6F0,#E9F4F8,#F2EDF7);
+                  border:1px solid rgba(69,133,124,.18);text-align:center;">
+                  <div><b>Recorded spill evidence</b><br><small>frequency, duration and risk</small></div>
+                  <div style="font-size:1.4rem;color:#4A9C7D">&#8594;</div>
+                  <div><b>Nearby 2025 monitoring</b><br><small>measured water conditions</small></div>
+                  <div style="font-size:1.4rem;color:#4A9C7D">&#8594;</div>
+                  <div><b>Priority for review</b><br><small>investigate—not proof of cause</small></div>
+                </div>
+                """
+            )
+
+            st.html(
+                """
+                <div style="margin:0 0 1rem;padding:.9rem 1rem;border-radius:16px;
+                  background:rgba(255,255,255,.76);border:1px solid rgba(74,156,125,.20);">
+                  <b style="color:#245F56">How this supports the spill-risk project</b>
+                  <div style="display:flex;flex-wrap:wrap;gap:.45rem;margin-top:.55rem;color:#486B67;">
+                    <span style="padding:.35rem .65rem;border-radius:999px;background:#E8F5F1;">Adds environmental context</span>
+                    <span style="padding:.35rem .65rem;border-radius:999px;background:#E8F3F8;">Helps compare linked places</span>
+                    <span style="padding:.35rem .65rem;border-radius:999px;background:#FFF3DD;">Screens priorities for investigation</span>
+                    <span style="padding:.35rem .65rem;border-radius:999px;background:#F1ECF7;">Creates a 2025 baseline</span>
+                  </div>
+                </div>
+                """
+            )
+
+            review_group = site_column or station_column
+            review_rows = pd.DataFrame()
+            if not chart_data.empty and review_group:
+                review_columns = [review_group]
+                for column in [
+                    company_column,
+                    site_column,
+                    station_column,
+                    linked_risk_column,
+                ]:
+                    if column and column not in review_columns:
+                        review_columns.append(column)
+                review_rows = (
+                    chart_data.groupby(
+                        review_columns,
+                        as_index=False,
+                        dropna=False,
+                    )
+                    .agg(
+                        median_result=("_result_numeric", "median"),
+                        measurements=("_result_numeric", "size"),
+                    )
+                    .dropna(subset=["median_result"])
+                )
+
+            if len(review_rows) >= 4 and review_direction != "context":
+                lower_quartile = review_rows["median_result"].quantile(.25)
+                upper_quartile = review_rows["median_result"].quantile(.75)
+                if review_direction == "lower":
+                    priority_rows = review_rows.loc[
+                        review_rows["median_result"].le(lower_quartile)
+                    ].sort_values("median_result", ascending=True)
+                    priority_reason = "lower end of the linked-station results"
+                elif review_direction == "higher":
+                    priority_rows = review_rows.loc[
+                        review_rows["median_result"].ge(upper_quartile)
+                    ].sort_values("median_result", ascending=False)
+                    priority_reason = "higher end of the linked-station results"
+                else:
+                    middle_value = review_rows["median_result"].median()
+                    priority_rows = review_rows.loc[
+                        review_rows["median_result"].le(lower_quartile)
+                        | review_rows["median_result"].ge(upper_quartile)
+                    ].copy()
+                    priority_rows["_distance_from_middle"] = (
+                        priority_rows["median_result"] - middle_value
+                    ).abs()
+                    priority_rows = priority_rows.sort_values(
+                        "_distance_from_middle",
+                        ascending=False,
+                    )
+                    priority_reason = "outer ends of the linked-station results"
+
+                section_header(
+                    "Locations for closer review",
+                    f"Descriptive screening: sites at the {priority_reason}. This is not a regulatory pass/fail test.",
+                )
+                review_display_columns = [
+                    column for column in [
+                        company_column,
+                        site_column,
+                        station_column,
+                        linked_risk_column,
+                        "median_result",
+                        "measurements",
+                    ]
+                    if column and column in priority_rows.columns
+                ]
+                review_display = priority_rows[review_display_columns].copy()
+                review_labels = {
+                    "median_result": f"2025 median ({selected_unit})",
+                    "measurements": "Measurements",
+                }
+                if company_column:
+                    review_labels[company_column] = "Water company"
+                if site_column:
+                    review_labels[site_column] = "Linked outlet/site"
+                if station_column:
+                    review_labels[station_column] = "Monitoring station"
+                if linked_risk_column:
+                    review_labels[linked_risk_column] = "Linked spill-risk category"
+                review_display = review_display.rename(columns=review_labels)
+                st.dataframe(
+                    review_display.round(3),
+                    use_container_width=True,
+                    hide_index=True,
+                )
+                st.caption(
+                    "These locations are unusual only within this linked 2025 sample. "
+                    "The flag is not evidence of a legal breach and does not show that the nearby outlet or water company caused the measurement."
+                )
+            elif review_direction == "context":
+                st.info(
+                    "This indicator is shown for environmental context. The dashboard does not rank locations without an appropriate indicator-specific standard."
+                )
+            elif not review_rows.empty:
+                st.info(
+                    "Too few linked locations are available to create a responsible comparative review list for this selection."
+                )
 
             section_header(
                 "2025 measurement results over time",
