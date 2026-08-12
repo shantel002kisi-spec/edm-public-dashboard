@@ -96,10 +96,25 @@ st.markdown(
           linear-gradient(145deg, #FBFDF9 0%, #F3FAF7 48%, #F5F9FC 100%);
       }
 
+      /* Keep Streamlit's Share controls visible without allowing the fixed
+         toolbar to overlap the title at the top of any dashboard page. */
+      header[data-testid="stHeader"] {
+        height: 2.85rem !important;
+        min-height: 2.85rem !important;
+        background: rgba(251, 253, 249, 0.96) !important;
+        border-bottom: 1px solid rgba(55, 120, 110, 0.10);
+      }
+
+      header[data-testid="stHeader"] [data-testid="stToolbar"] {
+        min-height: 2.85rem !important;
+        height: 2.85rem !important;
+        align-items: center !important;
+      }
+
       .block-container {
         width: 100%;
         max-width: 1900px;
-        padding-top: 0.65rem;
+        padding-top: 3.35rem;
         padding-left: 1rem;
         padding-right: 1rem;
         padding-bottom: 3rem;
