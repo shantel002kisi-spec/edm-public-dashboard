@@ -2676,7 +2676,7 @@ PAGES = [
     "Places and companies",
     "Improvements and changes",
     "2026 predictions",
-    "Water quality",
+    "2026 rainfall predictions",
     "Check one location",
     "About the evidence",
 ]
@@ -4218,948 +4218,225 @@ elif page == "2026 predictions":
 # PAGE 5 — 2025 WATER-QUALITY MEASUREMENTS
 # =============================================================================
 
-elif page == "Water quality":
-    st.html(
-        """
-        <section style="position:relative;overflow:hidden;margin:.15rem 0 1.1rem;
-          padding:1.7rem 2rem;border:1px solid rgba(77,151,152,.22);border-radius:28px;
-          background:linear-gradient(125deg,#E5F6F1 0%,#DFF2F7 55%,#EEEAF8 100%);
-          box-shadow:0 20px 48px rgba(43,104,99,.13);">
-          <div style="position:relative;z-index:2;max-width:850px">
-            <div style="display:inline-block;padding:.35rem .8rem;border-radius:999px;
-              background:rgba(255,255,255,.76);color:#326E70;font-weight:800;letter-spacing:.08em;">
-              💧 OFFICIAL 2025 MONITORING EVIDENCE
-            </div>
-            <h1 style="margin:.75rem 0 .35rem;color:#173D3A;font-size:clamp(2rem,4vw,3.5rem);">
-              Water-quality measurements near selected outlets
-            </h1>
-            <p style="max-width:760px;margin:0;color:#4F706C;font-size:1.08rem;">
-              Explore what nearby Environment Agency stations measured, when it was measured,
-              and which mapped site the monitoring evidence was geographically linked to.
-            </p>
-          </div>
-          <svg aria-hidden="true" viewBox="0 0 520 180" style="position:absolute;right:-25px;
-            bottom:-24px;width:min(38vw,520px);opacity:.73">
-            <path d="M0 118 C75 72 135 158 212 112 C290 65 350 154 520 88 L520 180 L0 180Z"
-              fill="#91CDD4"/>
-            <path d="M0 139 C85 96 145 173 230 132 C319 89 405 165 520 121"
-              fill="none" stroke="#F8FFFF" stroke-width="12" stroke-linecap="round"/>
-            <circle cx="355" cy="52" r="28" fill="#F9E7A8"/>
-            <g fill="#FFFFFF" opacity=".9"><circle cx="410" cy="55" r="23"/>
-              <circle cx="440" cy="42" r="31"/><circle cx="474" cy="58" r="22"/>
-              <rect x="400" y="55" width="92" height="25" rx="13"/></g>
-          </svg>
-        </section>
-        """
+elif page == "2026 rainfall predictions":
+    # 2026-08-22-existing-dashboard-rainfall-patch-v1
+    from pathlib import Path as _DashboardPath
+    import pandas as _dashboard_pd
+    import plotly.express as _dashboard_px
+
+    _risk_order = ["Low", "Medium", "High"]
+    _risk_colours = {
+        "Low": "#8FC8A8",
+        "Medium": "#E8C77B",
+        "High": "#D98C8C",
+    }
+    _data_folder = _DashboardPath(__file__).resolve().parent / "data"
+    _prediction_path = _data_folder / "rainfall_risk_predictions_2026_ytd.csv.gz"
+    _cv_path = _data_folder / "rainfall_model_cross_validation_results.csv.gz"
+
+    st.title("2026 rainfall-enhanced risk predictions")
+    st.caption(
+        "Year-to-date screening predictions using the recorded 2026 rainfall "
+        "available at the model cut-off. These are not confirmed 2026 discharges."
     )
 
-    quality = load_table("water_quality_records")
-    coverage = load_table("water_quality_coverage")
-    combined_quality = load_table("water_quality_combined_screening")
-    quality_profiles = load_table("water_quality_indicator_profiles")
-
-    if not combined_quality.empty:
-        combined_quality = combined_quality.copy()
-        combined_quality["combined_relative_concern_score"] = pd.to_numeric(
-            combined_quality["combined_relative_concern_score"],
-            errors="coerce",
+    if not _prediction_path.exists():
+        st.error(
+            "The 2026 prediction file is missing. Run Dashboard Cell 2 in Colab."
         )
-        combined_quality["scored_indicators"] = pd.to_numeric(
-            combined_quality["scored_indicators"],
-            errors="coerce",
-        )
-
-        section_header(
-            "Combined 2025 water-quality screening",
-            "Connect the recorded indicators for each linked outlet and monitoring station, then identify places for investigation.",
-        )
-        banner(
-            "<b>Relative screening—not a pollution verdict:</b> the score compares linked 2025 "
-            "stations with one another. Higher ammonia, phosphate and BOD, and lower dissolved "
-            "oxygen, raise the score. pH and temperature remain visible as context but are not "
-            "forced into the score.",
-            icon="i",
-            background="#EDF7F3",
-            edge="#62A887",
-        )
-
-        scored_quality = combined_quality.loc[
-            combined_quality["scored_indicators"].ge(2)
-            & combined_quality["combined_relative_concern_score"].notna()
-        ].copy()
-        priority_count = int(
-            combined_quality["screening_band"]
-            .astype(str)
-            .eq("Higher relative concern")
-            .sum()
-        )
-        metric_cards(
-            [
-                {
-                    "label": "Linked outlet/station pairs",
-                    "value": value_text(len(combined_quality)),
-                    "note": "With 2025 monitoring evidence",
-                    "accent": "#B7DDE5",
-                },
-                {
-                    "label": "Comparable combined profiles",
-                    "value": value_text(len(scored_quality)),
-                    "note": "At least two directional indicators",
-                    "accent": "#A8D8D0",
-                },
-                {
-                    "label": "Higher relative concern",
-                    "value": value_text(priority_count),
-                    "note": "Priority for investigation—not confirmed harm",
-                    "accent": "#D97A76",
-                },
-                {
-                    "label": "Water companies represented",
-                    "value": value_text(
-                        combined_quality["water_company_name"].nunique()
-                        if "water_company_name" in combined_quality.columns
-                        else 0
-                    ),
-                    "note": "Geographically linked evidence",
-                    "accent": "#CDBDDE",
-                },
-            ]
-        )
-
-        if scored_quality.empty:
-            st.info(
-                "No outlet/station pair has at least two comparable directional indicators. "
-                "The individual measurements remain available below."
-            )
-        else:
-            company_choices = ["All water companies"] + available_values(
-                scored_quality,
-                "water_company_name",
-            )
-            combined_company = st.selectbox(
-                "Filter the combined screening by water company",
-                company_choices,
-                key="combined_quality_company",
-            )
-            combined_view = scored_quality.copy()
-            if combined_company != "All water companies":
-                combined_view = combined_view.loc[
-                    combined_view["water_company_name"]
-                    .astype(str)
-                    .eq(combined_company)
-                ]
-
-            combined_view["display_location"] = combined_view.apply(
-                lambda row: (
-                    f"{safe_text(row.get('site_name'), 'Outlet not recorded')} — "
-                    f"{safe_text(row.get('monitoring_station'), 'Station not recorded')}"
-                ),
-                axis=1,
-            )
-            combined_view["screening_colour"] = combined_view[
-                "screening_band"
-            ].map(
-                {
-                    "Higher relative concern": "#D97A76",
-                    "Closer review": "#E8B867",
-                    "Lower relative concern": "#62A887",
-                }
-            ).fillna("#9AB8C3")
-
-            ranking_view = combined_view.sort_values(
-                "combined_relative_concern_score",
-                ascending=True,
-            ).tail(20)
-            combined_figure = go.Figure(
-                go.Bar(
-                    x=ranking_view["combined_relative_concern_score"],
-                    y=ranking_view["display_location"],
-                    orientation="h",
-                    marker=dict(
-                        color=ranking_view["screening_colour"],
-                        line=dict(color="#FFFFFF", width=1.2),
-                    ),
-                    text=ranking_view["combined_relative_concern_score"].map(
-                        lambda value: f"{value:.0f}/100"
-                    ),
-                    textposition="outside",
-                    customdata=ranking_view[
-                        [
-                            "water_company_name",
-                            "screening_band",
-                            "scored_indicators",
-                            "indicators_measured",
-                        ]
-                    ],
-                    hovertemplate=(
-                        "<b>%{y}</b><br>Company: %{customdata[0]}<br>"
-                        "Relative screening: %{x:.0f}/100<br>"
-                        "Band: %{customdata[1]}<br>"
-                        "Indicators scored: %{customdata[2]:.0f}<br>"
-                        "Indicators measured: %{customdata[3]:.0f}<extra></extra>"
-                    ),
-                )
-            )
-            combined_figure.update_layout(
-                title="Linked locations ranked for closer investigation",
-                xaxis_title="Relative-concern screening score (0–100)",
-                yaxis_title="Linked outlet and monitoring station",
-                height=max(580, 38 * len(ranking_view) + 180),
-                margin=dict(l=250, r=90, t=80, b=75),
-                showlegend=False,
-            )
-            combined_figure.update_xaxes(range=[0, 105])
-            st.plotly_chart(
-                plot_style(
-                    combined_figure,
-                    max(580, 38 * len(ranking_view) + 180),
-                ),
-                use_container_width=True,
-                key="combined_water_quality_ranking",
-                config={"displayModeBar": False},
-            )
-
-            location_options = available_values(
-                combined_view,
-                "display_location",
-            )
-            selected_combined_location = st.selectbox(
-                "Choose a linked location to see all of its 2025 indicators",
-                location_options,
-                key="combined_quality_location",
-            )
-            selected_combined = combined_view.loc[
-                combined_view["display_location"]
-                .astype(str)
-                .eq(selected_combined_location)
-            ].iloc[0]
-            metric_cards(
-                [
-                    {
-                        "label": "Water company",
-                        "value": str(selected_combined["water_company_name"]),
-                        "note": str(selected_combined.get("site_name", "Linked outlet")),
-                        "accent": "#B7DDE5",
-                    },
-                    {
-                        "label": "Linked spill risk",
-                        "value": str(selected_combined.get("linked_spill_risk", "Not available")),
-                        "note": "EDM evidence—not water-quality status",
-                        "accent": "#E8CD6A",
-                    },
-                    {
-                        "label": "Combined relative score",
-                        "value": f"{selected_combined['combined_relative_concern_score']:.0f}/100",
-                        "note": str(selected_combined["screening_band"]),
-                        "accent": str(selected_combined["screening_colour"]),
-                    },
-                    {
-                        "label": "Indicators measured",
-                        "value": value_text(selected_combined["indicators_measured"]),
-                        "note": "All retained in the profile",
-                        "accent": "#CDBDDE",
-                    },
-                ]
-            )
-
-            if not quality_profiles.empty:
-                location_profiles = quality_profiles.loc[
-                    quality_profiles["location_id"]
-                    .astype(str)
-                    .eq(str(selected_combined["location_id"]))
-                    & quality_profiles["monitoring_station"]
-                    .astype(str)
-                    .eq(str(selected_combined["monitoring_station"]))
-                ].copy()
-                for column in [
-                    "median_2025_result",
-                    "relative_concern_percentile",
-                    "exact_measurements",
-                ]:
-                    location_profiles[column] = pd.to_numeric(
-                        location_profiles[column],
-                        errors="coerce",
-                    )
-
-                scored_profiles = location_profiles.loc[
-                    location_profiles["relative_concern_percentile"].notna()
-                ].sort_values("relative_concern_percentile")
-                if not scored_profiles.empty:
-                    profile_figure = go.Figure(
-                        go.Bar(
-                            x=scored_profiles["relative_concern_percentile"],
-                            y=scored_profiles["water_quality_indicator"],
-                            orientation="h",
-                            marker=dict(
-                                color=scored_profiles["relative_concern_percentile"],
-                                colorscale=[
-                                    [0, "#8FC9B2"],
-                                    [.5, "#E8CD6A"],
-                                    [1, "#D97A76"],
-                                ],
-                                cmin=0,
-                                cmax=100,
-                                showscale=False,
-                            ),
-                            text=scored_profiles["relative_concern_percentile"].map(
-                                lambda value: f"{value:.0f}/100"
-                            ),
-                            textposition="outside",
-                            customdata=scored_profiles[
-                                [
-                                    "median_2025_result",
-                                    "reported_unit",
-                                    "exact_measurements",
-                                ]
-                            ],
-                            hovertemplate=(
-                                "<b>%{y}</b><br>Relative concern: %{x:.0f}/100<br>"
-                                "2025 median: %{customdata[0]:.3f} %{customdata[1]}<br>"
-                                "Measurements: %{customdata[2]:.0f}<extra></extra>"
-                            ),
-                        )
-                    )
-                    profile_figure.update_layout(
-                        title="How each directional indicator contributes",
-                        xaxis_title="Relative concern within the linked 2025 sample",
-                        yaxis_title="",
-                        height=max(440, 55 * len(scored_profiles) + 190),
-                        margin=dict(l=220, r=80, t=75, b=70),
-                        showlegend=False,
-                    )
-                    profile_figure.update_xaxes(range=[0, 105])
-                    st.plotly_chart(
-                        plot_style(
-                            profile_figure,
-                            max(440, 55 * len(scored_profiles) + 190),
-                        ),
-                        use_container_width=True,
-                        key="combined_quality_profile",
-                        config={"displayModeBar": False},
-                    )
-
-                profile_table = location_profiles[
-                    [
-                        "water_quality_indicator",
-                        "median_2025_result",
-                        "reported_unit",
-                        "exact_measurements",
-                        "screening_direction",
-                        "relative_concern_percentile",
-                    ]
-                ].rename(
-                    columns={
-                        "water_quality_indicator": "2025 indicator",
-                        "median_2025_result": "Station median",
-                        "reported_unit": "Unit",
-                        "exact_measurements": "Measurements",
-                        "screening_direction": "How it is used",
-                        "relative_concern_percentile": "Relative concern (0–100)",
-                    }
-                )
-                st.dataframe(
-                    profile_table.round(2),
-                    use_container_width=True,
-                    hide_index=True,
-                )
-
-        st.caption(
-            "Use this screening to decide where more monitoring or investigation may be useful. "
-            "It is not an official ecological-status classification, a legal breach assessment, "
-            "or evidence that a nearby outlet or water company caused a measurement."
-        )
-
-    if quality.empty:
-        st.info("The public 2025 water-quality measurements are not available yet.")
     else:
-        quality = quality.copy()
-        date_column = first_existing(
-            quality,
-            ["measurement_datetime", "measurement_date", "sample_date"],
+        _predictions = _dashboard_pd.read_csv(_prediction_path, low_memory=False)
+        _predictions["predicted_2026_risk_category"] = (
+            _predictions["predicted_2026_risk_category"]
+            .astype("string")
+            .str.strip()
+            .str.title()
         )
-        if date_column:
-            quality["_measurement_datetime"] = pd.to_datetime(
-                quality[date_column],
-                errors="coerce",
-            )
-            records_2025 = quality.loc[
-                quality["_measurement_datetime"].dt.year.eq(2025)
-            ].copy()
-            if not records_2025.empty:
-                quality = records_2025
-        else:
-            quality["_measurement_datetime"] = pd.NaT
-            if "measurement_year" in quality.columns:
-                year_values = pd.to_numeric(
-                    quality["measurement_year"],
-                    errors="coerce",
-                )
-                records_2025 = quality.loc[year_values.eq(2025)].copy()
-                if not records_2025.empty:
-                    quality = records_2025
-
-        company_column = first_existing(quality, ["company", "water_company_name"])
-        site_column = first_existing(
-            quality,
-            ["site_name", "source_site_name_ea_consents_database"],
-        )
-        station_column = first_existing(
-            quality,
-            ["sampling_point_name", "sampling_point_id"],
-        )
-        parameter_column = first_existing(
-            quality,
-            ["project_parameter_name", "determinand_name", "parameter"],
-        )
-        unit_column = first_existing(quality, ["reported_unit", "unit"])
-        reported_result_column = first_existing(
-            quality,
-            ["result_as_reported", "result_numeric", "exact_numeric_result"],
-        )
-        linked_risk_column = first_existing(
-            quality,
-            ["risk_category", "period_risk_category", "observed_2025_risk"],
+        _predictions["prediction_confidence"] = _dashboard_pd.to_numeric(
+            _predictions["prediction_confidence"], errors="coerce"
         )
 
-        if not parameter_column or not reported_result_column:
-            st.warning("The water-quality export is missing its parameter or result column.")
-        else:
-            first_filters = st.columns(3)
-            with first_filters[0]:
-                company_options = (
-                    ["All water companies"] + available_values(quality, company_column)
-                    if company_column
-                    else ["All water companies"]
-                )
-                selected_company = st.selectbox(
-                    "Water company",
-                    company_options,
-                    key="quality_page_company",
-                )
-
-            company_filtered = quality.copy()
-            if company_column and selected_company != "All water companies":
-                company_filtered = company_filtered.loc[
-                    company_filtered[company_column].astype(str).eq(selected_company)
-                ]
-
-            with first_filters[1]:
-                site_options = (
-                    ["All linked outlets"] + available_values(company_filtered, site_column)
-                    if site_column
-                    else ["All linked outlets"]
-                )
-                selected_site = st.selectbox(
-                    "Linked outlet",
-                    site_options,
-                    key="quality_page_site",
-                )
-
-            site_filtered = company_filtered.copy()
-            if site_column and selected_site != "All linked outlets":
-                site_filtered = site_filtered.loc[
-                    site_filtered[site_column].astype(str).eq(selected_site)
-                ]
-
-            parameter_options = available_values(site_filtered, parameter_column)
-            if not parameter_options:
-                st.warning("No 2025 water-quality indicators match those choices.")
-                st.stop()
-            default_parameter_index = next(
-                (
-                    index
-                    for index, option in enumerate(parameter_options)
-                    if "dissolved oxygen" in option.casefold()
-                ),
-                0,
+        _companies = sorted(
+            _predictions["water_company"].dropna().astype(str).unique()
+        )
+        _filter_columns = st.columns([1.3, 1, 1])
+        with _filter_columns[0]:
+            _selected_companies = st.multiselect(
+                "Water company", _companies, default=_companies,
+                key="rainfall_prediction_companies",
             )
-            with first_filters[2]:
-                selected_parameter = st.selectbox(
-                    "Water-quality indicator",
-                    parameter_options,
-                    index=default_parameter_index,
-                    key="quality_page_parameter",
-                )
-
-            filtered = site_filtered.loc[
-                site_filtered[parameter_column].astype(str).eq(selected_parameter)
-            ].copy()
-
-            if unit_column:
-                unit_options = available_values(filtered, unit_column)
-                if len(unit_options) > 1:
-                    selected_unit = st.selectbox(
-                        "Measurement unit",
-                        unit_options,
-                        key="quality_page_unit",
-                    )
-                    filtered = filtered.loc[
-                        filtered[unit_column].astype(str).eq(selected_unit)
-                    ]
-                else:
-                    selected_unit = unit_options[0] if unit_options else "Unit not reported"
-            else:
-                selected_unit = "Unit not reported"
-
-            numeric_column = first_existing(
-                filtered,
-                ["exact_numeric_result", "result_numeric"],
+        with _filter_columns[1]:
+            _selected_risks = st.multiselect(
+                "Predicted risk", _risk_order, default=_risk_order,
+                key="rainfall_prediction_risks",
             )
-            if numeric_column:
-                filtered["_result_numeric"] = pd.to_numeric(
-                    filtered[numeric_column],
-                    errors="coerce",
-                )
-            else:
-                numeric_text = filtered[reported_result_column].astype(str).str.extract(
-                    r"([-+]?\d*\.?\d+(?:[eE][-+]?\d+)?)",
-                    expand=False,
-                )
-                filtered["_result_numeric"] = pd.to_numeric(
-                    numeric_text,
-                    errors="coerce",
-                )
-
-            observation_column = first_existing(
-                filtered,
-                ["observation_id", "measurement_id"],
-            )
-            observations = (
-                int(filtered[observation_column].nunique())
-                if observation_column
-                else int(len(filtered))
-            )
-            linked_sites = (
-                int(filtered["location_id"].nunique())
-                if "location_id" in filtered.columns
-                else int(filtered[site_column].nunique()) if site_column else 0
-            )
-            monitoring_stations = (
-                int(filtered["sampling_point_id"].nunique())
-                if "sampling_point_id" in filtered.columns
-                else int(filtered[station_column].nunique()) if station_column else 0
-            )
-            exact_results = int(filtered["_result_numeric"].notna().sum())
-
-            indicator_key = selected_parameter.casefold()
-            if "ammon" in indicator_key:
-                indicator_type = "Potential pollutant concentration"
-                indicator_meaning = (
-                    "Ammoniacal nitrogen can come from sewage, agriculture and natural decay."
-                )
-                indicator_watch = (
-                    "Higher results may need closer investigation; lower is generally preferable."
-                )
-                review_direction = "higher"
-            elif "orthophosphate" in indicator_key or "phosphate" in indicator_key:
-                indicator_type = "Nutrient concentration"
-                indicator_meaning = (
-                    "Orthophosphate is plant-available phosphorus. Too much can encourage excessive algae and plant growth."
-                )
-                indicator_watch = (
-                    "Higher results may need closer investigation; lower is generally preferable."
-                )
-                review_direction = "higher"
-            elif "bod" in indicator_key or "biochemical oxygen" in indicator_key:
-                indicator_type = "Organic-pollution pressure indicator"
-                indicator_meaning = (
-                    "BOD shows how much oxygen microorganisms use while breaking down organic material."
-                )
-                indicator_watch = "Higher BOD can indicate greater organic pollution pressure."
-                review_direction = "higher"
-            elif "dissolved oxygen" in indicator_key and "percentage" in indicator_key:
-                indicator_type = "Water-condition indicator—not a pollutant"
-                indicator_meaning = (
-                    "Oxygen saturation compares the oxygen present with the amount the water could hold."
-                )
-                indicator_watch = (
-                    "Lower saturation may need closer review; temperature and sampling conditions also matter."
-                )
-                review_direction = "lower"
-            elif "dissolved oxygen" in indicator_key:
-                indicator_type = "Water-condition indicator—not a pollutant"
-                indicator_meaning = (
-                    "Dissolved oxygen is essential for fish and other aquatic organisms."
-                )
-                indicator_watch = (
-                    "Lower oxygen may need closer review; well-oxygenated water is generally beneficial."
-                )
-                review_direction = "lower"
-            elif indicator_key.strip() == "ph" or indicator_key.startswith("ph "):
-                indicator_type = "Water-condition indicator—not a pollutant"
-                indicator_meaning = "pH describes how acidic or alkaline the water is."
-                indicator_watch = (
-                    "Both unusually low and unusually high results need local environmental context."
-                )
-                review_direction = "both"
-            elif "temperature" in indicator_key:
-                indicator_type = "Environmental context—not a pollutant"
-                indicator_meaning = (
-                    "Temperature affects aquatic life and how much oxygen water can hold."
-                )
-                indicator_watch = (
-                    "Interpret it by season, time and water-body type; it is not ranked here."
-                )
-                review_direction = "context"
-            else:
-                indicator_type = "Water-quality measurement"
-                indicator_meaning = (
-                    "This result describes a condition measured at a nearby monitoring station."
-                )
-                indicator_watch = (
-                    "Interpret it using indicator-specific environmental guidance and local context."
-                )
-                review_direction = "context"
-
-            metric_cards(
-                [
-                    {"label": "2025 measurements", "value": value_text(observations),
-                     "note": selected_parameter, "accent": "#A8D8D0"},
-                    {"label": "Linked outlets", "value": value_text(linked_sites),
-                     "note": "Geographically linked sites", "accent": "#B7DDE5"},
-                    {"label": "Monitoring stations", "value": value_text(monitoring_stations),
-                     "note": "Environment Agency stations", "accent": "#CDBDDE"},
-                    {"label": "Numeric results plotted", "value": value_text(exact_results),
-                     "note": selected_unit, "accent": "#F1D39D"},
-                ]
+        with _filter_columns[2]:
+            _minimum_confidence = st.slider(
+                "Minimum confidence", 0.0, 1.0, 0.0, 0.05,
+                key="rainfall_prediction_confidence",
             )
 
-            st.html(
-                f"""
-                <div class="edm-quality-guide" style="gap:.75rem;
-                  margin:.75rem 0 1rem;">
-                  <div style="padding:1rem;border-radius:18px;background:#E8F5F1;
-                    border-top:6px solid #68A98F;box-shadow:0 9px 22px rgba(45,102,94,.08);">
-                    <b style="color:#245F56">1. What is it?</b><br>
-                    <span style="color:#486B67">{html.escape(indicator_type)}</span>
-                  </div>
-                  <div style="padding:1rem;border-radius:18px;background:#E8F3F8;
-                    border-top:6px solid #68AFC2;box-shadow:0 9px 22px rgba(45,102,94,.08);">
-                    <b style="color:#245F56">2. What does it tell us?</b><br>
-                    <span style="color:#486B67">{html.escape(indicator_meaning)}</span>
-                  </div>
-                  <div style="padding:1rem;border-radius:18px;background:#FFF3DD;
-                    border-top:6px solid #D8A34E;box-shadow:0 9px 22px rgba(45,102,94,.08);">
-                    <b style="color:#6D5529">3. What should users notice?</b><br>
-                    <span style="color:#655A43">{html.escape(indicator_watch)}</span>
-                  </div>
-                </div>
-                """
+        _filtered = _predictions.loc[
+            _predictions["water_company"].astype(str).isin(_selected_companies)
+            & _predictions["predicted_2026_risk_category"].isin(_selected_risks)
+            & _predictions["prediction_confidence"].ge(_minimum_confidence)
+        ].copy()
+
+        _risk_counts = (
+            _filtered["predicted_2026_risk_category"]
+            .value_counts().reindex(_risk_order, fill_value=0)
+        )
+        _high_count = int(_risk_counts.get("High", 0))
+        _mean_confidence = _filtered["prediction_confidence"].mean()
+        _agreement = (
+            _dashboard_pd.to_numeric(
+                _filtered.get("models_agreeing"), errors="coerce"
+            ).eq(4).mean()
+            if "models_agreeing" in _filtered.columns and len(_filtered)
+            else float("nan")
+        )
+
+        _kpis = st.columns(4)
+        _kpis[0].metric("Predictions shown", f"{len(_filtered):,}")
+        _kpis[1].metric("High-risk outlets", f"{_high_count:,}")
+        _kpis[2].metric(
+            "Mean confidence",
+            f"{_mean_confidence:.1%}" if _dashboard_pd.notna(_mean_confidence) else "—",
+        )
+        _kpis[3].metric(
+            "All four models agree",
+            f"{_agreement:.1%}" if _dashboard_pd.notna(_agreement) else "—",
+        )
+
+        _chart_columns = st.columns(2)
+        with _chart_columns[0]:
+            _risk_frame = _risk_counts.rename_axis("Risk").reset_index(name="Outlets")
+            _risk_figure = _dashboard_px.pie(
+                _risk_frame, names="Risk", values="Outlets", hole=0.58,
+                color="Risk", color_discrete_map=_risk_colours,
+                category_orders={"Risk": _risk_order},
+                title="Predicted risk categories for 2026",
             )
+            _risk_figure.update_traces(textinfo="label+percent+value")
+            st.plotly_chart(_risk_figure, use_container_width=True)
 
-            chart_data = filtered.loc[
-                filtered["_result_numeric"].notna()
-                & filtered["_measurement_datetime"].notna()
-            ].copy()
-
-            st.html(
-                """
-                <div class="edm-quality-flow" style="
-                  align-items:center;gap:.55rem;margin:.5rem 0 1rem;padding:1rem;
-                  border-radius:18px;background:linear-gradient(110deg,#EAF6F0,#E9F4F8,#F2EDF7);
-                  border:1px solid rgba(69,133,124,.18);text-align:center;">
-                  <div><b>Recorded spill evidence</b><br><small>frequency, duration and risk</small></div>
-                  <div style="font-size:1.4rem;color:#4A9C7D">&#8594;</div>
-                  <div><b>Nearby 2025 monitoring</b><br><small>measured water conditions</small></div>
-                  <div style="font-size:1.4rem;color:#4A9C7D">&#8594;</div>
-                  <div><b>Priority for review</b><br><small>investigate—not proof of cause</small></div>
-                </div>
-                """
+        with _chart_columns[1]:
+            _company_risk = (
+                _filtered.groupby(
+                    ["water_company", "predicted_2026_risk_category"],
+                    observed=True,
+                ).size().rename("Outlets").reset_index()
             )
-
-            st.html(
-                """
-                <div style="margin:0 0 1rem;padding:.9rem 1rem;border-radius:16px;
-                  background:rgba(255,255,255,.76);border:1px solid rgba(74,156,125,.20);">
-                  <b style="color:#245F56">How this supports the spill-risk project</b>
-                  <div style="display:flex;flex-wrap:wrap;gap:.45rem;margin-top:.55rem;color:#486B67;">
-                    <span style="padding:.35rem .65rem;border-radius:999px;background:#E8F5F1;">Adds environmental context</span>
-                    <span style="padding:.35rem .65rem;border-radius:999px;background:#E8F3F8;">Helps compare linked places</span>
-                    <span style="padding:.35rem .65rem;border-radius:999px;background:#FFF3DD;">Screens priorities for investigation</span>
-                    <span style="padding:.35rem .65rem;border-radius:999px;background:#F1ECF7;">Creates a 2025 baseline</span>
-                  </div>
-                </div>
-                """
+            _company_figure = _dashboard_px.bar(
+                _company_risk, x="Outlets", y="water_company",
+                color="predicted_2026_risk_category", orientation="h",
+                color_discrete_map=_risk_colours,
+                category_orders={"predicted_2026_risk_category": _risk_order},
+                title="Predictions by water company",
+                labels={
+                    "water_company": "Water company",
+                    "predicted_2026_risk_category": "Risk",
+                },
             )
+            st.plotly_chart(_company_figure, use_container_width=True)
 
-            review_group = site_column or station_column
-            review_rows = pd.DataFrame()
-            if not chart_data.empty and review_group:
-                review_columns = [review_group]
-                for column in [
-                    company_column,
-                    site_column,
-                    station_column,
-                    linked_risk_column,
-                ]:
-                    if column and column not in review_columns:
-                        review_columns.append(column)
-                review_rows = (
-                    chart_data.groupby(
-                        review_columns,
-                        as_index=False,
-                        dropna=False,
-                    )
-                    .agg(
-                        median_result=("_result_numeric", "median"),
-                        measurements=("_result_numeric", "size"),
-                    )
-                    .dropna(subset=["median_result"])
-                )
-
-            if len(review_rows) >= 4 and review_direction != "context":
-                lower_quartile = review_rows["median_result"].quantile(.25)
-                upper_quartile = review_rows["median_result"].quantile(.75)
-                if review_direction == "lower":
-                    priority_rows = review_rows.loc[
-                        review_rows["median_result"].le(lower_quartile)
-                    ].sort_values("median_result", ascending=True)
-                    priority_reason = "lower end of the linked-station results"
-                elif review_direction == "higher":
-                    priority_rows = review_rows.loc[
-                        review_rows["median_result"].ge(upper_quartile)
-                    ].sort_values("median_result", ascending=False)
-                    priority_reason = "higher end of the linked-station results"
-                else:
-                    middle_value = review_rows["median_result"].median()
-                    priority_rows = review_rows.loc[
-                        review_rows["median_result"].le(lower_quartile)
-                        | review_rows["median_result"].ge(upper_quartile)
-                    ].copy()
-                    priority_rows["_distance_from_middle"] = (
-                        priority_rows["median_result"] - middle_value
-                    ).abs()
-                    priority_rows = priority_rows.sort_values(
-                        "_distance_from_middle",
-                        ascending=False,
-                    )
-                    priority_reason = "outer ends of the linked-station results"
-
-                section_header(
-                    "Locations for closer review",
-                    f"Descriptive screening: sites at the {priority_reason}. This is not a regulatory pass/fail test.",
-                )
-                review_display_columns = [
-                    column for column in [
-                        company_column,
-                        site_column,
-                        station_column,
-                        linked_risk_column,
-                        "median_result",
-                        "measurements",
-                    ]
-                    if column and column in priority_rows.columns
-                ]
-                review_display = priority_rows[review_display_columns].copy()
-                review_labels = {
-                    "median_result": f"2025 median ({selected_unit})",
-                    "measurements": "Measurements",
-                }
-                if company_column:
-                    review_labels[company_column] = "Water company"
-                if site_column:
-                    review_labels[site_column] = "Linked outlet/site"
-                if station_column:
-                    review_labels[station_column] = "Monitoring station"
-                if linked_risk_column:
-                    review_labels[linked_risk_column] = "Linked spill-risk category"
-                review_display = review_display.rename(columns=review_labels)
-                st.dataframe(
-                    review_display.round(3),
-                    use_container_width=True,
-                    hide_index=True,
-                )
-                st.caption(
-                    "These locations are unusual only within this linked 2025 sample. "
-                    "The flag is not evidence of a legal breach and does not show that the nearby outlet or water company caused the measurement."
-                )
-            elif review_direction == "context":
-                st.info(
-                    "This indicator is shown for environmental context. The dashboard does not rank locations without an appropriate indicator-specific standard."
-                )
-            elif not review_rows.empty:
-                st.info(
-                    "Too few linked locations are available to create a responsible comparative review list for this selection."
-                )
-
-            section_header(
-                "2025 measurement results over time",
-                f"Interactive results for {selected_parameter}; hover over a point for its site, station and reported value.",
+        if {"latitude", "longitude"}.issubset(_filtered.columns):
+            _mapped = _filtered.copy()
+            _mapped["latitude"] = _dashboard_pd.to_numeric(
+                _mapped["latitude"], errors="coerce"
             )
-
-            if chart_data.empty:
-                st.info(
-                    "No exact numeric dated results are available for these choices. "
-                    "The original reported results remain available in the table below."
-                )
-            else:
-                colour_column = (
-                    company_column
-                    if company_column and chart_data[company_column].nunique() > 1
-                    else site_column if site_column and chart_data[site_column].nunique() > 1
-                    else station_column
-                )
-                hover_columns = [
-                    column
-                    for column in [
-                        company_column,
-                        site_column,
-                        station_column,
-                        "station_distance_km",
-                        reported_result_column,
-                        unit_column,
-                    ]
-                    if column and column in chart_data.columns
-                ]
-                pastel_palette = [
-                    "#65B7C5", "#79BEAB", "#A8A6D8", "#E4AFC3", "#EBC27A",
-                    "#94CFA4", "#8FBCE2", "#C8A8DD", "#EFA79E", "#A7D8D2",
-                ]
-                timeline = px.scatter(
-                    chart_data,
-                    x="_measurement_datetime",
-                    y="_result_numeric",
-                    color=colour_column,
-                    hover_data=hover_columns,
-                    color_discrete_sequence=pastel_palette,
-                    title=f"{selected_parameter} · official 2025 observations",
-                    labels={
-                        "_measurement_datetime": "Measurement date",
-                        "_result_numeric": f"Reported result ({selected_unit})",
+            _mapped["longitude"] = _dashboard_pd.to_numeric(
+                _mapped["longitude"], errors="coerce"
+            )
+            _mapped = _mapped.dropna(subset=["latitude", "longitude"])
+            if not _mapped.empty:
+                st.subheader("2026 prediction map")
+                _map_figure = _dashboard_px.scatter_mapbox(
+                    _mapped, lat="latitude", lon="longitude",
+                    color="predicted_2026_risk_category",
+                    color_discrete_map=_risk_colours,
+                    category_orders={"predicted_2026_risk_category": _risk_order},
+                    hover_name="site_name",
+                    hover_data={
+                        "water_company": True, "outlet_ngr": True,
+                        "prediction_confidence": ":.1%",
+                        "ytd_rainfall_mm": ":.1f",
+                        "latitude": False, "longitude": False,
                     },
+                    zoom=5, height=650, opacity=0.72,
                 )
-                timeline.update_traces(
-                    marker=dict(size=11, opacity=.86, line=dict(color="#FFFFFF", width=1.4))
+                _map_figure.update_layout(
+                    mapbox_style="open-street-map",
+                    margin=dict(l=0, r=0, t=0, b=0),
                 )
-                timeline.update_layout(
-                    legend_title_text=(pretty(colour_column) if colour_column else "Series"),
-                    hovermode="closest",
-                )
-                st.plotly_chart(
-                    plot_style(timeline, 590),
-                    use_container_width=True,
-                    key="water_quality_2025_timeline",
-                    config={"displayModeBar": False},
-                )
+                st.plotly_chart(_map_figure, use_container_width=True)
 
-                summary_group = site_column or station_column
-                if summary_group:
-                    site_summary = (
-                        chart_data.groupby(summary_group, as_index=False)
-                        .agg(
-                            median_result=("_result_numeric", "median"),
-                            measurements=("_result_numeric", "size"),
-                        )
-                        .sort_values(["measurements", "median_result"], ascending=[False, False])
-                        .head(20)
-                    )
-                    indicator_name = selected_parameter.casefold()
-                    lower_values_may_need_review = "dissolved oxygen" in indicator_name
-                    higher_values_may_need_review = any(
-                        term in indicator_name
-                        for term in ["ammonia", "ammoniacal", "bod", "phosphate"]
-                    )
-                    # Plotly places the final category at the top of a horizontal
-                    # bar chart. Reverse the dissolved-oxygen order so lower
-                    # values, which may merit closer review, are shown first.
-                    site_summary = site_summary.sort_values(
-                        "median_result",
-                        ascending=not lower_values_may_need_review,
-                    )
-                    if lower_values_may_need_review:
-                        reading_note = (
-                            "Site names are shown on the left. For dissolved oxygen, lower values "
-                            "are placed near the top because lower oxygen can require closer review."
-                        )
-                    elif higher_values_may_need_review:
-                        reading_note = (
-                            "Site names are shown on the left. Higher measured values are placed "
-                            "near the top for this indicator, but they are not automatically a breach."
-                        )
-                    else:
-                        reading_note = (
-                            "Site names are shown on the left. Bar length compares the median "
-                            "measurement only; it does not identify a worst site."
-                        )
-                    st.html(
-                        f"""
-                        <div style="margin:.6rem 0 .8rem;padding:.85rem 1rem;border-radius:14px;
-                          border-left:6px solid #68AFC2;background:linear-gradient(110deg,#E9F4F8,#F1ECF7);
-                          color:#315E5A;">
-                          <b>How to read the site comparison</b><br>{html.escape(reading_note)}
-                        </div>
-                        """
-                    )
-                    median_chart = go.Figure(
-                        go.Bar(
-                            x=site_summary["median_result"],
-                            y=site_summary[summary_group],
-                            orientation="h",
-                            marker=dict(
-                                color=site_summary["median_result"],
-                                colorscale=[
-                                    [0.0, "#DDF3ED"],
-                                    [0.50, "#88C8D0"],
-                                    [1.0, "#B8A9DD"],
-                                ],
-                                line=dict(color="#FFFFFF", width=1),
-                                showscale=False,
-                            ),
-                            text=[f"{value:,.2f}" for value in site_summary["median_result"]],
-                            textposition="outside",
-                            customdata=site_summary[["measurements"]],
-                            hovertemplate=(
-                                "<b>Linked outlet/site:</b> %{y}<br>Median: %{x:,.3f} " + html.escape(selected_unit)
-                                + "<br>Measurements: %{customdata[0]:,.0f}<extra></extra>"
-                            ),
-                        )
-                    )
-                    median_chart.update_layout(
-                        title=f"Typical 2025 {selected_parameter} near each linked outlet",
-                        xaxis_title=f"Median reported result ({selected_unit})",
-                        yaxis_title="Linked outlet/site name",
-                        showlegend=False,
-                    )
-                    st.plotly_chart(
-                        plot_style(median_chart, max(480, 31 * len(site_summary) + 170)),
-                        use_container_width=True,
-                        key="water_quality_site_medians",
-                        config={"displayModeBar": False},
-                    )
-                    st.caption(
-                        "A site name identifies the outlet linked geographically to the nearby monitoring station. "
-                        "The median is a descriptive summary—not a pass/fail score, proof of causation or a confirmed ranking of water-quality issues."
-                    )
+        if "ytd_rainfall_mm" in _filtered.columns:
+            _filtered["ytd_rainfall_mm"] = _dashboard_pd.to_numeric(
+                _filtered["ytd_rainfall_mm"], errors="coerce"
+            )
+            _rain_figure = _dashboard_px.box(
+                _filtered, x="predicted_2026_risk_category",
+                y="ytd_rainfall_mm", color="predicted_2026_risk_category",
+                color_discrete_map=_risk_colours,
+                category_orders={"predicted_2026_risk_category": _risk_order},
+                points="outliers",
+                title="Observed 2026 YTD rainfall by predicted risk",
+                labels={
+                    "predicted_2026_risk_category": "Predicted risk",
+                    "ytd_rainfall_mm": "YTD rainfall (mm)",
+                },
+            )
+            st.plotly_chart(_rain_figure, use_container_width=True)
 
-            with st.expander("See the 2025 measurements behind the graphs"):
-                display_columns = [
-                    column
-                    for column in [
-                        company_column,
-                        site_column,
-                        station_column,
-                        "station_distance_km",
-                        date_column,
-                        parameter_column,
-                        reported_result_column,
-                        unit_column,
-                    ]
-                    if column and column in filtered.columns
-                ]
-                st.dataframe(
-                    filtered[display_columns].sort_values(
-                        date_column,
-                        ascending=False,
-                        na_position="last",
-                    ) if date_column else filtered[display_columns],
-                    use_container_width=True,
-                    hide_index=True,
+        if _cv_path.exists():
+            _cv = _dashboard_pd.read_csv(_cv_path)
+            _metric_columns = [
+                column for column in [
+                    "CV accuracy mean", "CV balanced accuracy mean",
+                    "CV macro F1 mean",
+                ] if column in _cv.columns
+            ]
+            if _metric_columns:
+                st.subheader("Rainfall-enhanced model comparison")
+                _cv_long = _cv.melt(
+                    id_vars="Model", value_vars=_metric_columns,
+                    var_name="Metric", value_name="Score",
                 )
-                download_table(filtered[display_columns], "filtered_2025_water_quality_measurements.csv")
+                _cv_figure = _dashboard_px.bar(
+                    _cv_long, x="Model", y="Score", color="Metric",
+                    barmode="group",
+                    color_discrete_sequence=["#789F8A", "#92ABC6", "#C5A3C8"],
+                    text_auto=".3f",
+                )
+                _cv_figure.update_yaxes(range=[0, 1])
+                st.plotly_chart(_cv_figure, use_container_width=True)
 
-            if not coverage.empty:
-                with st.expander("See water-quality monitoring coverage by company"):
-                    st.dataframe(coverage, use_container_width=True, hide_index=True)
+        _preferred_columns = [
+            "water_company", "site_name", "outlet_ngr", "storm_asset_type",
+            "source_edm_year", "ytd_rainfall_mm", "ytd_wet_days_ge_1mm",
+            "ytd_heavy_days_ge_10mm", "predicted_2026_risk_category",
+            "prediction_confidence", "models_agreeing",
+            "random_forest_predicted_risk", "gbm_predicted_risk",
+            "xgboost_predicted_risk", "catboost_predicted_risk",
+        ]
+        _table_columns = [
+            column for column in _preferred_columns if column in _filtered.columns
+        ]
+        st.subheader("Outlet-level predictions")
+        st.dataframe(
+            _filtered[_table_columns], use_container_width=True, hide_index=True
+        )
+        st.download_button(
+            "Download the filtered predictions",
+            _filtered.to_csv(index=False).encode("utf-8"),
+            file_name="filtered_2026_rainfall_risk_predictions.csv",
+            mime="text/csv",
+        )
+        st.info(
+            "Use these results for screening and prioritisation. A predicted risk "
+            "category is not proof of a discharge or an infrastructure fault."
+        )
 
 
 # =============================================================================
