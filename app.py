@@ -15,15 +15,12 @@ from folium.plugins import FastMarkerCluster, Fullscreen, HeatMap, MeasureContro
 from streamlit_folium import st_folium
 
 
-DASHBOARD_RELEASE = "2026-08-12-clear-risk-category-charts-v13"
-
-
 # =============================================================================
 # PAGE AND PROJECT CONFIGURATION
 # =============================================================================
 
 st.set_page_config(
-    page_title="Sewage Overflow Insights",
+    page_title="England EDM Water & Spill-Risk Observatory",
     page_icon="💧",
     layout="wide",
     initial_sidebar_state="expanded",
@@ -32,9 +29,6 @@ st.set_page_config(
 ROOT = Path(__file__).resolve().parent
 DATA_DIR = ROOT / "data"
 ARTIFACT_DIR = ROOT / "artifacts"
-
-OBSERVED_YEARS = (2021, 2022, 2023, 2024, 2025)
-OBSERVED_PERIOD = "2021–2025"
 
 RISK_ORDER = ["Low", "Medium", "High"]
 RISK_COLOURS = {
@@ -74,22 +68,8 @@ st.markdown(
       }
 
       html, body, [class*="css"] {
-        font-family: "Atkinson Hyperlegible", Verdana, Tahoma, Arial, sans-serif;
+        font-family: "Inter", "Segoe UI", Arial, sans-serif;
         color: var(--edm-ink);
-        font-size: 15.5px;
-        line-height: 1.52;
-        letter-spacing: 0.01em;
-      }
-
-      p, li, label, input, button, select, textarea {
-        font-family: "Atkinson Hyperlegible", Verdana, Tahoma, Arial, sans-serif !important;
-        line-height: 1.52 !important;
-        letter-spacing: 0.01em;
-      }
-
-      h1, h2, h3, h4 {
-        font-family: "Atkinson Hyperlegible", Verdana, Tahoma, Arial, sans-serif !important;
-        letter-spacing: 0 !important;
       }
 
       .stApp {
@@ -99,32 +79,10 @@ st.markdown(
           linear-gradient(145deg, #FBFDF9 0%, #F3FAF7 48%, #F5F9FC 100%);
       }
 
-      /* Keep Streamlit's Share controls visible without allowing the fixed
-         toolbar to overlap the title at the top of any dashboard page. */
-      header[data-testid="stHeader"] {
-        height: 2.85rem !important;
-        min-height: 2.85rem !important;
-        background: rgba(251, 253, 249, 0.96) !important;
-        border-bottom: 1px solid rgba(55, 120, 110, 0.10);
-      }
-
-      header[data-testid="stHeader"] [data-testid="stToolbar"] {
-        min-height: 2.85rem !important;
-        height: 2.85rem !important;
-        align-items: center !important;
-      }
-
       .block-container {
-        width: 100%;
-        max-width: 1900px;
-        padding-top: 3.35rem;
-        padding-left: 1rem;
-        padding-right: 1rem;
-        padding-bottom: 3rem;
-      }
-
-      #MainMenu, footer, [data-testid="stDecoration"] {
-        visibility: hidden;
+        max-width: 1450px;
+        padding-top: 1.1rem;
+        padding-bottom: 4rem;
       }
 
       section[data-testid="stSidebar"] {
@@ -144,10 +102,10 @@ st.markdown(
       }
 
       div[role="radiogroup"] label {
-        background: rgba(255,255,255,0.68);
+        background: rgba(255,255,255,0.48);
         border: 1px solid rgba(62, 127, 117, 0.15);
         border-radius: 12px;
-        padding: 0.55rem 0.72rem;
+        padding: 0.42rem 0.62rem;
         margin-bottom: 0.28rem;
         transition: background 0.18s ease, transform 0.18s ease;
       }
@@ -180,60 +138,33 @@ st.markdown(
         position: relative;
         overflow: hidden;
         display: grid;
-        grid-template-columns: minmax(0, 1.1fr) minmax(360px, 0.9fr);
+        grid-template-columns: minmax(0, 1.6fr) minmax(260px, 0.7fr);
         gap: 1.4rem;
         align-items: center;
-        min-height: 345px;
-        padding: 2rem 2.2rem;
-        margin: 0.15rem 0 1.15rem;
-        border: 1px solid rgba(61, 129, 118, 0.22);
-        border-radius: 30px;
+        padding: 1.7rem 2rem;
+        margin: 0.1rem 0 1.2rem;
+        border: 1px solid rgba(61, 129, 118, 0.18);
+        border-radius: 24px;
         background:
-          radial-gradient(circle at 9% 16%, rgba(255,255,255,.92), transparent 15rem),
-          radial-gradient(circle at 82% 14%, rgba(255,239,190,.55), transparent 13rem),
-          linear-gradient(125deg, rgba(224,245,235,.99), rgba(220,241,248,.98) 58%, rgba(235,239,249,.98));
-        box-shadow: 0 22px 55px rgba(37,92,84,.13);
-      }
-
-      .edm-hero::before,
-      .edm-hero::after {
-        content: "";
-        position: absolute;
-        border-radius: 50%;
-        pointer-events: none;
-      }
-
-      .edm-hero::before {
-        width: 170px;
-        height: 170px;
-        left: -62px;
-        bottom: -74px;
-        border: 24px solid rgba(105,185,177,.13);
-      }
-
-      .edm-hero::after {
-        width: 120px;
-        height: 120px;
-        right: 32%;
-        top: -75px;
-        border: 18px solid rgba(104,175,194,.12);
+          linear-gradient(125deg, rgba(231, 247, 239, 0.98), rgba(231, 244, 249, 0.96));
+        box-shadow: 0 16px 42px rgba(35, 91, 83, 0.10);
       }
 
       .edm-hero h1 {
         margin: 0;
         max-width: 880px;
         color: var(--edm-ink);
-        font-size: clamp(2.15rem, 4vw, 4rem);
-        line-height: 1.02;
-        letter-spacing: 0;
+        font-size: clamp(2rem, 4.2vw, 3.65rem);
+        line-height: 1.03;
+        letter-spacing: -0.045em;
       }
 
       .edm-hero p {
         max-width: 850px;
         margin: 0.8rem 0 0;
         color: var(--edm-muted);
-        font-size: 1.08rem;
-        line-height: 1.55;
+        font-size: 1.07rem;
+        line-height: 1.65;
       }
 
       .edm-kicker {
@@ -252,518 +183,16 @@ st.markdown(
       }
 
       .edm-water-art {
-        min-height: 330px;
+        min-height: 185px;
         display: flex;
         align-items: center;
         justify-content: center;
-        padding: .5rem;
-        border-radius: 28px;
-        background: rgba(255,255,255,.48);
-        border: 1px solid rgba(84,145,137,.18);
-        box-shadow: inset 0 0 35px rgba(255,255,255,.48), 0 12px 30px rgba(49,104,96,.10);
-      }
-
-      .edm-sewer-diagram {
-        position: relative;
-        width: 100%;
-        height: 320px;
-        overflow: hidden;
-        border: 1px solid rgba(53,112,104,.18);
-        border-radius: 22px;
-        background: linear-gradient(to bottom, #EAF8FC 0 48%, #E7DDC9 48% 100%);
-        color: #173D3A;
-      }
-
-      .edm-diagram-title {
-        position: absolute;
-        z-index: 8;
-        top: 12px;
-        left: 16px;
-        right: 16px;
-        padding: 7px 10px;
-        border-radius: 12px;
-        background: rgba(255,255,255,.88);
-        color: #204E49;
-        font-size: .78rem;
-        font-weight: 850;
-        text-align: center;
-        box-shadow: 0 4px 12px rgba(41,96,89,.08);
-      }
-
-      .edm-hero-raindrop {
-        position: absolute;
-        z-index: 4;
-        top: 56px;
-        color: #4FA9CE;
-        font-size: 18px;
-        line-height: 1;
-        animation: edmRain 1.6s ease-in-out infinite;
-      }
-
-      .edm-hero-raindrop.r1 { left: 10%; }
-      .edm-hero-raindrop.r2 { left: 20%; animation-delay: .35s; }
-      .edm-hero-raindrop.r3 { left: 34%; animation-delay: .7s; }
-      .edm-hero-raindrop.r4 { left: 48%; animation-delay: .2s; }
-      .edm-hero-raindrop.r5 { left: 61%; animation-delay: .8s; }
-
-      .edm-house {
-        position: absolute;
-        z-index: 5;
-        left: 8%;
-        top: 94px;
-        width: 84px;
-        height: 54px;
-        border: 3px solid #47766F;
-        border-radius: 5px 5px 2px 2px;
-        background: #FFF8E8;
-      }
-
-      .edm-house::before {
-        content: "";
-        position: absolute;
-        left: 7px;
-        top: -34px;
-        width: 62px;
-        height: 62px;
-        border-top: 3px solid #47766F;
-        border-left: 3px solid #47766F;
-        background: #D7A99D;
-        transform: rotate(45deg);
-        z-index: -1;
-      }
-
-      .edm-house::after {
-        content: "Wastewater";
-        position: absolute;
-        left: 6px;
-        bottom: 6px;
-        color: #315F5A;
-        font-size: 10px;
-        font-weight: 750;
-      }
-
-      .edm-door {
-        position: absolute;
-        right: 9px;
-        bottom: 0;
-        width: 18px;
-        height: 30px;
-        border: 2px solid #47766F;
-        background: #DCEDE5;
-      }
-
-      .edm-road {
-        position: absolute;
-        z-index: 3;
-        top: 152px;
-        left: 0;
-        right: 0;
-        height: 36px;
-        border-top: 5px solid #94B58D;
-        border-bottom: 4px solid #71817E;
-        background: #AAB7B5;
-      }
-
-      .edm-road::after {
-        content: "RAIN + WASTEWATER ENTER ONE PIPE";
-        position: absolute;
-        left: 34%;
-        top: 8px;
-        color: #FFFFFF;
-        font-size: 9px;
-        font-weight: 850;
-        letter-spacing: .05em;
-      }
-
-      .edm-drain {
-        position: absolute;
-        z-index: 6;
-        left: 46%;
-        top: 158px;
-        width: 38px;
-        height: 12px;
-        border-radius: 3px;
-        background: repeating-linear-gradient(90deg, #334E4B 0 3px, #8CA09D 3px 7px);
-      }
-
-      .edm-house-connector,
-      .edm-drain-connector {
-        position: absolute;
-        z-index: 2;
-        width: 13px;
-        border: 3px solid #5B716D;
-        background: #9C6A48;
-      }
-
-      .edm-house-connector { left: 24%; top: 138px; height: 91px; }
-      .edm-drain-connector { left: 49%; top: 166px; height: 63px; background: #69ADBE; }
-
-      .edm-main-pipe {
-        position: absolute;
-        z-index: 5;
-        left: 8%;
-        top: 216px;
-        width: 66%;
-        height: 46px;
-        overflow: hidden;
-        border: 5px solid #5A6C69;
-        border-radius: 24px;
-        background: #EEF2EF;
-        box-shadow: 0 5px 10px rgba(62,77,73,.12);
-      }
-
-      .edm-main-flow {
-        position: absolute;
-        left: 4px;
-        right: 4px;
-        bottom: 4px;
-        height: 17px;
-        border-radius: 12px;
-        background: repeating-linear-gradient(110deg, #8B5A3C 0 20px, #A56B42 20px 38px);
-        animation: edmRiver 3s linear infinite;
-      }
-
-      .edm-main-pipe-label {
-        position: absolute;
-        z-index: 7;
-        left: 19%;
-        top: 229px;
-        color: #FFFFFF;
-        font-size: 10px;
-        font-weight: 900;
-        letter-spacing: .04em;
-        text-transform: uppercase;
-      }
-
-      .edm-overflow-chamber {
-        position: absolute;
-        z-index: 7;
-        left: 68%;
-        top: 200px;
-        width: 48px;
-        height: 76px;
-        border: 4px solid #4E6863;
-        border-radius: 8px 8px 18px 18px;
-        background: linear-gradient(to bottom, #EDF4F1 0 42%, #8B5A3C 42% 100%);
-      }
-
-      .edm-overflow-chamber span {
-        position: absolute;
-        left: 50%;
-        top: -18px;
-        width: 92px;
-        transform: translateX(-50%);
-        color: #315F5A;
-        font-size: 9px;
-        font-weight: 850;
-        text-align: center;
-      }
-
-      .edm-overflow-pipe {
-        position: absolute;
-        z-index: 6;
-        left: 74%;
-        top: 243px;
-        width: 99px;
-        height: 20px;
-        border: 4px solid #5A6C69;
-        border-radius: 12px;
-        background: #8B5A3C;
-        transform: rotate(17deg);
-        transform-origin: left center;
-      }
-
-      .edm-discharge-label {
-        position: absolute;
-        z-index: 9;
-        right: 5px;
-        top: 218px;
-        padding: 4px 7px;
-        border-radius: 8px;
-        background: #FFF5EA;
-        color: #7A452C;
-        font-size: 9px;
-        font-weight: 900;
-      }
-
-      .edm-river {
-        position: absolute;
-        z-index: 4;
-        right: -18px;
-        bottom: -20px;
-        width: 150px;
-        height: 75px;
-        border: 5px solid rgba(62,145,167,.35);
-        border-radius: 55% 45% 0 0;
-        background: repeating-linear-gradient(165deg, #8FD0DE 0 15px, #65B4C8 15px 28px);
-      }
-
-      .edm-river span {
-        position: absolute;
-        left: 28px;
-        top: 9px;
-        color: #FFFFFF;
-        font-size: 10px;
-        font-weight: 900;
-      }
-
-      .edm-treatment-route {
-        position: absolute;
-        z-index: 4;
-        left: 18%;
-        top: 257px;
-        width: 12px;
-        height: 24px;
-        border: 3px solid #4D7770;
-        background: #73B6A4;
-      }
-
-      .edm-treatment {
-        position: absolute;
-        z-index: 6;
-        left: 7%;
-        bottom: 7px;
-        width: 125px;
-        padding: 7px 8px;
-        border: 2px solid #4C8176;
-        border-radius: 11px;
-        background: #DDF0E4;
-        color: #285B54;
-        font-size: 10px;
-        font-weight: 850;
-        text-align: center;
-      }
-
-      /* Static, label-free combined-sewer illustration used in the hero. */
-      .edm-simple-sewer-art {
-        position: relative;
-        width: 100%;
-        height: 310px;
-        overflow: hidden;
-        border: 1px solid rgba(53,112,104,.18);
-        border-radius: 22px;
-        background: linear-gradient(to bottom, #EAF8FC 0 46%, #E7DDC9 46% 100%);
-      }
-
-      .edm-simple-house {
-        position: absolute;
-        z-index: 5;
-        width: 78px;
-        height: 58px;
-        border: 3px solid #54746F;
-        border-radius: 5px 5px 2px 2px;
-        background: #FFF8E8;
-      }
-
-      .edm-simple-house::before {
-        content: "";
-        position: absolute;
-        left: 7px;
-        top: -31px;
-        width: 58px;
-        height: 58px;
-        border-top: 3px solid #54746F;
-        border-left: 3px solid #54746F;
-        background: #CFA99E;
-        transform: rotate(45deg);
-        z-index: -1;
-      }
-
-      .edm-simple-house-a { left: 8%; top: 75px; }
-      .edm-simple-house-b { left: 35%; top: 91px; transform: scale(.82); }
-
-      .edm-simple-window {
-        position: absolute;
-        left: 10px;
-        top: 15px;
-        width: 19px;
-        height: 18px;
-        border: 2px solid #54746F;
-        background: #C9E7ED;
-      }
-
-      .edm-simple-door {
-        position: absolute;
-        right: 9px;
-        bottom: 0;
-        width: 19px;
-        height: 32px;
-        border: 2px solid #54746F;
-        background: #DCEDE5;
-      }
-
-      .edm-simple-ground {
-        position: absolute;
-        z-index: 3;
-        top: 144px;
-        left: 0;
-        right: 0;
-        height: 34px;
-        border-top: 5px solid #94B58D;
-        border-bottom: 4px solid #768885;
-        background: #AEBBB8;
-      }
-
-      .edm-simple-drain {
-        position: absolute;
-        z-index: 7;
-        left: 54%;
-        top: 150px;
-        width: 40px;
-        height: 12px;
-        border-radius: 3px;
-        background: repeating-linear-gradient(90deg, #344D4A 0 3px, #91A39F 3px 7px);
-      }
-
-      .edm-simple-connector {
-        position: absolute;
-        z-index: 4;
-        width: 15px;
-        border: 4px solid #586B68;
-        background: #DDE6E2;
-      }
-
-      .edm-simple-connector-a { left: 22%; top: 128px; height: 94px; }
-      .edm-simple-connector-b { left: 44%; top: 137px; height: 85px; }
-      .edm-simple-connector-c { left: 57%; top: 160px; height: 62px; }
-
-      .edm-static-main-pipe {
-        position: absolute;
-        z-index: 6;
-        left: 7%;
-        top: 210px;
-        width: 68%;
-        height: 48px;
-        overflow: hidden;
-        border: 6px solid #586B68;
-        border-radius: 26px;
-        background: #ECF1EF;
-        box-shadow: 0 5px 10px rgba(62,77,73,.13);
-      }
-
-      .edm-static-main-water {
-        position: absolute;
-        left: 5px;
-        right: 5px;
-        bottom: 5px;
-        height: 13px;
-        border-radius: 9px;
-        background: #9CCFD8;
-      }
-
-      .edm-static-chamber {
-        position: absolute;
-        z-index: 8;
-        left: 69%;
-        top: 197px;
-        width: 46px;
-        height: 73px;
-        border: 5px solid #526A66;
-        border-radius: 9px 9px 19px 19px;
-        background: linear-gradient(to bottom, #EDF3F1 0 52%, #A7C9C5 52% 100%);
-      }
-
-      .edm-static-outfall-pipe {
-        position: absolute;
-        z-index: 7;
-        left: 75%;
-        top: 238px;
-        width: 118px;
-        height: 26px;
-        overflow: hidden;
-        border: 5px solid #586B68;
-        border-radius: 14px;
-        background: #E7ECEA;
-        transform: rotate(16deg);
-        transform-origin: left center;
-      }
-
-      .edm-outfall-stain {
-        position: absolute;
-        right: -4px;
-        bottom: 3px;
-        width: 65%;
-        height: 11px;
-        border-radius: 8px;
-        background: linear-gradient(90deg, rgba(139,90,60,.18), #8B5A3C 72%);
-      }
-
-      .edm-static-receiving-water {
-        position: absolute;
-        z-index: 5;
-        right: -20px;
-        bottom: -20px;
-        width: 170px;
-        height: 80px;
-        overflow: hidden;
-        border: 5px solid rgba(62,145,167,.34);
-        border-radius: 60% 40% 0 0;
-        background: repeating-linear-gradient(165deg, #A8DDE5 0 18px, #79C3D1 18px 34px);
-      }
-
-      .edm-water-stain {
-        position: absolute;
-        left: 8px;
-        top: 7px;
-        width: 74px;
-        height: 34px;
-        border-radius: 50%;
-        background: radial-gradient(ellipse at left, rgba(139,90,60,.62), rgba(139,90,60,.20) 55%, transparent 76%);
-      }
-
-      .edm-hero-badges {
-        display: flex;
-        flex-wrap: wrap;
-        gap: .55rem;
-        margin-top: 1.1rem;
-      }
-
-      .edm-hero-badges span {
-        display: inline-flex;
-        align-items: center;
-        padding: .42rem .68rem;
-        border: 1px solid rgba(51,117,108,.16);
-        border-radius: 999px;
-        background: rgba(255,255,255,.72);
-        color: #315F5A;
-        font-size: .78rem;
-        font-weight: 760;
-      }
-
-      .edm-cloud-a { animation: edmCloudA 8s ease-in-out infinite alternate; }
-      .edm-cloud-b { animation: edmCloudB 10s ease-in-out infinite alternate; }
-      .edm-rain-drop { animation: edmRain 1.6s ease-in-out infinite; }
-      .edm-rain-drop:nth-child(2n) { animation-delay: .45s; }
-      .edm-rain-drop:nth-child(3n) { animation-delay: .85s; }
-      .edm-river-flow {
-        stroke-dasharray: 28 16;
-        animation: edmRiver 3.2s linear infinite;
-      }
-
-      @keyframes edmCloudA {
-        from { transform: translateX(-8px); }
-        to { transform: translateX(16px); }
-      }
-
-      @keyframes edmCloudB {
-        from { transform: translateX(10px); }
-        to { transform: translateX(-15px); }
-      }
-
-      @keyframes edmRain {
-        0% { transform: translateY(-4px); opacity: 0; }
-        30% { opacity: .85; }
-        100% { transform: translateY(22px); opacity: 0; }
-      }
-
-      @keyframes edmRiver {
-        to { stroke-dashoffset: -88; }
       }
 
       .edm-section-header {
-        margin: 0.15rem 0 0.65rem;
-        padding: 0.72rem 1rem;
-        border-left: 6px solid #4A9C7D;
+        margin: 0.2rem 0 0.9rem;
+        padding: 1rem 1.2rem;
+        border-left: 7px solid #4A9C7D;
         border-radius: 0 16px 16px 0;
         background: linear-gradient(90deg, rgba(234,246,240,0.95), rgba(255,255,255,0.50));
       }
@@ -771,39 +200,28 @@ st.markdown(
       .edm-section-header h2 {
         margin: 0;
         color: var(--edm-ink);
-        font-size: 1.42rem;
+        font-size: 1.75rem;
         line-height: 1.15;
       }
 
       .edm-section-header p {
-        margin: 0.22rem 0 0;
+        margin: 0.38rem 0 0;
         color: var(--edm-muted);
-        line-height: 1.4;
-        font-size: .91rem;
-      }
-
-      .edm-quality-guide {
-        display: grid;
-        grid-template-columns: repeat(3, minmax(0, 1fr));
-      }
-
-      .edm-quality-flow {
-        display: grid;
-        grid-template-columns: 1fr auto 1fr auto 1fr;
+        line-height: 1.5;
       }
 
       .edm-metric-grid {
         display: grid;
         grid-template-columns: repeat(4, minmax(0, 1fr));
-        gap: 0.65rem;
-        margin: 0.5rem 0 0.85rem;
+        gap: 0.85rem;
+        margin: 0.7rem 0 1.2rem;
       }
 
       .edm-metric-card {
         position: relative;
         overflow: hidden;
-        min-height: 104px;
-        padding: 0.78rem 0.9rem;
+        min-height: 132px;
+        padding: 1rem 1.05rem;
         border: 1px solid rgba(48, 112, 103, 0.14);
         border-radius: 18px;
         background: rgba(255,255,255,0.72);
@@ -833,7 +251,7 @@ st.markdown(
       .edm-metric-value {
         margin: 0.28rem 0 0.2rem;
         color: var(--edm-ink);
-        font-size: 1.62rem;
+        font-size: 2rem;
         font-weight: 750;
         line-height: 1.05;
       }
@@ -854,110 +272,17 @@ st.markdown(
         box-shadow: 0 8px 24px rgba(38, 91, 84, 0.06);
       }
 
-      .edm-plain-card {
-        padding: 1rem 1.05rem;
-        margin: .55rem 0;
-        border: 1px solid rgba(48, 112, 103, 0.16);
-        border-radius: 16px;
-        background: rgba(255,255,255,.78);
-        box-shadow: 0 7px 20px rgba(38, 91, 84, .07);
-      }
-
-      .edm-plain-card h3 {
-        margin: 0 0 .35rem;
-        color: var(--edm-ink);
-        font-size: 1.08rem;
-      }
-
-      .edm-rank-row {
-        padding: .72rem .78rem;
-        margin: .48rem 0;
-        border-radius: 13px;
-        background: rgba(255,255,255,.82);
-        border: 1px solid rgba(48,112,103,.14);
-        border-left: 7px solid var(--rank-colour, #68AFC2);
-      }
-
-      .edm-rank-number {
-        display: inline-flex;
-        align-items: center;
-        justify-content: center;
-        min-width: 30px;
-        height: 30px;
-        margin-right: .45rem;
-        border-radius: 50%;
-        background: #E9F4F8;
-        color: #245B61;
-        font-weight: 800;
-      }
-
-      .edm-rank-name { font-weight: 800; color: var(--edm-ink); }
-      .edm-rank-detail { margin-top: .25rem; color: var(--edm-muted); font-size: .84rem; }
-
-      .edm-risk-guide {
-        display: grid;
-        grid-template-columns: repeat(3, minmax(0, 1fr));
-        gap: .8rem;
-        margin: .65rem 0 1.1rem;
-      }
-
-      .edm-risk-guide > div {
-        min-height: 94px;
-        padding: 1rem 1.1rem;
-        border-radius: 19px;
-        background: linear-gradient(145deg, rgba(255,255,255,.94), var(--risk-tint));
-        border-top: 8px solid var(--risk-colour);
-        box-shadow: 0 10px 25px rgba(38,91,84,.08);
-      }
-
-      .edm-risk-guide b {
-        display: block;
-        margin-bottom: .2rem;
-        color: var(--edm-ink);
-        font-size: 1.05rem;
-      }
-
-      .edm-home-chart-note {
-        margin: .35rem 0 .85rem;
-        padding: .78rem 1rem;
-        border: 1px solid rgba(55,120,110,.14);
-        border-radius: 15px;
-        color: #416B66;
-        background: linear-gradient(110deg, rgba(235,248,242,.88), rgba(233,245,249,.88));
-        font-size: .9rem;
-      }
-
-      .edm-simple-label {
-        color: #365F5B;
-        font-size: .84rem;
-        font-weight: 750;
-      }
-
-      .edm-access-note {
-        padding: .7rem .8rem;
-        border-radius: 12px;
-        background: rgba(255,255,255,.72);
-        color: #365F5B;
-        font-size: .82rem;
-      }
-
-      :focus-visible {
-        outline: 4px solid #2B7D89 !important;
-        outline-offset: 3px !important;
-      }
-
       .edm-banner {
         display: flex;
         gap: 0.75rem;
         align-items: flex-start;
-        padding: 0.65rem 0.82rem;
-        margin: 0.45rem 0 0.75rem;
+        padding: 0.9rem 1rem;
+        margin: 0.6rem 0 1rem;
         border-radius: 14px;
         color: var(--edm-ink);
         background: var(--banner-bg, #E9F4F8);
         border-left: 6px solid var(--banner-edge, #68AFC2);
-        line-height: 1.42;
-        font-size: .91rem;
+        line-height: 1.55;
       }
 
       .edm-journey {
@@ -1010,181 +335,16 @@ st.markdown(
         background: linear-gradient(145deg, #F8FCFA, #E9F5F1);
       }
 
-      div[data-testid="stRadio"] > div[role="radiogroup"] {
-        display: flex;
-        flex-wrap: wrap;
-        gap: .38rem;
-        padding: .42rem;
-        margin: .15rem 0 .75rem;
-        border: 1px solid rgba(55,120,110,.16);
-        border-radius: 16px;
-        background: rgba(255,255,255,.62);
-        box-shadow: 0 6px 18px rgba(38,91,84,.05);
-      }
-
-      div[data-testid="stRadio"] > div[role="radiogroup"] label {
-        flex: 1 1 145px;
-        justify-content: center;
-        min-height: 38px;
-        padding: .38rem .55rem;
-        margin: 0;
-        font-size: .86rem;
-        font-weight: 750;
-        text-align: center;
-        background: linear-gradient(145deg, rgba(255,255,255,.88), rgba(232,246,240,.78));
-      }
-
-      /* The dashboard has one navigation menu: a compact vertical menu in
-         Streamlit's sidebar. These rules override the horizontal radio style
-         used by filters inside the main page. */
-      section[data-testid="stSidebar"] div[data-testid="stRadio"] > div[role="radiogroup"] {
-        display: flex !important;
-        flex-direction: column !important;
-        flex-wrap: nowrap !important;
-        gap: .34rem !important;
-        padding: .3rem 0 !important;
-        margin: .15rem 0 .65rem !important;
-        border: 0 !important;
-        border-radius: 0 !important;
-        background: transparent !important;
-        box-shadow: none !important;
-      }
-
-      section[data-testid="stSidebar"] div[data-testid="stRadio"] > div[role="radiogroup"] label {
-        flex: 0 0 auto !important;
-        width: 100% !important;
-        min-height: 40px !important;
-        justify-content: flex-start !important;
-        padding: .42rem .55rem !important;
-        margin: 0 !important;
-        border: 1px solid rgba(71,139,164,.24) !important;
-        border-radius: 11px !important;
-        background: linear-gradient(135deg, #E7F5FA, #D8ECF5) !important;
-        box-shadow: 0 3px 9px rgba(58,123,148,.07) !important;
-        font-size: .84rem !important;
-        font-weight: 720 !important;
-        text-align: left !important;
-        transform: none !important;
-      }
-
-      section[data-testid="stSidebar"] div[data-testid="stRadio"] > div[role="radiogroup"] label:hover {
-        background: linear-gradient(135deg, #DCEFF7, #CBE6F1) !important;
-        border-color: rgba(55,126,153,.42) !important;
-      }
-
-      section[data-testid="stSidebar"] div[data-testid="stRadio"] > div[role="radiogroup"] label:has(input:checked) {
-        background: linear-gradient(135deg, #CFEAF4, #BFDDEA) !important;
-        border-color: rgba(48,118,145,.48) !important;
-        box-shadow: 0 4px 12px rgba(48,118,145,.13) !important;
-      }
-
-      .edm-page-grid {
-        display: grid;
-        grid-template-columns: repeat(6, minmax(0,1fr));
-        gap: .62rem;
-        margin: .5rem 0 .9rem;
-      }
-
-      .edm-page-card {
-        min-height: 105px;
-        padding: .8rem;
-        border: 1px solid rgba(52,114,105,.14);
-        border-radius: 17px;
-        background: linear-gradient(145deg, rgba(255,255,255,.88), var(--page-tint,#EAF6F0));
-        box-shadow: 0 8px 20px rgba(38,91,84,.06);
-        transition: transform .18s ease, box-shadow .18s ease;
-      }
-
-      .edm-page-card:hover {
-        transform: translateY(-3px);
-        box-shadow: 0 12px 24px rgba(38,91,84,.11);
-      }
-
-      .edm-page-icon {
-        display: inline-flex;
-        align-items: center;
-        justify-content: center;
-        width: 42px;
-        height: 42px;
-        border-radius: 50%;
-        font-size: 1.55rem;
-        background: linear-gradient(145deg, rgba(255,255,255,.94), var(--page-tint,#EAF6F0));
-        border: 1px solid rgba(67,126,118,.14);
-        box-shadow: 0 5px 12px rgba(38,91,84,.08);
-      }
-      .edm-page-card h3 { margin: .25rem 0 .12rem; font-size: .97rem; }
-      .edm-page-card p {
-        margin: 0;
-        color: var(--edm-muted);
-        font-size: .79rem;
-        line-height: 1.35 !important;
-      }
-
-      .edm-sewer-story {
-        overflow: hidden;
-        padding: .6rem .7rem .35rem;
-        margin: .5rem 0 .85rem;
-        border: 1px solid rgba(52,114,105,.15);
-        border-radius: 20px;
-        background: linear-gradient(180deg,#EDF8FA 0%,#EAF6F0 55%,#E7F2E9 100%);
-        box-shadow: 0 10px 26px rgba(38,91,84,.07);
-      }
-
-      .edm-sewer-story svg { width: 100%; height: auto; display: block; }
-      .edm-flow-water {
-        stroke-dasharray: 18 11;
-        animation: edmPipeFlow 2.2s linear infinite;
-      }
-      .edm-flow-node {
-        transition: transform .18s ease, filter .18s ease;
-        transform-origin: center;
-      }
-      .edm-flow-node:hover {
-        transform: translateY(-4px);
-        filter: drop-shadow(0 5px 5px rgba(32,90,82,.18));
-      }
-      @keyframes edmPipeFlow { to { stroke-dashoffset: -58; } }
-
-      div[data-testid="stPlotlyChart"] {
-        padding: .35rem;
-        border: 1px solid rgba(52,114,105,.12);
-        border-radius: 18px;
-        background: rgba(255,255,255,.58);
-        box-shadow: 0 8px 22px rgba(38,91,84,.055);
-      }
-
-      iframe[title="streamlit_folium.st_folium"] {
-        width: 100% !important;
-        border: 1px solid rgba(48,112,103,.20) !important;
-        border-radius: 24px !important;
-        box-shadow: 0 18px 42px rgba(34,82,75,.14) !important;
-        background: linear-gradient(145deg,#DDF2F5,#E8F3EA) !important;
-      }
-
       @media (max-width: 1050px) {
-        .block-container { padding-right: 1rem; }
         .edm-metric-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
-        .edm-page-grid { grid-template-columns: repeat(3, minmax(0, 1fr)); }
         .edm-hero { grid-template-columns: 1fr; }
         .edm-water-art { min-height: 135px; }
       }
 
       @media (max-width: 680px) {
-        .edm-metric-grid, .edm-journey, .edm-risk-guide { grid-template-columns: 1fr; }
-        .edm-page-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+        .edm-metric-grid, .edm-journey { grid-template-columns: 1fr; }
         .edm-hero { padding: 1.25rem; border-radius: 18px; }
         .block-container { padding-left: 0.75rem; padding-right: 0.75rem; }
-        .edm-quality-guide, .edm-quality-flow { grid-template-columns: 1fr !important; }
-        .edm-quality-flow > div:nth-child(2),
-        .edm-quality-flow > div:nth-child(4) { transform: rotate(90deg); }
-      }
-
-      @media (prefers-reduced-motion: reduce) {
-        *, *::before, *::after {
-          animation-duration: .01ms !important;
-          animation-iteration-count: 1 !important;
-          scroll-behavior: auto !important;
-        }
       }
     </style>
     """,
@@ -1245,121 +405,6 @@ def first_existing(frame: pd.DataFrame, candidates: list[str]) -> str | None:
     return next((column for column in candidates if column in frame.columns), None)
 
 
-def make_risk_ranking(
-    frame: pd.DataFrame,
-    risk_column: str,
-    group_column: str | None,
-) -> pd.DataFrame:
-    """Create a plain-English ranking for the current map view."""
-    if frame.empty or not group_column or group_column not in frame.columns:
-        return pd.DataFrame()
-
-    working = frame.loc[
-        frame[risk_column].isin(RISK_ORDER)
-        & frame[group_column].notna()
-    ].copy()
-    working[group_column] = working[group_column].astype(str).str.strip()
-    working = working.loc[working[group_column].ne("")]
-    if working.empty:
-        return pd.DataFrame()
-
-    counts = (
-        working.groupby([group_column, risk_column])
-        .size()
-        .unstack(fill_value=0)
-        .reindex(columns=RISK_ORDER, fill_value=0)
-        .reset_index()
-    )
-    counts["Mapped locations"] = counts[RISK_ORDER].sum(axis=1)
-
-    spill_column = first_existing(
-        working,
-        [
-            "place_total_counted_spills",
-            "total_counted_spills_in_period",
-            "counted_spills",
-        ],
-    )
-    if spill_column:
-        spill_values = working.assign(
-            _spill_value=pd.to_numeric(working[spill_column], errors="coerce")
-        )
-        spill_group = spill_values.groupby(group_column, as_index=False)["_spill_value"]
-        # Place totals are repeated on every outlet in the same place, whereas
-        # outlet totals need summing for a water-company ranking.
-        spills = (
-            spill_group.max()
-            if spill_column == "place_total_counted_spills"
-            else spill_group.sum(min_count=1)
-        ).rename(columns={"_spill_value": "Recorded spills"})
-        counts = counts.merge(spills, on=group_column, how="left")
-    else:
-        counts["Recorded spills"] = np.nan
-
-    counts["Risk score"] = (
-        counts["High"] * 3
-        + counts["Medium"] * 2
-        + counts["Low"]
-    )
-    counts = counts.sort_values(
-        ["High", "Medium", "Recorded spills", "Mapped locations", group_column],
-        ascending=[False, False, False, False, True],
-        na_position="last",
-    ).reset_index(drop=True)
-    counts.insert(0, "Rank", np.arange(1, len(counts) + 1))
-    return counts
-
-
-def render_rank_list(
-    ranking: pd.DataFrame,
-    name_column: str,
-    empty_message: str,
-    limit: int = 8,
-):
-    if ranking.empty:
-        st.info(empty_message)
-        return
-
-    rows = []
-    for _, row in ranking.head(limit).iterrows():
-        colour = (
-            RISK_COLOURS["High"] if int(row.get("High", 0)) > 0
-            else RISK_COLOURS["Medium"] if int(row.get("Medium", 0)) > 0
-            else RISK_COLOURS["Low"]
-        )
-        spills = row.get("Recorded spills")
-        spill_text = (
-            f" · {float(spills):,.0f} recorded spills"
-            if pd.notna(spills)
-            else ""
-        )
-        rows.append(
-            f"""
-            <div class="edm-rank-row" style="--rank-colour:{colour};">
-              <div><span class="edm-rank-number">{int(row['Rank'])}</span>
-              <span class="edm-rank-name">{html.escape(str(row[name_column]))}</span></div>
-              <div class="edm-rank-detail">
-                ▲ High {int(row.get('High', 0)):,} &nbsp; ◆ Medium {int(row.get('Medium', 0)):,}
-                &nbsp; ● Low {int(row.get('Low', 0)):,}{spill_text}
-              </div>
-            </div>
-            """
-        )
-    st.html("".join(rows))
-
-
-def render_risk_guide():
-    st.html(
-        """
-        <div class="edm-risk-guide" aria-label="Plain-English risk guide">
-          <div style="--risk-colour:#4A9C7D;--risk-tint:#E7F4EC;"><b>💧 &#9679; Low</b>Lower concern</div>
-          <div style="--risk-colour:#E2A45C;--risk-tint:#FFF1D8;"><b>💧 &#9670; Medium</b>Closer attention</div>
-          <div style="--risk-colour:#D66565;--risk-tint:#FBE5E6;"><b>💧 &#9650; High</b>Priority review</div>
-        </div>
-        """
-    )
-
-
 def kpi_value(frame: pd.DataFrame, phrase: str, fallback=np.nan):
     if frame.empty or not {"KPI", "Value"}.issubset(frame.columns):
         return fallback
@@ -1382,223 +427,63 @@ def download_table(frame: pd.DataFrame, filename: str):
 # =============================================================================
 
 def render_hero():
-    st.html(
+    st.markdown(
         """
         <section class="edm-hero">
           <div>
-            <div class="edm-kicker">💧 England and Wales</div>
-            <h1>Sewage Overflow Insights</h1>
+            <div class="edm-kicker">💧 England environmental intelligence</div>
+            <h1>EDM Water &amp; Spill-Risk Observatory</h1>
             <p>
-              Explore mapped discharge outlets, receiving waters and recorded 2021–2025 risk,
-              then view the separate, clearly labelled 2026 forecast.
+              Explore verified 2023–2025 evidence, compare places and water companies,
+              and examine transparent 2026 machine-learning forecasts. Observations and
+              predictions remain visibly separated throughout the system.
             </p>
-            <div class="edm-hero-badges" aria-label="Dashboard highlights">
-              <span>Mapped receiving waters</span>
-              <span>Exact discharge outlets</span>
-              <span>Separate 2026 forecast</span>
-            </div>
           </div>
-          <div class="edm-water-art">
-            <div
-              class="edm-simple-sewer-art"
-              role="img"
-              aria-label="Static combined sewer illustration showing connected underground pipes, an outfall pipe and slight brown discolouration where the outfall reaches receiving water."
-            >
-              <div class="edm-simple-house edm-simple-house-a">
-                <span class="edm-simple-window"></span><span class="edm-simple-door"></span>
-              </div>
-              <div class="edm-simple-house edm-simple-house-b">
-                <span class="edm-simple-window"></span><span class="edm-simple-door"></span>
-              </div>
-              <div class="edm-simple-ground"></div>
-              <div class="edm-simple-drain"></div>
-              <div class="edm-simple-connector edm-simple-connector-a"></div>
-              <div class="edm-simple-connector edm-simple-connector-b"></div>
-              <div class="edm-simple-connector edm-simple-connector-c"></div>
-              <div class="edm-static-main-pipe"><div class="edm-static-main-water"></div></div>
-              <div class="edm-static-chamber"></div>
-              <div class="edm-static-outfall-pipe"><div class="edm-outfall-stain"></div></div>
-              <div class="edm-static-receiving-water"><div class="edm-water-stain"></div></div>
-            </div>
+          <div class="edm-water-art" aria-label="Water, river and leaf illustration">
+            <svg viewBox="0 0 360 220" width="100%" role="img" aria-label="Pastel water and environment illustration">
+              <defs>
+                <linearGradient id="waterDrop" x1="0" y1="0" x2="1" y2="1">
+                  <stop offset="0" stop-color="#93D3DE"/>
+                  <stop offset="1" stop-color="#4A9C7D"/>
+                </linearGradient>
+              </defs>
+              <circle cx="185" cy="112" r="92" fill="#FFFFFF" opacity="0.55"/>
+              <path d="M180 28 C150 74 128 101 128 134 C128 170 153 192 184 192 C216 192 241 169 241 135 C241 101 215 72 180 28Z" fill="url(#waterDrop)" opacity="0.94"/>
+              <path d="M154 140 C173 150 198 150 217 138" fill="none" stroke="#EAF7F4" stroke-width="8" stroke-linecap="round"/>
+              <path d="M47 169 C84 145 111 149 140 169 C168 188 201 190 236 169 C266 151 294 151 330 169" fill="none" stroke="#68AFC2" stroke-width="9" stroke-linecap="round" opacity="0.72"/>
+              <path d="M41 193 C81 171 115 176 143 193 C173 211 205 211 236 192 C271 171 300 174 334 193" fill="none" stroke="#A8D8D0" stroke-width="7" stroke-linecap="round"/>
+              <path d="M82 75 C57 58 43 66 45 88 C68 91 79 84 82 75Z" fill="#8DC6A7"/>
+              <path d="M81 75 C85 50 99 44 115 60 C105 78 94 83 81 75Z" fill="#B5DDBE"/>
+              <path d="M282 93 C301 68 318 71 323 91 C306 105 293 104 282 93Z" fill="#8DC6A7"/>
+              <path d="M282 93 C276 69 260 62 247 80 C256 98 269 102 282 93Z" fill="#C2E3C8"/>
+            </svg>
           </div>
         </section>
         """,
-    )
-
-
-def render_page_cards():
-    """Show every dashboard area on the landing page without long instructions."""
-    st.html(
-        """
-        <div class="edm-page-grid" aria-label="Dashboard sections">
-          <div class="edm-page-card" style="--page-tint:#E3F3F7;">
-            <div class="edm-page-icon">💧</div><h3>Interactive maps</h3>
-            <p>Recorded outlets and 2026 estimates.</p>
-          </div>
-          <div class="edm-page-card" style="--page-tint:#FBE4E4;">
-            <div class="edm-page-icon">💧</div><h3>Priority locations</h3>
-            <p>High-risk places, outlets and companies.</p>
-          </div>
-          <div class="edm-page-card" style="--page-tint:#E5F3EA;">
-            <div class="edm-page-icon">💧</div><h3>Places &amp; companies</h3>
-            <p>Simple rankings and yearly patterns.</p>
-          </div>
-          <div class="edm-page-card" style="--page-tint:#FFF1D8;">
-            <div class="edm-page-icon">💧</div><h3>Improvements &amp; changes</h3>
-            <p>See where counted spills rose or fell.</p>
-          </div>
-          <div class="edm-page-card" style="--page-tint:#F0EAF6;">
-            <div class="edm-page-icon">💧</div><h3>2026 predictions</h3>
-            <p>Forecast risks and affected locations.</p>
-          </div>
-          <div class="edm-page-card" style="--page-tint:#FFF0DD;">
-            <div class="edm-page-icon">💧</div><h3>Find a location</h3>
-            <p>Search a site and view its probabilities.</p>
-          </div>
-          <div class="edm-page-card" style="--page-tint:#E7F4F6;">
-            <div class="edm-page-icon">💧</div><h3>Water quality</h3>
-            <p>Explore linked 2025 monitoring results.</p>
-          </div>
-          <div class="edm-page-card" style="--page-tint:#EDF3DE;">
-            <div class="edm-page-icon">💧</div><h3>Evidence</h3>
-            <p>Sources, quality checks and limitations.</p>
-          </div>
-        </div>
-        """
-    )
-    destinations = [
-        ("Open map", "Explore the map"),
-        ("Priority list", "Priority locations"),
-        ("Compare", "Places and companies"),
-        ("Changes", "Improvements and changes"),
-        ("2026 forecast", "2026 predictions"),
-        ("Water quality", "Water quality"),
-        ("Find a site", "Check one location"),
-        ("Evidence", "About the evidence"),
-    ]
-    for row_start in range(0, len(destinations), 4):
-        row_destinations = destinations[row_start:row_start + 4]
-        for column, (button_text, destination) in zip(
-            st.columns(4), row_destinations
-        ):
-            with column:
-                st.button(
-                    button_text,
-                    key=f"home_{destination}",
-                    use_container_width=True,
-                    on_click=lambda target=destination: st.session_state.update(
-                        sidebar_navigation=target
-                    ),
-                )
-
-
-def render_sewer_story():
-    """Compact animated explanation of a combined sewer and overflow route."""
-    st.html(
-        """
-        <div class="edm-sewer-story">
-          <svg viewBox="0 0 1200 355" role="img" aria-labelledby="sewer-title sewer-desc">
-            <title id="sewer-title">How water moves through a combined sewer system</title>
-            <desc id="sewer-desc">Rain and household wastewater enter one combined sewer. Normal flows travel to treatment. During heavy rain an overflow can release excess mixed water to a river.</desc>
-            <defs>
-              <linearGradient id="sky" x1="0" y1="0" x2="0" y2="1">
-                <stop offset="0" stop-color="#DDF2F7"/><stop offset="1" stop-color="#F8FCFA"/>
-              </linearGradient>
-              <linearGradient id="river" x1="0" y1="0" x2="1" y2="0">
-                <stop offset="0" stop-color="#B8E1EA"/><stop offset="1" stop-color="#74B8C9"/>
-              </linearGradient>
-              <marker id="arrowBlue" markerWidth="9" markerHeight="9" refX="8" refY="4.5" orient="auto">
-                <path d="M0,0 L9,4.5 L0,9 z" fill="#4E9FB6"/>
-              </marker>
-              <marker id="arrowCoral" markerWidth="9" markerHeight="9" refX="8" refY="4.5" orient="auto">
-                <path d="M0,0 L9,4.5 L0,9 z" fill="#D27670"/>
-              </marker>
-            </defs>
-            <rect width="1200" height="355" rx="20" fill="url(#sky)"/>
-            <path d="M0 175 Q160 150 330 177 T650 172 T950 177 T1200 164 V355 H0Z" fill="#DCEEDB"/>
-
-            <g class="edm-flow-node" transform="translate(35,18)">
-              <g fill="#FAFDFD" stroke="#8EBFCC" stroke-width="3">
-                <ellipse cx="105" cy="50" rx="75" ry="29"/><circle cx="72" cy="39" r="31"/>
-                <circle cx="114" cy="30" r="39"/><circle cx="153" cy="45" r="27"/>
-              </g>
-              <g stroke="#68AFC2" stroke-width="5" stroke-linecap="round">
-                <line class="edm-rain-drop" x1="67" y1="79" x2="56" y2="106"/>
-                <line class="edm-rain-drop" x1="108" y1="80" x2="97" y2="108"/>
-                <line class="edm-rain-drop" x1="150" y1="78" x2="139" y2="105"/>
-              </g>
-              <text x="105" y="132" text-anchor="middle" fill="#245B61" font-size="17" font-weight="700">Heavy rain</text>
-            </g>
-
-            <g class="edm-flow-node" transform="translate(230,82)">
-              <path d="M0 80 L70 20 L140 80Z" fill="#D88477"/><rect x="18" y="78" width="105" height="90" rx="5" fill="#FFF7E8" stroke="#A98D72" stroke-width="3"/>
-              <rect x="59" y="110" width="28" height="58" fill="#9FC7CE"/><rect x="28" y="98" width="25" height="25" fill="#B7DDE5"/>
-              <path d="M105 102 Q138 114 126 148" fill="none" stroke="#68AFC2" stroke-width="6"/>
-              <text x="70" y="194" text-anchor="middle" fill="#245B61" font-size="17" font-weight="700">Homes</text>
-              <text x="70" y="214" text-anchor="middle" fill="#5D7772" font-size="13">wastewater + roof water</text>
-            </g>
-
-            <g class="edm-flow-node" transform="translate(410,154)">
-              <rect x="0" y="34" width="118" height="62" rx="10" fill="#C7D2D3" stroke="#6E8585" stroke-width="3"/>
-              <g stroke="#5B7070" stroke-width="6"><line x1="20" y1="44" x2="20" y2="86"/><line x1="48" y1="44" x2="48" y2="86"/><line x1="76" y1="44" x2="76" y2="86"/><line x1="104" y1="44" x2="104" y2="86"/></g>
-              <text x="59" y="121" text-anchor="middle" fill="#245B61" font-size="17" font-weight="700">Road drains</text>
-            </g>
-
-            <path class="edm-flow-water" d="M350 245 C430 245 485 260 555 272" fill="none" stroke="#4E9FB6" stroke-width="8" marker-end="url(#arrowBlue)"/>
-            <path class="edm-flow-water" d="M470 250 C510 252 535 260 565 272" fill="none" stroke="#4E9FB6" stroke-width="8"/>
-
-            <g class="edm-flow-node" transform="translate(545,205)">
-              <rect width="205" height="106" rx="20" fill="#D8E7E4" stroke="#4A837B" stroke-width="4"/>
-              <path d="M18 54 C55 35 86 70 120 50 C151 32 171 61 190 49" fill="none" stroke="#4E9FB6" stroke-width="8"/>
-              <text x="103" y="31" text-anchor="middle" fill="#173D3A" font-size="18" font-weight="800">Combined sewer</text>
-              <text x="103" y="88" text-anchor="middle" fill="#5D7772" font-size="13">one pipe carries both flows</text>
-            </g>
-
-            <path class="edm-flow-water" d="M750 262 C805 262 835 234 875 219" fill="none" stroke="#4E9FB6" stroke-width="9" marker-end="url(#arrowBlue)"/>
-            <g class="edm-flow-node" transform="translate(856,117)">
-              <rect x="0" y="46" width="145" height="118" rx="14" fill="#F4F1E4" stroke="#7B9B87" stroke-width="4"/>
-              <circle cx="42" cy="86" r="25" fill="#B7D9C6" stroke="#5C9076" stroke-width="3"/><circle cx="103" cy="86" r="25" fill="#B7D9C6" stroke="#5C9076" stroke-width="3"/>
-              <rect x="27" y="120" width="91" height="27" rx="6" fill="#DDEADF"/>
-              <text x="72" y="24" text-anchor="middle" fill="#245B61" font-size="17" font-weight="800">Treatment works</text>
-              <text x="72" y="184" text-anchor="middle" fill="#5D7772" font-size="13">normal route</text>
-            </g>
-
-            <path d="M648 206 C710 140 785 122 1020 242" fill="none" stroke="#D27670" stroke-width="8" stroke-dasharray="15 10" marker-end="url(#arrowCoral)"/>
-            <g class="edm-flow-node" transform="translate(714,67)">
-              <rect width="155" height="63" rx="14" fill="#FFF0DD" stroke="#D09B58" stroke-width="3"/>
-              <text x="78" y="26" text-anchor="middle" fill="#7A4C16" font-size="16" font-weight="800">Storm overflow</text>
-              <text x="78" y="47" text-anchor="middle" fill="#7A6041" font-size="12">only when capacity is exceeded</text>
-            </g>
-
-            <path d="M994 251 C1058 221 1112 231 1200 255 V355 H972Z" fill="url(#river)"/>
-            <path class="edm-river-flow" d="M992 275 C1052 248 1118 259 1190 284" fill="none" stroke="#EFFBFC" stroke-width="9"/>
-            <g transform="translate(1080,292)" fill="none" stroke="#3C7F8F" stroke-width="3"><path d="M0 8 Q18 -8 36 8 Q18 26 0 8Z"/><circle cx="27" cy="6" r="2" fill="#3C7F8F"/></g>
-            <text x="1090" y="215" text-anchor="middle" fill="#245B61" font-size="18" font-weight="800">River</text>
-            <text x="1090" y="235" text-anchor="middle" fill="#5D7772" font-size="13">treated water or overflow route</text>
-          </svg>
-        </div>
-        """
+        unsafe_allow_html=True,
     )
 
 
 def section_header(title: str, subtitle: str):
-    st.html(
+    st.markdown(
         f"""
         <div class="edm-section-header">
           <h2>{html.escape(title)}</h2>
           <p>{html.escape(subtitle)}</p>
         </div>
         """,
+        unsafe_allow_html=True,
     )
 
 
 def banner(text: str, icon="ℹ️", background=PALE_BLUE, edge="#68AFC2"):
-    st.html(
+    st.markdown(
         f"""
         <div class="edm-banner" style="--banner-bg:{background};--banner-edge:{edge};">
           <span aria-hidden="true">{icon}</span><div>{text}</div>
         </div>
         """,
+        unsafe_allow_html=True,
     )
 
 
@@ -1614,269 +499,26 @@ def metric_cards(cards: list[dict]):
             </div>
             """
         )
-    # st.html renders the cards as HTML only. Using Markdown here can expose
-    # indented <div> text as a visible code block on the public dashboard.
-    st.html('<div class="edm-metric-grid">' + "".join(pieces) + "</div>")
-
-
-def mapped_annual_spill_totals(
-    frame: pd.DataFrame,
-    place_column: str | None,
-) -> dict[int, float]:
-    """Return annual counted spills without repeating town/city totals per outlet."""
-    years = OBSERVED_YEARS
-    annual_columns = [f"place_counted_spills_{year}" for year in years]
-    if (
-        frame.empty
-        or not place_column
-        or place_column not in frame.columns
-        or not all(column in frame.columns for column in annual_columns)
-    ):
-        return {year: np.nan for year in years}
-
-    # Each mapped outlet carries its town/city's annual total. Keep one row per
-    # place before adding the totals so the same spills are never counted once
-    # for every outlet in that place.
-    place_totals = (
-        frame[[place_column, *annual_columns]]
-        .dropna(subset=[place_column])
-        .drop_duplicates(subset=[place_column])
-    )
-    return {
-        year: pd.to_numeric(
-            place_totals[f"place_counted_spills_{year}"],
-            errors="coerce",
-        ).sum(min_count=1)
-        for year in years
-    }
-
-
-def normalised_record_key(value) -> str:
-    """Create a stable key for IDs read from compressed CSV files."""
-    if value is None or pd.isna(value):
-        return ""
-    text = str(value).strip()
-    if not text:
-        return ""
-    numeric = pd.to_numeric(pd.Series([text]), errors="coerce").iloc[0]
-    if pd.notna(numeric) and float(numeric).is_integer():
-        return str(int(numeric))
-    return text.casefold()
-
-
-def water_quality_site_key(company, site) -> str:
-    company_key = "" if company is None or pd.isna(company) else str(company).strip().casefold()
-    site_key = "" if site is None or pd.isna(site) else str(site).strip().casefold()
-    return f"{company_key}||{site_key}" if company_key and site_key else ""
-
-
-def water_quality_popup_panel(records: pd.DataFrame) -> str:
-    """Summarise linked 2025 nearby-station observations for one outlet."""
-    if records.empty:
-        return ""
-
-    parameter_column = first_existing(
-        records,
-        ["project_parameter_name", "determinand_name", "parameter"],
-    )
-    result_column = first_existing(
-        records,
-        ["result_as_reported", "result_numeric", "exact_numeric_result"],
-    )
-    if not parameter_column or not result_column:
-        return ""
-
-    working = records.copy()
-    date_column = first_existing(
-        working,
-        ["measurement_datetime", "measurement_date", "sample_date"],
-    )
-    if date_column:
-        working["_measurement_date"] = pd.to_datetime(
-            working[date_column],
-            errors="coerce",
-        )
-        dated = working.loc[working["_measurement_date"].dt.year.eq(2025)]
-        if not dated.empty:
-            working = dated
-    elif "measurement_year" in working.columns:
-        year_values = pd.to_numeric(working["measurement_year"], errors="coerce")
-        dated = working.loc[year_values.eq(2025)]
-        if not dated.empty:
-            working = dated
-        working["_measurement_date"] = pd.NaT
-    else:
-        working["_measurement_date"] = pd.NaT
-
-    working = working.loc[working[parameter_column].notna()].copy()
-    if working.empty:
-        return ""
-
-    station_column = first_existing(
-        working,
-        ["sampling_point_name", "monitoring_station_name", "sampling_point_id"],
-    )
-    distance_column = first_existing(
-        working,
-        ["station_distance_km", "monitoring_station_distance_km"],
-    )
-    unit_column = first_existing(working, ["reported_unit", "unit"])
-    observation_column = first_existing(working, ["observation_id", "measurement_id"])
-
-    station_text = "Nearby Environment Agency monitoring station"
-    if station_column:
-        station_values = (
-            working[station_column]
-            .dropna()
-            .astype(str)
-            .str.strip()
-            .loc[lambda values: values.ne("")]
-            .unique()
-            .tolist()
-        )
-        if station_values:
-            station_text = ", ".join(station_values[:2])
-            if len(station_values) > 2:
-                station_text += f" and {len(station_values) - 2} more"
-
-    distance_text = ""
-    if distance_column:
-        distances = pd.to_numeric(working[distance_column], errors="coerce").dropna()
-        if not distances.empty:
-            distance_text = f" · nearest station {float(distances.min()):.2f} km from outlet"
-
-    indicator_rows = []
-    for parameter, parameter_records in working.groupby(parameter_column, dropna=False):
-        parameter_records = parameter_records.sort_values(
-            "_measurement_date",
-            ascending=False,
-            na_position="last",
-        )
-        reported = parameter_records.loc[
-            parameter_records[result_column].notna()
-            & parameter_records[result_column].astype(str).str.strip().ne("")
-        ]
-        latest = reported.iloc[0] if not reported.empty else parameter_records.iloc[0]
-        result = safe_text(latest.get(result_column))
-        unit = safe_text(latest.get(unit_column), "") if unit_column else ""
-        measured_on = latest.get("_measurement_date")
-        date_text = (
-            pd.Timestamp(measured_on).strftime("%d %b %Y")
-            if pd.notna(measured_on)
-            else "2025 date not reported"
-        )
-        observation_count = (
-            int(parameter_records[observation_column].nunique())
-            if observation_column
-            else int(len(parameter_records))
-        )
-        value_with_unit = f"{result} {unit}".strip()
-        indicator_rows.append(
-            "<div style='padding:6px 7px;margin:4px 0;background:#FFFFFF;"
-            "border:1px solid #C8DDD7;border-radius:7px'>"
-            f"<b>{safe_text(parameter)}</b><br>"
-            f"Latest reported result: {value_with_unit}<br>"
-            f"<span style='font-size:11px;color:#5D7772'>{date_text} · "
-            f"{observation_count:,} measurement{'s' if observation_count != 1 else ''}</span>"
-            "</div>"
-        )
-
-    return f"""
-      <div style="margin-top:8px;padding:9px;background:#E9F4F8;border-radius:9px;">
-        <b>2025 nearby water-quality measurements</b><br>
-        <span style="font-size:11px;color:#456F73">{safe_text(station_text)}{distance_text}</span>
-        <div style="max-height:220px;overflow:auto;margin-top:5px">{''.join(indicator_rows)}</div>
-        <div style="margin-top:6px;font-size:10px;color:#5D7772">
-          These are measurements at a nearby monitoring station. Proximity does not prove
-          that this outlet caused the result. Dissolved oxygen is a water-quality indicator,
-          not itself a pollutant.
-        </div>
-      </div>
-    """
-
-
-@st.cache_data(show_spinner=False)
-def water_quality_popup_lookups() -> dict[str, dict[str, str]]:
-    """Build fast popup lookups from the public 2025 water-quality export."""
-    quality = load_table("water_quality_records")
-    empty = {"by_location": {}, "by_site": {}}
-    if quality.empty:
-        return empty
-
-    by_location: dict[str, str] = {}
-    if "location_id" in quality.columns:
-        quality["_location_key"] = quality["location_id"].map(normalised_record_key)
-        for key, records in quality.loc[quality["_location_key"].ne("")].groupby("_location_key"):
-            panel = water_quality_popup_panel(records)
-            if panel:
-                by_location[str(key)] = panel
-
-    company_column = first_existing(quality, ["company", "water_company_name"])
-    site_column = first_existing(
-        quality,
-        ["site_name", "source_site_name_ea_consents_database"],
-    )
-    by_site: dict[str, str] = {}
-    if company_column and site_column:
-        quality["_site_key"] = [
-            water_quality_site_key(company, site)
-            for company, site in zip(quality[company_column], quality[site_column])
-        ]
-        for key, records in quality.loc[quality["_site_key"].ne("")].groupby("_site_key"):
-            panel = water_quality_popup_panel(records)
-            if panel:
-                by_site[str(key)] = panel
-
-    return {"by_location": by_location, "by_site": by_site}
+    st.markdown('<div class="edm-metric-grid">' + "".join(pieces) + "</div>", unsafe_allow_html=True)
 
 
 def plot_style(figure: go.Figure, height=480):
     figure.update_layout(
         height=height,
-        margin=dict(l=34, r=22, t=58, b=42),
+        margin=dict(l=28, r=20, t=65, b=45),
         paper_bgcolor="rgba(0,0,0,0)",
-        plot_bgcolor="rgba(255,255,255,0.35)",
-        font=dict(
-            family="Atkinson Hyperlegible, Verdana, Arial, sans-serif",
-            color=INK,
-            size=12,
-        ),
-        title=dict(font=dict(color=INK, size=16), x=0.02, xanchor="left"),
+        plot_bgcolor="rgba(255,255,255,0.45)",
+        font=dict(color=INK, size=13),
+        title_font=dict(color=INK, size=18),
         legend_title_text="",
-        colorway=["#73B7AA", "#86BBD8", "#D2B6DD", "#F0C987", "#E7A3A3"],
-        hoverlabel=dict(
-            bgcolor="#FFFFFF",
-            bordercolor="#B8D6CE",
-            font_color=INK,
-            font_size=12,
-        ),
-        legend=dict(
-            bgcolor="rgba(255,255,255,.58)",
-            bordercolor="rgba(55,120,110,.12)",
-            borderwidth=1,
-        ),
+        hoverlabel=dict(bgcolor="#FFFFFF", font_color=INK),
     )
-    figure.update_xaxes(
-        gridcolor="rgba(68,120,110,0.10)",
-        linecolor="rgba(68,120,110,0.18)",
-        zeroline=False,
-        automargin=True,
-    )
-    figure.update_yaxes(
-        gridcolor="rgba(68,120,110,0.10)",
-        linecolor="rgba(68,120,110,0.18)",
-        zeroline=False,
-        automargin=True,
-    )
+    figure.update_xaxes(gridcolor="rgba(68,120,110,0.12)", zeroline=False)
+    figure.update_yaxes(gridcolor="rgba(68,120,110,0.12)", zeroline=False)
     return figure
 
 
-def risk_donut(
-    frame: pd.DataFrame,
-    risk_column: str,
-    title: str,
-    centre_label: str,
-) -> go.Figure:
+def risk_donut(frame: pd.DataFrame, risk_column: str, title: str) -> go.Figure:
     counts = (
         frame[risk_column]
         .astype("string")
@@ -1887,42 +529,22 @@ def risk_donut(
         go.Pie(
             labels=counts.index,
             values=counts.values,
-            hole=0.61,
+            hole=0.58,
             sort=False,
-            direction="clockwise",
-            rotation=-92,
             marker=dict(
                 colors=[RISK_COLOURS[label] for label in counts.index],
-                line=dict(color="#FBFDF9", width=4),
+                line=dict(color="#FBFDF9", width=3),
             ),
             textinfo="label+percent",
-            textfont=dict(size=14, color=INK),
-            insidetextorientation="horizontal",
-            pull=[0, 0.012, 0.035],
-            hovertemplate=(
-                "%{label} risk category<br>"
-                "%{value:,} discharge outlets<br>"
-                "%{percent}<extra></extra>"
-            ),
+            hovertemplate="%{label}<br>%{value:,} locations<br>%{percent}<extra></extra>",
         )
     )
     figure.update_layout(
         title=title,
-        annotations=[
-            dict(
-                text=(
-                    f"<b>{int(counts.sum()):,}</b><br>"
-                    f"<span style='font-size:12px'>{centre_label}</span>"
-                ),
-                x=0.5,
-                y=0.5,
-                showarrow=False,
-                font=dict(size=20, color=INK),
-            )
-        ],
+        annotations=[dict(text=f"{int(counts.sum()):,}<br><span style='font-size:12px'>locations</span>", x=0.5, y=0.5, showarrow=False, font=dict(size=18, color=INK))],
         showlegend=False,
     )
-    return plot_style(figure, height=455)
+    return plot_style(figure, height=420)
 
 
 # =============================================================================
@@ -1930,31 +552,15 @@ def risk_donut(
 # =============================================================================
 
 def popup_for_row(row: pd.Series, risk_column: str, prediction: bool) -> str:
-    """Build a readable map popup using the same evidence as the Colab map."""
     place = row.get("official_place_name", row.get("town_or_city", "Not available"))
     site = row.get("site_name", row.get("source_site_name_ea_consents_database", "Not available"))
     company = row.get("water_company_name", "Not available")
     receiving = row.get("receiving_water", row.get("source_receiving_water", "Not available"))
     catchment = row.get("catchment_name", row.get("catchment", "Not available"))
     grid = row.get("parsed_grid_reference", "Not available")
-    permit = row.get("permit_reference", "Not available")
-    years_observed = row.get("years_observed", "2021–2025")
-    risk_history = row.get("risk_history", "Not available")
     risk = row.get(risk_column, "Not available")
-    relationship = safe_text(row.get("official_place_relationship"))
-    distance = value_text(row.get("distance_to_official_place_km"), 2, " km")
-    x_coordinate = value_text(row.get("easting_x"), 1)
-    y_coordinate = value_text(row.get("northing_y"), 1)
-    annual_boxes = []
-    for year in OBSERVED_YEARS:
-        annual_value = row.get(f"place_counted_spills_{year}")
-        annual_boxes.append(
-            f"<div style='padding:5px;text-align:center;background:#F4FAF8;"
-            f"border:1px solid #C8DDD7;border-radius:6px'><b>{year}</b><br>"
-            f"{value_text(annual_value)} spills</div>"
-        )
-    annual_spills = "".join(annual_boxes)
 
+    evidence_rows = ""
     if prediction:
         observed = row.get("observed_2025_risk", row.get("actual_2025_risk_label", "Not available"))
         confidence = pd.to_numeric(pd.Series([row.get("prediction_confidence")]), errors="coerce").iloc[0]
@@ -1964,402 +570,50 @@ def popup_for_row(row: pd.Series, risk_column: str, prediction: bool) -> str:
             value = pd.to_numeric(pd.Series([row.get(column)]), errors="coerce").iloc[0]
             probabilities.append(f"{label}: {value:.1%}" if pd.notna(value) else f"{label}: not available")
         evidence_rows = f"""
-          <div style="margin-top:8px;padding:9px;background:#FFF3DD;border-radius:9px;">
-            <b>Recorded category in 2025:</b> {safe_text(observed)}<br>
-            <b>Suggested category for 2026:</b> {safe_text(risk)}<br>
-            <b>Chances:</b> {' · '.join(probabilities)}<br>
-            <b>Certainty:</b> {f'{confidence:.1%}' if pd.notna(confidence) else 'Not available'}<br>
-            <b>Check needed:</b> {safe_text(confidence_flag)}
+          <div style="margin-top:7px;padding:7px;background:#FFF3DD;border-radius:7px;">
+            <b>Observed 2025:</b> {safe_text(observed)}<br>
+            <b>Predicted 2026:</b> {safe_text(risk)}<br>
+            <b>Probability:</b> {' · '.join(probabilities)}<br>
+            <b>Confidence:</b> {f'{confidence:.1%}' if pd.notna(confidence) else 'Not available'}<br>
+            <b>Review flag:</b> {safe_text(confidence_flag)}
           </div>
         """
     else:
+        year = row.get("reporting_year", "2023–2025 combined period")
         spills = row.get(
             "total_counted_spills_in_period",
-            row.get("counted_spills", row.get("counted_spills_using_12_24h_count_method", "Not available")),
+            row.get(
+                "counted_spills",
+                row.get("counted_spills_using_12_24h_count_method", "Not available"),
+            ),
         )
         duration = row.get(
             "total_spill_duration_hours_in_period",
             row.get("total_duration_hours", "Not available"),
         )
-        place_spills = row.get("place_total_counted_spills", np.nan)
-        place_high = row.get("place_high_risk_locations", np.nan)
-        place_medium = row.get("place_medium_risk_locations", np.nan)
-        place_low = row.get("place_low_risk_locations", np.nan)
-        place_summary = ""
-        if any(pd.notna(value) for value in [place_high, place_medium, place_low]):
-            place_summary = (
-                f"<br><b>Risk around this town/city:</b> High {value_text(place_high)}, "
-                f"Medium {value_text(place_medium)}, Low {value_text(place_low)}"
-            )
         evidence_rows = f"""
-          <div style="margin-top:8px;padding:9px;background:#EAF6F0;border-radius:9px;">
-            <b>Risk shown on this map:</b> {safe_text(risk)}<br>
-            <b>Years covered:</b> {safe_text(years_observed)}<br>
-            <b>Counted spills for this outlet:</b> {value_text(spills)}<br>
-            <b>Recorded duration:</b> {value_text(duration, 1, ' hours')}<br>
-            <div style="margin:6px 0 3px"><b>Town/city counted spills by year</b></div>
-            <div style="display:grid;grid-template-columns:repeat(5,minmax(78px,1fr));gap:4px">{annual_spills}</div>
-            <b>Town/city total:</b> {value_text(place_spills)}
-            {place_summary}
+          <div style="margin-top:7px;padding:7px;background:#EAF6F0;border-radius:7px;">
+            <b>Observed risk:</b> {safe_text(risk)}<br>
+            <b>Evidence period:</b> {safe_text(year)}<br>
+            <b>Period counted spills:</b> {value_text(spills)}<br>
+            <b>Period recorded duration:</b> {value_text(duration, 1, ' hours')}
           </div>
         """
 
     return f"""
-      <div style="font-family:Verdana,Arial,sans-serif;width:520px;max-width:90vw;color:#173D3A;line-height:1.58;font-size:13px;">
-        <div style="font-size:16px;font-weight:800;margin:-1px -1px 8px;padding:9px 10px;
-                    border-radius:8px;background:#E9F4F8;">{safe_text(site)}</div>
+      <div style="font-family:Arial,sans-serif;width:300px;color:#173D3A;line-height:1.42;">
+        <div style="font-size:16px;font-weight:700;margin-bottom:5px;">{safe_text(site)}</div>
         <b>Town/city:</b> {safe_text(place)}<br>
-        <b>Place match:</b> {relationship} · {distance}<br>
         <b>Water company:</b> {safe_text(company)}<br>
         <b>Receiving water:</b> {safe_text(receiving)}<br>
         <b>Catchment:</b> {safe_text(catchment)}<br>
-        <b>Risk history:</b> {safe_text(risk_history)}<br>
-        <b>Permit reference:</b> {safe_text(permit)}<br>
         <b>Grid reference:</b> {safe_text(grid)}
         {evidence_rows}
         <div style="margin-top:7px;font-size:11px;color:#5D7772;">
-          Coordinates: {float(row['latitude']):.5f}, {float(row['longitude']):.5f}<br>
-          National Grid X/Y: {x_coordinate}, {y_coordinate}
+          Coordinates: {float(row['latitude']):.5f}, {float(row['longitude']):.5f}
         </div>
       </div>
     """
-
-
-def add_colab_map_panels(
-    water_map: folium.Map,
-    plotting: pd.DataFrame,
-    risk_column: str,
-    prediction: bool,
-) -> None:
-    """Add the same directory-and-ranking experience used by the Colab map."""
-    if plotting.empty:
-        return
-
-    def plain(value, fallback="Not available"):
-        if value is None or pd.isna(value) or str(value).strip() == "":
-            return fallback
-        return str(value).strip()
-
-    place_column = first_existing(plotting, ["official_place_name", "town_or_city"])
-    company_column = first_existing(plotting, ["water_company_name", "company"])
-    site_column = first_existing(
-        plotting,
-        ["site_name", "source_site_name_ea_consents_database"],
-    )
-    if not place_column or not company_column:
-        return
-
-    company_ranking = make_risk_ranking(plotting, risk_column, company_column)
-    company_trends = load_table("company_spill_trends")
-    trend_lookup = {}
-    if not company_trends.empty and {
-        "water_company_name",
-        "reporting_year",
-        "counted_spills",
-    }.issubset(company_trends.columns):
-        for company_name, company_rows in company_trends.groupby("water_company_name"):
-            company_rows = company_rows.copy()
-            company_rows["reporting_year"] = pd.to_numeric(
-                company_rows["reporting_year"], errors="coerce"
-            )
-            yearly = []
-            for year in OBSERVED_YEARS:
-                match = company_rows.loc[company_rows["reporting_year"].eq(year)]
-                count_value = (
-                    pd.to_numeric(match["counted_spills"], errors="coerce").iloc[0]
-                    if not match.empty
-                    else np.nan
-                )
-                duration_value = (
-                    pd.to_numeric(match["spill_duration_hours"], errors="coerce").iloc[0]
-                    if not match.empty and "spill_duration_hours" in match.columns
-                    else np.nan
-                )
-                yearly.append(
-                    {
-                        "year": year,
-                        "count": None if pd.isna(count_value) else round(float(count_value), 1),
-                        "duration": None if pd.isna(duration_value) else round(float(duration_value), 1),
-                    }
-                )
-            trend_lookup[str(company_name)] = yearly
-
-    ranking_rows = []
-    for _, row in company_ranking.head(12).iterrows():
-        company_name = str(row[company_column])
-        ranking_rows.append(
-            f"""
-            <button type="button" class="edm-map-rank edm-company-trend-button"
-                    data-company="{html.escape(company_name, quote=True)}"
-                    aria-label="Show the 2021 to 2025 spill trend for {html.escape(company_name, quote=True)}">
-              <span class="edm-map-rank-number">{int(row['Rank'])}</span>
-              <b>{html.escape(company_name)}</b>
-              <div><span class="risk-high">&#9650; {int(row.get('High', 0)):,}</span>
-              <span class="risk-medium">&#9670; {int(row.get('Medium', 0)):,}</span>
-              <span class="risk-low">&#9679; {int(row.get('Low', 0)):,}</span></div>
-              <small>View 2021–2025 spill trend</small>
-            </button>
-            """
-        )
-
-    risk_counts = plotting[risk_column].value_counts().reindex(RISK_ORDER, fill_value=0)
-    map_title = "Predicted 2026 risk" if prediction else "Observed spill risk"
-    period_text = "Forecast - not a confirmed event" if prediction else "Recorded 2021-2025 evidence"
-    place_detail_label = "Forecast status" if prediction else "Recorded spills"
-    panels = f"""
-    <style>
-      .edm-map-panel {{position:fixed;top:12px;z-index:9999;width:300px;max-height:86vh;
-        overflow:auto;padding:12px;background:rgba(251,253,249,.96);color:#173D3A;
-        border:1px solid #AFCFC6;border-radius:14px;box-shadow:0 7px 25px rgba(28,77,70,.19);
-        font:12px/1.38 'Atkinson Hyperlegible',Verdana,Arial,sans-serif;
-        transition:transform .28s ease,opacity .22s ease;}}
-      #edm-map-left {{left:12px;height:calc(86vh - 24px);overflow:hidden;display:flex;flex-direction:column;}}
-      #edm-map-right {{right:12px;top:12px;bottom:auto;}}
-      .edm-map-title {{margin:-12px -12px 8px;padding:10px 12px;border-radius:13px 13px 0 0;
-        color:#173D3A;background:linear-gradient(120deg,#CFEAE3,#DDEFF4);font-size:16px;font-weight:800;
-        display:flex;align-items:center;justify-content:space-between;gap:8px;}}
-      .edm-panel-close {{display:inline-flex;align-items:center;justify-content:center;width:28px;height:28px;
-        flex:0 0 28px;padding:0;border:1px solid rgba(40,100,93,.20);border-radius:50%;cursor:pointer;
-        background:rgba(255,255,255,.78);color:#245B61;font-size:18px;font-weight:800;line-height:1;}}
-      .edm-panel-close:hover,.edm-panel-close:focus {{background:#FFFFFF;box-shadow:0 3px 9px rgba(28,77,70,.14);}}
-      #edm-panel-toggle {{display:none;position:fixed;top:12px;left:12px;z-index:10001;padding:9px 13px;
-        border:1px solid #8FBDB2;border-radius:999px;background:rgba(251,253,249,.97);color:#173D3A;
-        box-shadow:0 6px 18px rgba(28,77,70,.20);cursor:pointer;font:700 12px/1.2 'Atkinson Hyperlegible',Verdana,Arial,sans-serif;}}
-      #edm-panel-toggle:hover,#edm-panel-toggle:focus {{background:#EAF6F0;}}
-      body.edm-panels-hidden #edm-map-left {{transform:translateX(calc(-100% - 24px));opacity:0;pointer-events:none;}}
-      body.edm-panels-hidden #edm-map-right {{transform:translateX(calc(100% + 24px));opacity:0;pointer-events:none;}}
-      body.edm-panels-hidden #edm-panel-toggle {{display:inline-flex;align-items:center;gap:6px;}}
-      .edm-map-period {{margin:5px 0 8px;padding:5px 7px;border-radius:8px;background:#FFFFFF;
-        color:#446862;font-size:11px;font-weight:700;}}
-      .edm-map-legend {{display:grid;grid-template-columns:repeat(5,minmax(78px,1fr));gap:4px;margin:7px 0;}}
-      .edm-map-legend div {{padding:6px 3px;border-radius:8px;text-align:center;background:#FFFFFF;font-weight:700;}}
-      .edm-map-panel label {{display:block;margin:5px 0 2px;font-weight:700;color:#365F5B;}}
-      .edm-map-panel input,.edm-map-panel select {{width:100%;box-sizing:border-box;padding:7px 8px;
-        border:1px solid #B7CEC8;border-radius:8px;background:#FFFFFF;color:#173D3A;font-size:12px;}}
-      .edm-map-filter-row {{display:grid;grid-template-columns:1fr 1fr;gap:6px;}}
-      #edm-place-count {{padding:6px 1px 3px;font-weight:700;}}
-      #edm-place-results {{flex:1;min-height:230px;overflow:auto;margin-top:2px;padding-right:2px;
-        border-top:1px solid #D4E5DF;}}
-      .edm-place-letter {{position:sticky;top:0;padding:3px 7px;background:#DDEFF4;color:#245B61;
-        font-weight:800;border-radius:6px;}}
-      .edm-place-button {{display:block;width:100%;margin:5px 0;padding:7px 8px;text-align:left;
-        color:#173D3A;background:#FFFFFF;border:1px solid #D1E1DC;border-left:6px solid var(--place-risk);
-        border-radius:9px;cursor:pointer;font-size:12px;}}
-      .edm-place-button:hover,.edm-place-button:focus {{background:#EDF8F5;transform:translateX(2px);}}
-      .edm-place-name {{display:block;font-size:13px;font-weight:800;margin-bottom:2px;}}
-      .edm-place-detail {{color:#5D7772;font-size:11px;}}
-      .edm-map-rank {{display:block;width:100%;margin:5px 0;padding:7px;text-align:left;color:#173D3A;
-        border:1px solid #D5E5E0;border-left:5px solid #68AFC2;border-radius:9px;background:#FFFFFF;
-        cursor:pointer;font:12px/1.38 'Atkinson Hyperlegible',Verdana,Arial,sans-serif;}}
-      .edm-map-rank:hover,.edm-map-rank:focus {{background:#EAF6F0;transform:translateX(-2px);
-        box-shadow:0 4px 10px rgba(35,89,81,.12);}}
-      .edm-map-rank-number {{display:inline-flex;align-items:center;justify-content:center;width:23px;
-        height:23px;margin-right:5px;border-radius:50%;background:#DDEFF4;color:#245B61;font-weight:800;}}
-      .edm-map-rank div {{margin:3px 0 0 29px;font-size:11px;word-spacing:5px;}}
-      .edm-map-rank small {{display:block;margin:4px 0 0 29px;color:#47716A;font-weight:700;}}
-      #edm-company-trend {{display:none;margin:7px 0 9px;padding:9px;border:1px solid #BFD8D0;
-        border-radius:11px;background:linear-gradient(160deg,#F7FCFA,#EAF6F0);}}
-      #edm-company-trend h4 {{margin:0 0 3px;font-size:13px;color:#173D3A;}}
-      .edm-trend-status {{display:inline-block;margin:2px 0 7px;padding:3px 7px;border-radius:999px;
-        background:#FFFFFF;color:#365F5B;font-size:11px;font-weight:800;}}
-      .edm-trend-bars {{display:flex;align-items:flex-end;justify-content:space-around;height:126px;
-        padding:7px 3px 0;border-bottom:1px solid #9BBDB4;}}
-      .edm-trend-year {{display:flex;flex-direction:column;align-items:center;justify-content:flex-end;
-        width:30%;height:100%;font-size:10px;color:#365F5B;}}
-      .edm-trend-value {{margin-bottom:3px;font-weight:800;color:#173D3A;}}
-      .edm-trend-bar {{width:34px;min-height:3px;border-radius:7px 7px 2px 2px;
-        background:linear-gradient(180deg,#68AFC2,#4A9C7D);}}
-      .edm-trend-year-label {{margin-top:4px;font-weight:800;}}
-      .edm-trend-duration {{margin-top:7px;padding:6px;border-radius:7px;background:#FFFFFF;
-        color:#52716C;font-size:10px;line-height:1.55;}}
-      .risk-high {{color:#A84B4B;font-weight:800;}} .risk-medium {{color:#93611D;font-weight:800;}}
-      .risk-low {{color:#357A63;font-weight:800;}}
-      @media(max-width:1000px) {{.edm-map-panel{{width:235px;max-height:86vh;}}
-        #edm-map-left{{height:calc(86vh - 24px);}}
-        #edm-map-right{{top:12px;bottom:auto;}}}}
-    </style>
-    <button id="edm-panel-toggle" type="button" aria-label="Show the map filters and rankings">
-      &#9776; Show filters and rankings
-    </button>
-    <aside id="edm-map-left" class="edm-map-panel" aria-label="Town and city directory">
-      <div class="edm-map-title"><span>{map_title}</span>
-      <button class="edm-panel-close" type="button" data-edm-hide-panels aria-label="Hide the map panels">&times;</button></div>
-      <div class="edm-map-period">{period_text}</div>
-      <div class="edm-map-legend">
-        <div style="color:#357A63;">&#9679; Low<br>{int(risk_counts['Low']):,}</div>
-        <div style="color:#93611D;">&#9670; Medium<br>{int(risk_counts['Medium']):,}</div>
-        <div style="color:#A84B4B;">&#9650; High<br>{int(risk_counts['High']):,}</div>
-      </div>
-      <label for="edm-place-search">Find a town or city</label>
-      <input id="edm-place-search" type="search" placeholder="Type a name or browse below">
-      <div class="edm-map-filter-row">
-        <div><label for="edm-risk-filter">Risk</label>
-        <select id="edm-risk-filter"><option value="">All risks</option><option>High</option><option>Medium</option><option>Low</option></select></div>
-        <div><label for="edm-company-filter">Water company</label>
-        <select id="edm-company-filter"><option value="">All companies</option></select></div>
-      </div>
-      <div id="edm-place-count" class="edm-place-detail">Loading the complete place list...</div>
-      <div id="edm-place-results"></div>
-    </aside>
-    <aside id="edm-map-right" class="edm-map-panel" aria-label="Water company ranking">
-      <div class="edm-map-title"><span>Water-company ranking</span>
-      <button class="edm-panel-close" type="button" data-edm-hide-panels aria-label="Hide the map panels">&times;</button></div>
-      <div class="edm-map-period">High-risk locations first</div>
-      <div class="edm-place-detail" style="margin-bottom:6px;">Select a company to view its recorded spill trend.</div>
-      <div id="edm-company-trend" aria-live="polite"></div>
-      {''.join(ranking_rows)}
-    </aside>
-    """
-    water_map.get_root().html.add_child(folium.Element(panels))
-
-    directory = []
-    for _, row in plotting.iterrows():
-        risk = plain(row.get(risk_column), "Uncategorised")
-        directory.append(
-            {
-                "lat": round(float(row["latitude"]), 6),
-                "lon": round(float(row["longitude"]), 6),
-                "risk": risk,
-                "colour": RISK_COLOURS.get(risk, "#78909C"),
-                "company": plain(row.get(company_column), "Unknown company"),
-                "place": plain(row.get(place_column), "Place unavailable"),
-                "site": plain(row.get(site_column), "Spill outlet") if site_column else "Spill outlet",
-                "spills": (
-                    "Model-generated 2026 risk"
-                    if prediction
-                    else value_text(
-                        row.get(
-                            "place_total_counted_spills",
-                            row.get("total_counted_spills_in_period"),
-                        )
-                    )
-                ),
-            }
-        )
-    directory_json = json.dumps(directory, ensure_ascii=True, separators=(",", ":")).replace("</", "<\\/")
-    company_trend_json = json.dumps(
-        trend_lookup,
-        ensure_ascii=True,
-        separators=(",", ":"),
-    ).replace("</", "<\\/")
-    map_name = water_map.get_name()
-    script = f"""
-    var edmSites={directory_json};
-    var edmCompanyTrends={company_trend_json};
-    var edmMap={map_name};
-    var edmFocusMarker=null;
-    var edmPanelsManuallyHidden=false;
-    function edmHidePanels(manual){{
-      document.body.classList.add('edm-panels-hidden');
-      if(manual)edmPanelsManuallyHidden=true;
-    }}
-    function edmShowPanels(){{
-      edmPanelsManuallyHidden=false;
-      document.body.classList.remove('edm-panels-hidden');
-    }}
-    function edmEscape(value){{var n=document.createElement('div');n.textContent=value||'';return n.innerHTML;}}
-    function edmNumber(value,decimals){{
-      if(value===null||value===undefined||Number.isNaN(Number(value)))return 'Not reported';
-      return Number(value).toLocaleString(undefined,{{minimumFractionDigits:decimals,maximumFractionDigits:decimals}});
-    }}
-    function edmShowCompanyTrend(company){{
-      var root=document.getElementById('edm-company-trend');
-      var rows=edmCompanyTrends[company];
-      root.style.display='block';
-      if(!rows||!rows.length){{
-        root.innerHTML='<h4>'+edmEscape(company)+'</h4><div class="edm-place-detail">The annual spill-count export is not available for this company.</div>';
-        root.scrollIntoView({{block:'nearest',behavior:'smooth'}});
-        return;
-      }}
-      var valid=rows.filter(function(row){{return row.count!==null;}});
-      var maximum=Math.max.apply(null,valid.map(function(row){{return Number(row.count);}}).concat([1]));
-      var status='Annual direction unavailable';
-      if(valid.length>1){{
-        var change=Number(valid[valid.length-1].count)-Number(valid[0].count);
-        status=change>0?'Increased by '+edmNumber(change,0)+' counted spills':
-          (change<0?'Decreased by '+edmNumber(Math.abs(change),0)+' counted spills':'No overall change');
-      }}
-      var bars=rows.map(function(row){{
-        var height=row.count===null?3:Math.max(3,Math.round(100*Number(row.count)/maximum));
-        return '<div class="edm-trend-year"><span class="edm-trend-value">'+edmNumber(row.count,0)+
-          '</span><span class="edm-trend-bar" style="height:'+height+'%"></span><span class="edm-trend-year-label">'+
-          row.year+'</span></div>';
-      }}).join('');
-      var durations=rows.map(function(row){{return '<b>'+row.year+':</b> '+edmNumber(row.duration,1)+' hours';}}).join(' &nbsp; ');
-      root.innerHTML='<h4>'+edmEscape(company)+'</h4><div class="edm-place-detail">Recorded counted spills</div>'+ 
-        '<div class="edm-trend-status">'+edmEscape(status)+'</div><div class="edm-trend-bars">'+bars+'</div>'+ 
-        '<div class="edm-trend-duration"><b>Recorded duration</b><br>'+durations+'</div>'+ 
-        '<div class="edm-place-detail" style="margin-top:5px">The 2021–2025 trend is recorded evidence; any 2026 category remains a forecast.</div>';
-      root.scrollIntoView({{block:'nearest',behavior:'smooth'}});
-    }}
-    function edmBuildPlaces(){{
-      var query=document.getElementById('edm-place-search').value.toLowerCase().trim();
-      var risk=document.getElementById('edm-risk-filter').value;
-      var company=document.getElementById('edm-company-filter').value;
-      var groups=new Map();
-      edmSites.forEach(function(site){{
-        if((risk&&site.risk!==risk)||(company&&site.company!==company))return;
-        if(query&&site.place.toLowerCase().indexOf(query)===-1)return;
-        if(!groups.has(site.place))groups.set(site.place,{{name:site.place,sites:[],companies:new Set(),high:0,medium:0,low:0,spills:site.spills}});
-        var place=groups.get(site.place);place.sites.push(site);place.companies.add(site.company);
-        if(site.risk==='High')place.high++;else if(site.risk==='Medium')place.medium++;else if(site.risk==='Low')place.low++;
-      }});
-      return Array.from(groups.values()).sort(function(a,b){{return a.name.localeCompare(b.name);}});
-    }}
-    function edmFocusPlace(place){{
-      var coords=place.sites.map(function(s){{return[s.lat,s.lon];}});
-      if(coords.length===1)edmMap.setView(coords[0],14);else edmMap.fitBounds(L.latLngBounds(coords).pad(.16),{{maxZoom:13}});
-      if(edmFocusMarker)edmMap.removeLayer(edmFocusMarker);
-      var centre=coords.reduce(function(t,c){{t[0]+=c[0];t[1]+=c[1];return t;}},[0,0]);
-      centre=[centre[0]/coords.length,centre[1]/coords.length];
-      edmFocusMarker=L.circleMarker(centre,{{radius:10,color:'#173D3A',weight:3,fillColor:'#DDEFF4',fillOpacity:.95}}).addTo(edmMap);
-      var popup='<div style="font:12px/1.45 Verdana;color:#173D3A;min-width:245px"><b style="font-size:14px">'+edmEscape(place.name)+'</b><br>'+coords.length.toLocaleString()+' mapped outlets<br><b>Risk:</b> High '+place.high+', Medium '+place.medium+', Low '+place.low+'<br><b>Companies:</b> '+edmEscape(Array.from(place.companies).sort().join(', '))+'<br><b>{place_detail_label}:</b> '+edmEscape(place.spills)+'</div>';
-      edmFocusMarker.bindPopup(popup,{{maxWidth:330}}).openPopup();
-    }}
-    function edmRenderPlaces(){{
-      var places=edmBuildPlaces();document.getElementById('edm-place-count').textContent=places.length.toLocaleString()+' places shown';
-      var root=document.getElementById('edm-place-results');root.replaceChildren();var previous='';
-      if(!places.length){{
-        root.innerHTML='<div style="margin:8px 0;padding:10px;border-radius:9px;background:#FFF0DD;color:#704C1D">No matching town or city. Clear the search or change the filters.</div>';
-        return;
-      }}
-      places.forEach(function(place){{
-        var letter=(place.name.charAt(0)||'#').toUpperCase();if(letter!==previous){{var h=document.createElement('div');h.className='edm-place-letter';h.textContent=letter;root.appendChild(h);previous=letter;}}
-        var button=document.createElement('button');button.type='button';button.className='edm-place-button';
-        button.style.setProperty('--place-risk',place.high?'#D66565':(place.medium?'#E2A45C':'#4A9C7D'));
-        button.innerHTML='<span class="edm-place-name">'+edmEscape(place.name)+'</span><span class="edm-place-detail">&#9650; '+place.high+' &nbsp; &#9670; '+place.medium+' &nbsp; &#9679; '+place.low+' · '+place.sites.length+' outlets</span>';
-        button.addEventListener('click',function(){{edmFocusPlace(place);}});root.appendChild(button);
-      }});
-    }}
-    var companySelect=document.getElementById('edm-company-filter');
-    Array.from(new Set(edmSites.map(function(s){{return s.company;}}))).sort().forEach(function(company){{var o=document.createElement('option');o.value=company;o.textContent=company;companySelect.appendChild(o);}});
-    document.getElementById('edm-place-search').addEventListener('input',edmRenderPlaces);
-    document.getElementById('edm-risk-filter').addEventListener('change',edmRenderPlaces);
-    document.getElementById('edm-company-filter').addEventListener('change',edmRenderPlaces);
-    document.querySelectorAll('.edm-company-trend-button').forEach(function(button){{
-      button.addEventListener('click',function(){{edmShowCompanyTrend(button.dataset.company);}});
-    }});
-    document.querySelectorAll('[data-edm-hide-panels]').forEach(function(button){{
-      button.addEventListener('click',function(){{edmHidePanels(true);}});
-    }});
-    document.getElementById('edm-panel-toggle').addEventListener('click',edmShowPanels);
-    edmMap.on('popupopen',function(){{edmHidePanels(false);}});
-    edmMap.on('popupclose',function(){{
-      if(!edmPanelsManuallyHidden)window.setTimeout(edmShowPanels,120);
-    }});
-    window.setTimeout(edmRenderPlaces,0);
-    """
-    # streamlit-folium does not reliably emit custom code placed in
-    # ``root.script``. Add a real script element and wait until Leaflet loads.
-    water_map.get_root().html.add_child(
-        folium.Element(
-            "<script>\n"
-            "window.addEventListener('load', function(){\n"
-            + script
-            + "\n});\n"
-            "</script>"
-        )
-    )
 
 
 def build_folium_map(
@@ -2387,18 +641,9 @@ def build_folium_map(
     )
 
     folium.TileLayer(
-        tiles="https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png",
-        attr="&copy; OpenStreetMap contributors &copy; CARTO",
-        name="Pastel rivers and places",
-        show=True,
-        control=True,
-        subdomains="abcd",
-        max_zoom=20,
-    ).add_to(water_map)
-    folium.TileLayer(
         tiles="CartoDB positron",
-        name="Soft contrast map",
-        show=False,
+        name="Pastel light map",
+        show=True,
         control=True,
     ).add_to(water_map)
     folium.TileLayer(
@@ -2408,127 +653,73 @@ def build_folium_map(
         control=True,
     ).add_to(water_map)
 
-    water_map.get_root().header.add_child(
-        folium.Element(
-            """
-            <style>
-              .leaflet-container {
-                background: linear-gradient(145deg,#CFEAF1 0%,#E1F2EE 55%,#EFF6E8 100%) !important;
-                font-family: "Atkinson Hyperlegible", Verdana, Arial, sans-serif !important;
-              }
-              .leaflet-tile-pane {
-                filter: saturate(1.14) contrast(.97) brightness(1.025);
-              }
-              .leaflet-control-zoom a,
-              .leaflet-control-layers,
-              .leaflet-control-scale-line {
-                border-color: rgba(39,106,97,.28) !important;
-                color: #173D3A !important;
-                background: rgba(251,253,249,.94) !important;
-              }
-              .marker-cluster-small,
-              .marker-cluster-medium,
-              .marker-cluster-large {
-                background-color: rgba(104,175,194,.30) !important;
-              }
-              .marker-cluster div {
-                background: linear-gradient(145deg,#74C6BE,#5BA6C1) !important;
-                color: #FFFFFF !important;
-                box-shadow: 0 5px 14px rgba(28,83,78,.24);
-              }
-              .leaflet-popup-content-wrapper,
-              .leaflet-popup-tip {
-                background: rgba(251,253,249,.98) !important;
-              }
-            </style>
-            """
-        )
-    )
-
-    if display_style == "Risk concentration":
-        heat_values = plotting[["latitude", "longitude", risk_column]].copy()
-        heat_values["weight"] = heat_values[risk_column].map(
-            {"Low": 1.0, "Medium": 2.0, "High": 3.5}
-        )
+    if display_style == "Location density":
         HeatMap(
-            heat_values[["latitude", "longitude", "weight"]].to_numpy().tolist(),
-            name="Spill-risk concentration",
+            plotting[["latitude", "longitude"]].to_numpy().tolist(),
+            name="Filtered location density",
             radius=13,
             blur=17,
             min_opacity=0.28,
             gradient={0.20: "#B7DDE5", 0.48: "#7BC6B5", 0.72: "#E8C77C", 1.0: "#D66565"},
         ).add_to(water_map)
     else:
+        cluster_data = []
+        for _, row in plotting.iterrows():
+            risk = str(row[risk_column])
+            place = row.get("official_place_name", row.get("town_or_city", "Unknown place"))
+            site = row.get("site_name", "EDM location")
+            tooltip = f"{RISK_SYMBOLS.get(risk, '●')} {risk} · {site} · {place}"
+            cluster_data.append(
+                [
+                    float(row["latitude"]),
+                    float(row["longitude"]),
+                    risk,
+                    popup_for_row(row, risk_column, prediction),
+                    safe_text(tooltip),
+                ]
+            )
+
         callback = """
         function (row) {
           const colours = {Low: '#4A9C7D', Medium: '#E2A45C', High: '#D66565'};
+          const symbols = {Low: '●', Medium: '◆', High: '▲'};
           const marker = L.circleMarker([row[0], row[1]], {
             radius: 6.5,
             color: '#FFFFFF',
             weight: 1.4,
             fillColor: colours[row[2]] || '#78909C',
-            fillOpacity: 0.92
+            fillOpacity: 0.90
           });
-          marker.bindPopup(row[3], {maxWidth: 365});
+          marker.bindPopup(row[3], {maxWidth: 340});
           marker.bindTooltip(row[4], {direction: 'top', opacity: 0.96});
           return marker;
         }
         """
-        for risk in ["High", "Medium", "Low"]:
-            risk_rows = plotting.loc[plotting[risk_column].eq(risk)]
-            if risk_rows.empty:
-                continue
-            cluster_data = []
-            for _, row in risk_rows.iterrows():
-                place = row.get("official_place_name", row.get("town_or_city", "Unknown place"))
-                site = row.get("site_name", "Spill outlet")
-                tooltip = f"{RISK_SYMBOLS[risk]} {risk} risk · {site} · {place}"
-                cluster_data.append(
-                    [
-                        float(row["latitude"]),
-                        float(row["longitude"]),
-                        risk,
-                        popup_for_row(row, risk_column, prediction),
-                        safe_text(tooltip),
-                    ]
-                )
-            layer = folium.FeatureGroup(
-                name=f"{RISK_SYMBOLS[risk]} {risk} risk · {len(risk_rows):,} locations",
-                show=True,
-            )
-            FastMarkerCluster(
-                data=cluster_data,
-                callback=callback,
-                options={"maxClusterRadius": 35, "disableClusteringAtZoom": 11},
-            ).add_to(layer)
-            layer.add_to(water_map)
+        FastMarkerCluster(
+            data=cluster_data,
+            callback=callback,
+            name="Clustered EDM locations",
+            show=True,
+        ).add_to(water_map)
 
     Fullscreen(position="topright", title="Open full-screen map", title_cancel="Exit full screen").add_to(water_map)
     MeasureControl(position="topright", primary_length_unit="kilometers").add_to(water_map)
     MiniMap(toggle_display=True, minimized=True, position="bottomright").add_to(water_map)
     folium.LayerControl(collapsed=True, position="topright").add_to(water_map)
 
-    if display_style == "Clustered spill locations":
-        add_colab_map_panels(
-            water_map,
-            plotting,
-            risk_column,
-            prediction,
-        )
-    else:
-        risk_counts = plotting[risk_column].value_counts().reindex(RISK_ORDER, fill_value=0)
-        legend = f"""
-        <div style="position:fixed;left:18px;bottom:28px;z-index:9999;
-                    background:rgba(255,255,255,.94);border:1px solid #BFD6CF;
-                    border-radius:12px;padding:10px 13px;color:#173D3A;
-                    box-shadow:0 5px 18px rgba(34,82,75,.16);font:12px Arial;">
-          <div style="font-weight:700;margin-bottom:6px;">Risk category</div>
-          <div><span style="color:#4A9C7D;font-size:17px;">●</span> Low · {int(risk_counts['Low']):,}</div>
-          <div><span style="color:#E2A45C;font-size:16px;">◆</span> Medium · {int(risk_counts['Medium']):,}</div>
-          <div><span style="color:#D66565;font-size:15px;">▲</span> High · {int(risk_counts['High']):,}</div>
-        </div>
-        """
-        water_map.get_root().html.add_child(folium.Element(legend))
+    legend = """
+    <div style="position:fixed;left:18px;bottom:28px;z-index:9999;
+                background:rgba(255,255,255,.94);border:1px solid #BFD6CF;
+                border-radius:12px;padding:10px 13px;color:#173D3A;
+                box-shadow:0 5px 18px rgba(34,82,75,.16);font:13px Arial;">
+      <div style="font-weight:700;margin-bottom:6px;">Risk category</div>
+      <div><span style="color:#4A9C7D;font-size:17px;">●</span> Low</div>
+      <div><span style="color:#E2A45C;font-size:16px;">◆</span> Medium</div>
+      <div><span style="color:#D66565;font-size:15px;">▲</span> High</div>
+      <div style="margin-top:6px;font-size:11px;color:#5D7772;">Click a marker for evidence</div>
+    </div>
+    """
+    water_map.get_root().html.add_child(folium.Element(legend))
 
     if len(plotting) > 1:
         water_map.fit_bounds(
@@ -2550,20 +741,20 @@ def filter_map(frame: pd.DataFrame, risk_column: str, prediction: bool) -> tuple
     filter_columns = st.columns([1.05, 1.05, 1.05, 1.35])
     with filter_columns[0]:
         risk_choices = st.multiselect(
-            "Show these risk levels",
+            "Risk category",
             RISK_ORDER,
             default=RISK_ORDER,
             key=f"{'forecast' if prediction else 'observed'}_risk",
         )
     with filter_columns[1]:
         company_options = ["All companies"] + available_values(filtered, company_column) if company_column else ["All companies"]
-        company = st.selectbox("Choose a water company", company_options, key=f"{'forecast' if prediction else 'observed'}_company")
+        company = st.selectbox("Water company", company_options, key=f"{'forecast' if prediction else 'observed'}_company")
     with filter_columns[2]:
         place_options = ["All towns/cities"] + available_values(filtered, place_column) if place_column else ["All towns/cities"]
-        place = st.selectbox("Choose a town or city", place_options, key=f"{'forecast' if prediction else 'observed'}_place")
+        place = st.selectbox("Town or city", place_options, key=f"{'forecast' if prediction else 'observed'}_place")
     with filter_columns[3]:
         search = st.text_input(
-            "Search for a site, permit or river",
+            "Search site, permit or receiving water",
             key=f"{'forecast' if prediction else 'observed'}_search",
         ).strip()
 
@@ -2634,586 +825,198 @@ def apply_calibrators(raw, calibrators):
 # SIDEBAR NAVIGATION
 # =============================================================================
 
-st.sidebar.html(
+st.sidebar.markdown(
     """
     <div class="edm-brand">
       <div style="display:flex;align-items:center;">
         <span class="edm-brand-mark">💧</span>
-        <div><div style="font-size:1.12rem;font-weight:800;line-height:1.2;">Sewage Overflow<br>Insights</div>
-        <div style="font-size:.76rem;color:#5D7772;margin-top:.18rem;">England and Wales · evidence · forecast</div></div>
+        <div><div style="font-size:1.18rem;font-weight:800;">EDM Observatory</div>
+        <div style="font-size:.78rem;color:#5D7772;">England · evidence · forecast</div></div>
       </div>
     </div>
     """,
+    unsafe_allow_html=True,
 )
-
-st.sidebar.markdown("**Reading options**")
-larger_text = st.sidebar.toggle("Use larger writing", value=False)
-reduce_motion = st.sidebar.toggle("Stop moving illustrations", value=False)
-
-if larger_text:
-    st.html(
-        """
-        <style>
-          html, body, [class*="css"] { font-size: 19px !important; }
-          .edm-metric-note, .edm-rank-detail { font-size: .92rem !important; }
-        </style>
-        """
-    )
-
-if reduce_motion:
-    st.html(
-        """
-        <style>
-          *, *::before, *::after {
-            animation: none !important;
-            transition: none !important;
-          }
-        </style>
-        """
-    )
 
 PAGES = [
-    "Start here",
-    "Explore the map",
-    "Priority locations",
-    "Places and companies",
-    "Improvements and changes",
-    "2026 predictions",
-    "2026 rainfall predictions",
-    "Check one location",
-    "About the evidence",
-]
+            "🏡 Overview",
+            "🗺️ Explore maps",
+            "🏙️ Places & companies",
+            "📊 Model performance",
+            "🔎 Individual prediction",
+            "🌿 Evidence & limitations",
+            '🌧️ Rainfall and spills',
+        ]
+
+page_label = st.sidebar.radio("Navigate", PAGES)
+page = page_label.split(" ", 1)[1]
 
 st.sidebar.markdown("---")
-page_label = st.sidebar.radio(
-    "Choose a section",
-    PAGES,
-    key="sidebar_navigation",
-)
-st.sidebar.html(
+st.sidebar.markdown(
     """
-    <div class="edm-access-note">
-      <b style="color:#173D3A;">2026 means forecast</b><br>
-      It is an estimate, not a confirmed future spill.
+    <div style="font-size:.82rem;line-height:1.5;color:#5D7772;">
+      <b style="color:#173D3A;">Responsible-use note</b><br>
+      A 2026 category is a calibrated model forecast—not a confirmed future spill,
+      pollution-volume estimate or statement of legal responsibility.
     </div>
-    """
+    """,
+    unsafe_allow_html=True,
 )
-
-page = page_label
 
 
 # =============================================================================
 # PAGE 1 — OVERVIEW
 # =============================================================================
 
-if page == "Start here":
+if page == "Overview":
     render_hero()
-    section_header("Risk categories", "")
-    render_risk_guide()
 
-    section_header(
-        "Spill-risk percentages",
-        "Compare the recorded evidence with the separately labelled 2026 forecast.",
+    observed = load_table("observed_locations")
+    forecast = load_table("forecast_map_points")
+    observed_kpis = load_table("observed_kpis")
+    forecast_kpis = load_table("forecast_kpis")
+
+    observed_high = int(observed.get("period_risk_category", pd.Series(dtype=str)).eq("High").sum())
+    predicted_high = int(forecast.get("predicted_2026_risk", pd.Series(dtype=str)).eq("High").sum())
+    review_count = int(forecast.get("confidence_flag", pd.Series(dtype=str)).ne("Higher confidence").sum()) if "confidence_flag" in forecast.columns else 0
+
+    metric_cards(
+        [
+            {"label": "Mapped observed locations", "value": value_text(len(observed)), "note": "Verified 2023–2025 evidence", "accent": "#A8D8D0"},
+            {"label": "Observed High risk", "value": value_text(observed_high), "note": "Highest recorded category", "accent": "#E9A7A7"},
+            {"label": "Forecast-eligible locations", "value": value_text(len(forecast)), "note": "Known sites with 2026 forecasts", "accent": "#B7DDE5"},
+            {"label": "Predictions to review", "value": value_text(review_count), "note": "Low confidence or close probabilities", "accent": "#F1D39D"},
+        ]
     )
-    st.html(
+
+    banner(
+        "<b>Observed evidence</b> comes from verified historical labels. "
+        "<b>Predicted 2026 risk</b> comes from the selected calibrated model. "
+        "The interface uses different wording and contextual warnings so the two cannot be confused.",
+        icon="🛟",
+        background=PALE_AMBER,
+        edge="#D59A3C",
+    )
+
+    left, right = st.columns([1, 1])
+    with left:
+        if not observed.empty and "period_risk_category" in observed.columns:
+            st.plotly_chart(
+                risk_donut(observed, "period_risk_category", "Observed location categories"),
+                use_container_width=True,
+                config={"displayModeBar": False},
+            )
+    with right:
+        if not forecast.empty and "predicted_2026_risk" in forecast.columns:
+            st.plotly_chart(
+                risk_donut(forecast, "predicted_2026_risk", "Predicted 2026 categories"),
+                use_container_width=True,
+                config={"displayModeBar": False},
+            )
+
+    section_header("How the observatory works", "A transparent route from verified evidence to public decision support.")
+    st.markdown(
         """
-        <div class="edm-home-chart-note">
-          Each percentage is the share of <b>mapped discharge outlets</b> in a risk category.
-          Recorded 2021–2025 evidence and predicted 2026 risk are deliberately kept separate.
+        <div class="edm-journey">
+          <div class="edm-journey-step"><span class="edm-journey-number">1</span>
+            <h4>Observe</h4><p>Clean and validate genuine EDM site-year records, labels and locations.</p></div>
+          <div class="edm-journey-step"><span class="edm-journey-number">2</span>
+            <h4>Forecast</h4><p>Use earlier-year evidence to estimate the next year's Low, Medium and High probabilities.</p></div>
+          <div class="edm-journey-step"><span class="edm-journey-number">3</span>
+            <h4>Investigate responsibly</h4><p>Explore patterns, uncertainty and environmental context without treating predictions as facts.</p></div>
         </div>
-        """
+        """,
+        unsafe_allow_html=True,
     )
-
-    observed_overview = load_table("observed_locations")
-    forecast_overview = load_table("forecast_map_points")
-    overview_charts = []
-    if (
-        not observed_overview.empty
-        and "period_risk_category" in observed_overview.columns
-    ):
-        overview_charts.append(
-            (
-                observed_overview,
-                "period_risk_category",
-                "Recorded risk categories for mapped discharge outlets, 2021–2025",
-                "outlets classified",
-                "home_observed_risk_share",
-            )
-        )
-    if (
-        not forecast_overview.empty
-        and "predicted_2026_risk" in forecast_overview.columns
-    ):
-        overview_charts.append(
-            (
-                forecast_overview,
-                "predicted_2026_risk",
-                "Predicted risk categories for mapped discharge outlets, 2026",
-                "outlets forecast",
-                "home_predicted_risk_share",
-            )
-        )
-
-    if overview_charts:
-        for chart_column, chart_details in zip(
-            st.columns(len(overview_charts)),
-            overview_charts,
-        ):
-            (
-                chart_frame,
-                chart_risk,
-                chart_title,
-                chart_centre_label,
-                chart_key,
-            ) = chart_details
-            with chart_column:
-                st.plotly_chart(
-                    risk_donut(
-                        chart_frame,
-                        chart_risk,
-                        chart_title,
-                        chart_centre_label,
-                    ),
-                    use_container_width=True,
-                    key=chart_key,
-                    config={"displayModeBar": False},
-                )
-    else:
-        st.info("The risk-percentage charts will appear when the dashboard data is available.")
 
 
 # =============================================================================
 # PAGE 2 — COMBINED OBSERVED/PREDICTED MAP EXPERIENCE
 # =============================================================================
 
-elif page == "Explore the map":
-    st.html(
-        """
-        <style>
-          .block-container {
-            width:100% !important;
-            max-width:none !important;
-            padding-left:.55rem !important;
-            padding-right:.55rem !important;
-          }
-        </style>
-        """
-    )
+elif page == "Explore maps":
     section_header(
-        "Explore spill locations across England",
-        "Start with every mapped outlet, then choose a cluster, town, water company or risk level.",
+        "Interactive environmental risk map",
+        "Switch between verified observations and model forecasts, then filter, cluster, inspect or view density.",
     )
 
     layer = st.radio(
-        "What would you like to see?",
-        ["Recorded 2021–2025 (what happened)", "2026 forecast (what may happen)"],
+        "Evidence layer",
+        ["Observed 2023–2025", "Predicted 2026"],
         horizontal=True,
     )
     display_style = st.radio(
-        "How should the map look?",
-        ["Clustered spill locations", "Risk concentration"],
+        "Map display",
+        ["Clustered sites", "Location density"],
         horizontal=True,
     )
 
-    prediction = layer.startswith("2026")
+    prediction = layer == "Predicted 2026"
     table_name = "forecast_map_points" if prediction else "observed_locations"
     risk_column = "predicted_2026_risk" if prediction else "period_risk_category"
     map_data = load_table(table_name)
 
     if map_data.empty:
-        st.error("The map information is unavailable. Please try again later.")
+        st.error(f"The required {table_name} export is unavailable.")
     elif risk_column not in map_data.columns:
-        st.error("The map cannot find the risk category needed for this view.")
+        st.error(f"The required risk field '{risk_column}' is missing.")
     else:
         if prediction:
             banner(
-                "<b>2026 forecast:</b> these colours show what the system estimates may happen. "
-                "They do not show events that have already happened in 2026.",
+                "<b>Forecast layer:</b> markers show calibrated 2026 probabilities for known 2025 sites. "
+                "They are not observed 2026 events.",
                 icon="🔮",
                 background=PALE_AMBER,
                 edge="#D59A3C",
             )
         else:
             banner(
-                "<b>Recorded information:</b> every marker is a mapped discharge outlet using the supplied 2021–2025 records.",
-                icon="💧",
+                "<b>Observed layer:</b> markers show verified Low, Medium and High categories from the supplied historical records.",
+                icon="🌊",
                 background=PALE_MINT,
                 edge="#4A9C7D",
             )
 
-        render_risk_guide()
-        filtered, place_column = filter_map(map_data, risk_column, prediction)
+        filtered, _ = filter_map(map_data, risk_column, prediction)
         risk_counts = filtered[risk_column].value_counts().reindex(RISK_ORDER, fill_value=0)
-        if prediction:
-            metric_cards(
-                [
-                    {
-                        "label": "2026 forecast outlets shown",
-                        "value": value_text(len(filtered)),
-                        "note": "Mapped receiving-water outlets · not confirmed spills",
-                        "accent": "#B7DDE5",
-                    },
-                    {
-                        "label": "2026 predicted Low outlets",
-                        "value": value_text(risk_counts["Low"]),
-                        "note": "Forecast receiving-water locations",
-                        "accent": "#A8D8D0",
-                    },
-                    {
-                        "label": "2026 predicted Medium outlets",
-                        "value": value_text(risk_counts["Medium"]),
-                        "note": "Forecast receiving-water locations",
-                        "accent": "#F1D39D",
-                    },
-                    {
-                        "label": "2026 predicted High outlets",
-                        "value": value_text(risk_counts["High"]),
-                        "note": "Forecast receiving-water locations",
-                        "accent": "#E9A7A7",
-                    },
-                ]
-            )
-        else:
-            annual_spills = mapped_annual_spill_totals(filtered, place_column)
-            metric_cards(
-                [
-                    {
-                        "label": "Receiving-water outlets shown",
-                        "value": value_text(len(filtered)),
-                        "note": "Mapped outlets · this is not a spill count",
-                        "accent": "#B7DDE5",
-                    },
-                    {
-                        "label": "2023 counted spills",
-                        "value": value_text(annual_spills[2023]),
-                        "note": "Recorded across the receiving-water locations shown",
-                        "accent": "#A8D8D0",
-                    },
-                    {
-                        "label": "2024 counted spills",
-                        "value": value_text(annual_spills[2024]),
-                        "note": "Recorded across the receiving-water locations shown",
-                        "accent": "#B9DCCF",
-                    },
-                    {
-                        "label": "2025 counted spills",
-                        "value": value_text(annual_spills[2025]),
-                        "note": "Recorded across the receiving-water locations shown",
-                        "accent": "#F1D39D",
-                    },
-                ]
-            )
+        metric_cards(
+            [
+                {"label": "Filtered locations", "value": value_text(len(filtered)), "note": layer, "accent": "#B7DDE5"},
+                {"label": "Low", "value": value_text(risk_counts["Low"]), "note": "● lower-risk category", "accent": "#A8D8D0"},
+                {"label": "Medium", "value": value_text(risk_counts["Medium"]), "note": "◆ medium-risk category", "accent": "#F1D39D"},
+                {"label": "High", "value": value_text(risk_counts["High"]), "note": "▲ high-risk category", "accent": "#E9A7A7"},
+            ]
+        )
 
         if filtered.empty:
-            st.warning("No locations match those choices. Remove one or more filters and try again.")
+            st.warning("No locations match the selected filters.")
         else:
-            company_column = first_existing(filtered, ["water_company_name", "company"])
-            place_ranking = make_risk_ranking(filtered, risk_column, place_column)
-            company_ranking = make_risk_ranking(filtered, risk_column, company_column)
-
-            # The full-width map contains the same place directory and water-
-            # company ranking used by the detailed Colab map.
-            with st.spinner("Drawing the interactive map and grouping nearby locations..."):
-                map_object = build_folium_map(
-                    filtered,
-                    risk_column,
-                    prediction,
-                    display_style,
-                )
-
+            with st.spinner("Preparing the interactive map…"):
+                map_object = build_folium_map(filtered, risk_column, prediction, display_style)
             st_folium(
                 map_object,
-                height=1020,
+                height=720,
                 use_container_width=True,
                 returned_objects=[],
-                key=f"edm_{'forecast' if prediction else 'recorded'}_{display_style}",
+                key=f"edm_{'forecast' if prediction else 'observed'}_{display_style}",
             )
             st.caption(
-                "Select a numbered cluster to zoom in. Select a coloured marker "
-                "for its site, place, company and risk details."
+                "Cluster numbers show how many filtered locations overlap. Zoom to separate them; "
+                "click a marker for site evidence, risk wording, coordinates and forecast probabilities where applicable."
             )
-
-            # Compact lists are retained as an accessible alternative.
-            with st.expander("Compact rankings for the current map view"):
-                place_tab, company_tab = st.tabs(["Places", "Water companies"])
-                with place_tab:
-                    render_rank_list(
-                        place_ranking,
-                        place_column,
-                        "No town or city ranking is available for these choices.",
-                        limit=10,
-                    )
-                with company_tab:
-                    render_rank_list(
-                        company_ranking,
-                        company_column,
-                        "No water-company ranking is available for these choices.",
-                        limit=10,
-                    )
-
-            with st.expander("See the records behind this map"):
+            with st.expander("View and export the filtered evidence table"):
                 st.dataframe(filtered.head(5000), use_container_width=True, hide_index=True)
                 download_table(filtered, "filtered_2026_predictions.csv" if prediction else "filtered_observed_locations.csv")
 
 
 # =============================================================================
-# PAGE 3 — HIGH-RISK PRIORITY LOCATIONS
+# PAGE 3 — PLACES, COMPANIES AND CHANGE
 # =============================================================================
 
-elif page == "Priority locations":
+elif page == "Places & companies":
     section_header(
-        "High-risk locations requiring priority review",
-        "See the exact towns, mapped outlets and water companies linked to the High category.",
-    )
-
-    priority_view = st.radio(
-        "Choose the evidence",
-        ["Recorded 2021–2025", "Predicted 2026"],
-        horizontal=True,
-        key="priority_evidence_view",
-    )
-    priority_prediction = priority_view.startswith("Predicted")
-    priority_table = "forecast_map_points" if priority_prediction else "observed_locations"
-    priority_risk_column = "predicted_2026_risk" if priority_prediction else "period_risk_category"
-    priority_data = load_table(priority_table)
-
-    if priority_data.empty or priority_risk_column not in priority_data.columns:
-        st.error("The priority-location information is unavailable. Please try again later.")
-    else:
-        priority_data = priority_data.loc[
-            priority_data[priority_risk_column].astype(str).eq("High")
-        ].copy()
-        priority_place = first_existing(priority_data, ["official_place_name", "town_or_city"])
-        priority_company = first_existing(priority_data, ["water_company_name", "company"])
-        priority_site = first_existing(
-            priority_data,
-            ["site_name", "source_site_name_ea_consents_database"],
-        )
-
-        if priority_prediction:
-            banner(
-                "<b>Predicted 2026:</b> these are model-generated High categories, not confirmed events.",
-                icon="🔮",
-                background=PALE_AMBER,
-                edge="#D59A3C",
-            )
-        else:
-            banner(
-                "<b>Recorded priority review:</b> High means the strongest concern category in this dashboard. "
-                "It is not proof of environmental harm or an emergency declaration.",
-                icon="🚨",
-                background="#FBE8E8",
-                edge="#D66565",
-            )
-
-        if not priority_place or not priority_company:
-            st.error("Town/city or water-company fields are missing from the priority data.")
-        elif priority_data.empty:
-            st.info("No High-risk locations are available for this selection.")
-        else:
-            filter_one, filter_two, filter_three = st.columns([1, 1, 1.35])
-            with filter_one:
-                selected_priority_company = st.selectbox(
-                    "Water company",
-                    ["All companies"] + available_values(priority_data, priority_company),
-                    key="priority_company_filter",
-                )
-            with filter_two:
-                selected_priority_place = st.selectbox(
-                    "Town or city",
-                    ["All towns/cities"] + available_values(priority_data, priority_place),
-                    key="priority_place_filter",
-                )
-            with filter_three:
-                priority_search = st.text_input(
-                    "Find a town, outlet, company or receiving water",
-                    key="priority_search",
-                ).strip()
-
-            priority_filtered = priority_data.copy()
-            if selected_priority_company != "All companies":
-                priority_filtered = priority_filtered.loc[
-                    priority_filtered[priority_company].astype(str).eq(selected_priority_company)
-                ]
-            if selected_priority_place != "All towns/cities":
-                priority_filtered = priority_filtered.loc[
-                    priority_filtered[priority_place].astype(str).eq(selected_priority_place)
-                ]
-            if priority_search:
-                searchable_columns = [
-                    column
-                    for column in [
-                        priority_place,
-                        priority_company,
-                        priority_site,
-                        "receiving_water",
-                        "source_receiving_water",
-                        "permit_reference",
-                    ]
-                    if column and column in priority_filtered.columns
-                ]
-                priority_match = pd.Series(False, index=priority_filtered.index)
-                for column in searchable_columns:
-                    priority_match |= priority_filtered[column].astype("string").str.contains(
-                        priority_search,
-                        case=False,
-                        regex=False,
-                        na=False,
-                    )
-                priority_filtered = priority_filtered.loc[priority_match]
-
-            if priority_filtered.empty:
-                st.warning("No High-risk locations match these choices. Clear a filter and try again.")
-            else:
-                place_summary = (
-                    priority_filtered.groupby(
-                        [priority_place, priority_company],
-                        dropna=False,
-                    )
-                    .size()
-                    .reset_index(name="High-risk mapped outlets")
-                    .sort_values(
-                        ["High-risk mapped outlets", priority_place],
-                        ascending=[False, True],
-                    )
-                    .reset_index(drop=True)
-                )
-                place_summary.insert(0, "Priority rank", np.arange(1, len(place_summary) + 1))
-
-                company_summary = (
-                    priority_filtered.groupby(priority_company, dropna=False)
-                    .agg(
-                        **{
-                            "High-risk mapped outlets": (priority_risk_column, "size"),
-                            "Towns/cities represented": (priority_place, "nunique"),
-                        }
-                    )
-                    .reset_index()
-                    .sort_values("High-risk mapped outlets", ascending=False)
-                    .reset_index(drop=True)
-                )
-                company_summary.insert(0, "Company rank", np.arange(1, len(company_summary) + 1))
-
-                top_place = str(place_summary.iloc[0][priority_place]) if not place_summary.empty else "Not available"
-                metric_cards(
-                    [
-                        {
-                            "label": "High-risk mapped outlets",
-                            "value": value_text(len(priority_filtered)),
-                            "note": priority_view,
-                            "accent": "#E9A7A7",
-                        },
-                        {
-                            "label": "Towns and cities",
-                            "value": value_text(priority_filtered[priority_place].nunique()),
-                            "note": "Places with at least one High location",
-                            "accent": "#F1D39D",
-                        },
-                        {
-                            "label": "Water companies",
-                            "value": value_text(priority_filtered[priority_company].nunique()),
-                            "note": "Companies represented in this view",
-                            "accent": "#B7DDE5",
-                        },
-                        {
-                            "label": "Highest-ranked place",
-                            "value": top_place,
-                            "note": "Ranked by High-risk mapped outlets",
-                            "accent": "#A8D8D0",
-                        },
-                    ]
-                )
-
-                place_tab, company_tab, outlet_tab = st.tabs(
-                    ["Towns and cities", "Water companies", "Exact mapped outlets"]
-                )
-
-                with place_tab:
-                    chart_data = place_summary.head(20).sort_values("High-risk mapped outlets")
-                    chart_data = chart_data.copy()
-                    chart_data["Place and company"] = (
-                        chart_data[priority_place].astype(str)
-                        + " · "
-                        + chart_data[priority_company].astype(str)
-                    )
-                    place_figure = px.bar(
-                        chart_data,
-                        x="High-risk mapped outlets",
-                        y="Place and company",
-                        orientation="h",
-                        color="High-risk mapped outlets",
-                        color_continuous_scale=["#F9DEDE", "#E9A7A7", "#C85D5D"],
-                        text="High-risk mapped outlets",
-                        title="Towns and cities with the most High-risk mapped outlets",
-                    )
-                    place_figure.update_traces(textposition="outside")
-                    place_figure.update_layout(coloraxis_showscale=False)
-                    place_figure.update_yaxes(title="")
-                    st.plotly_chart(
-                        plot_style(place_figure, max(480, 34 * len(chart_data))),
-                        use_container_width=True,
-                        config={"displayModeBar": False},
-                    )
-                    st.dataframe(place_summary, use_container_width=True, hide_index=True)
-
-                with company_tab:
-                    company_figure = px.bar(
-                        company_summary.sort_values("High-risk mapped outlets"),
-                        x="High-risk mapped outlets",
-                        y=priority_company,
-                        orientation="h",
-                        color="High-risk mapped outlets",
-                        color_continuous_scale=["#DDEFF4", "#9FCAD5", "#4E9FB6"],
-                        text="High-risk mapped outlets",
-                        title="Water companies linked to High-risk mapped outlets",
-                    )
-                    company_figure.update_traces(textposition="outside")
-                    company_figure.update_layout(coloraxis_showscale=False)
-                    company_figure.update_yaxes(title="")
-                    st.plotly_chart(
-                        plot_style(company_figure, max(430, 45 * len(company_summary))),
-                        use_container_width=True,
-                        config={"displayModeBar": False},
-                    )
-                    st.dataframe(company_summary, use_container_width=True, hide_index=True)
-
-                with outlet_tab:
-                    outlet_columns = [
-                        column
-                        for column in [
-                            priority_site,
-                            priority_place,
-                            priority_company,
-                            "receiving_water",
-                            "source_receiving_water",
-                            "permit_reference",
-                            priority_risk_column,
-                            "total_counted_spills_in_period",
-                            "total_spill_duration_hours_in_period",
-                            "prediction_confidence",
-                            "latitude",
-                            "longitude",
-                        ]
-                        if column and column in priority_filtered.columns
-                    ]
-                    outlet_records = priority_filtered[outlet_columns].copy()
-                    st.dataframe(outlet_records, use_container_width=True, hide_index=True)
-                    download_table(
-                        outlet_records,
-                        "predicted_2026_high_risk_locations.csv"
-                        if priority_prediction
-                        else "recorded_high_risk_locations.csv",
-                    )
-
-
-# =============================================================================
-# PAGE 4 — PLACES, COMPANIES AND CHANGE
-# =============================================================================
-
-elif page == "Places and companies":
-    section_header(
-        "See how places and water companies compare",
-        "Use the charts to compare recorded risk, changes over time and the 2026 forecast.",
+        "Places and water-company evidence",
+        "Compare absolute burden, proportional burden, annual trends and observed-to-predicted change.",
     )
 
     company_tab, town_tab, change_tab = st.tabs(
@@ -3227,11 +1030,11 @@ elif page == "Places and companies":
             st.info("The company-ranking export is unavailable.")
         else:
             metric_choice = st.radio(
-                "How would you like to rank the companies?",
-                ["Number of High-risk locations", "Share of locations that are Medium or High"],
+                "Ranking measure",
+                ["Absolute High-risk burden", "Proportional Medium-or-High burden"],
                 horizontal=True,
             )
-            if metric_choice.startswith("Number"):
+            if metric_choice.startswith("Absolute"):
                 value_column = "high_risk_unique_locations"
                 x_title = "Unique observed High-risk locations"
                 colour = RISK_COLOURS["High"]
@@ -3290,16 +1093,16 @@ elif page == "Places and companies":
             metric_cards(
                 [
                     {"label": "Place", "value": place, "note": str(row.get("water_companies", "Company not recorded")), "accent": "#B7DDE5"},
-                    {"label": "2021 → 2025 direction", "value": str(row.get("trend_2023_to_2025", "Not available")), "note": "Observed counted-spill direction", "accent": "#A8D8D0"},
+                    {"label": "2023 → 2025 direction", "value": str(row.get("trend_2023_to_2025", "Not available")), "note": "Observed counted-spill direction", "accent": "#A8D8D0"},
                     {"label": "Risk history", "value": str(row.get("town_risk_transition", "Not available")), "note": "Highest annual mapped risk", "accent": "#F1D39D"},
                     {"label": "2025 counted spills", "value": value_text(row.get("counted_spills_2025")), "note": "Recorded evidence—not volume", "accent": "#E9A7A7"},
                 ]
             )
             trend = pd.DataFrame(
                 {
-                    "Year": list(OBSERVED_YEARS),
-                    "Counted spills": [row.get(f"counted_spills_{year}") for year in list(OBSERVED_YEARS)],
-                    "Duration hours": [row.get(f"duration_hours_{year}") for year in list(OBSERVED_YEARS)],
+                    "Year": [2023, 2024, 2025],
+                    "Counted spills": [row.get(f"counted_spills_{year}") for year in [2023, 2024, 2025]],
+                    "Duration hours": [row.get(f"duration_hours_{year}") for year in [2023, 2024, 2025]],
                 }
             )
             left, right = st.columns(2)
@@ -3348,1111 +1151,82 @@ elif page == "Places and companies":
 
 
 # =============================================================================
-# PAGE 5 — IMPROVEMENTS AND RECORDED CHANGES
+# PAGE 4 — MODEL PERFORMANCE
 # =============================================================================
 
-elif page == "Improvements and changes":
+elif page == "Model performance":
     section_header(
-        "Where did recorded spills and risk improve?",
-        "Compare water companies, then explore every available town, city and receiving-water outlet.",
+        "Model performance and validation",
+        "Training-period cross-validation and chronological 2025 validation are presented separately.",
     )
     banner(
-        "A decrease means the recorded 2025 result is lower than the same-location "
-        "2021–2024 average. These figures describe recorded change; they do not prove why it happened.",
-        icon="↕",
-        background="#EDF7F3",
-        edge="#62A887",
+        "Macro F1 is the primary selection metric because it gives equal importance to Low, Medium and High. "
+        "Balanced accuracy addresses class imbalance; High-risk recall measures sensitivity to genuine High-risk cases.",
+        icon="🧠",
+        background=PALE_LAVENDER,
+        edge="#8F79A8",
     )
 
-    company_change_tab, town_change_tab, water_change_tab = st.tabs(
-        [
-            "Water-company improvement",
-            "Towns and cities",
-            "Receiving-water locations",
+    models = load_table("model_comparison")
+    metrics = load_table("validation_metrics")
+    report = load_table("classification_report")
+
+    if not models.empty:
+        model_column = first_existing(models, ["Model", "model"])
+        metric_columns = [
+            column for column in models.columns
+            if any(term in str(column).casefold() for term in ["macro f1", "balanced accuracy", "high-risk recall"])
+            and pd.api.types.is_numeric_dtype(models[column])
         ]
-    )
-
-    with company_change_tab:
-        company_changes = load_table("company_improvement_results")
-
-        # A transparent fallback keeps the page usable during deployment. The
-        # common-location Colab export replaces this descriptive annual result.
-        if company_changes.empty:
-            annual_fallback = load_table("annual_company_trends")
-            fallback_rows = []
-            required_risk_columns = {
-                "water_company_name",
-                "reporting_year",
-                "low_risk_unique_locations",
-                "medium_risk_unique_locations",
-                "high_risk_unique_locations",
-            }
-            if required_risk_columns.issubset(annual_fallback.columns):
-                annual_fallback = annual_fallback.copy()
-                annual_fallback["reporting_year"] = pd.to_numeric(
-                    annual_fallback["reporting_year"], errors="coerce"
-                )
-                for company_name, company_rows in annual_fallback.groupby(
-                    "water_company_name"
-                ):
-                    yearly_percentages = {}
-                    yearly_totals = {}
-                    for year in list(OBSERVED_YEARS):
-                        row_match = company_rows.loc[
-                            company_rows["reporting_year"].eq(year)
-                        ]
-                        if row_match.empty:
-                            continue
-                        row = row_match.iloc[0]
-                        low = pd.to_numeric(row.get("low_risk_unique_locations"), errors="coerce")
-                        medium = pd.to_numeric(row.get("medium_risk_unique_locations"), errors="coerce")
-                        high = pd.to_numeric(row.get("high_risk_unique_locations"), errors="coerce")
-                        total = low + medium + high
-                        if pd.notna(total) and total > 0:
-                            yearly_percentages[year] = (medium + high) / total * 100
-                            yearly_totals[year] = total
-                    if all(year in yearly_percentages for year in list(OBSERVED_YEARS)):
-                        baseline = np.mean(
-                            [yearly_percentages[year] for year in OBSERVED_YEARS if year < 2025]
-                        )
-                        fallback_rows.append(
-                            {
-                                "water_company_name": company_name,
-                                "common_locations": yearly_totals[2025],
-                                "baseline_medium_high_percent": baseline,
-                                "medium_high_percent_2025": yearly_percentages[2025],
-                                "risk_improvement_percentage_points": (
-                                    baseline - yearly_percentages[2025]
-                                ),
-                            }
-                        )
-            company_changes = pd.DataFrame(fallback_rows)
-            if not company_changes.empty:
-                st.caption(
-                    "Temporary descriptive view. Re-run the Colab deployment to use the exact common-location comparison."
-                )
-
-        required_company_columns = {
-            "water_company_name",
-            "baseline_medium_high_percent",
-            "medium_high_percent_2025",
-            "risk_improvement_percentage_points",
-        }
-        if company_changes.empty or not required_company_columns.issubset(
-            company_changes.columns
-        ):
-            st.info(
-                "Run the company-improvement Colab cell and the updated dashboard installer to publish this ranking."
+        if model_column and metric_columns:
+            long = models.melt(id_vars=model_column, value_vars=metric_columns, var_name="Metric", value_name="Score")
+            figure = px.bar(
+                long, x=model_column, y="Score", color="Metric", barmode="group",
+                title="Training-period candidate-model comparison",
+                color_discrete_sequence=["#70B7A5", "#8CBBD0", "#C4A8D5"],
             )
-        else:
-            company_changes = company_changes.copy()
-            for column in [
-                "baseline_medium_high_percent",
-                "medium_high_percent_2025",
-                "risk_improvement_percentage_points",
-                "common_locations",
-            ]:
-                if column in company_changes.columns:
-                    company_changes[column] = pd.to_numeric(
-                        company_changes[column], errors="coerce"
-                    )
-            company_changes = company_changes.dropna(
-                subset=["risk_improvement_percentage_points"]
-            ).sort_values("risk_improvement_percentage_points")
-
-            best_company = company_changes.iloc[-1]
-            smallest_company = company_changes.iloc[0]
-            metric_cards(
-                [
-                    {
-                        "label": "Greatest improvement",
-                        "value": str(best_company["water_company_name"]),
-                        "note": f"{np.ceil(best_company['risk_improvement_percentage_points']):.0f} percentage-point reduction",
-                        "accent": "#62A887",
-                    },
-                    {
-                        "label": "Smallest improvement",
-                        "value": str(smallest_company["water_company_name"]),
-                        "note": f"{np.ceil(smallest_company['risk_improvement_percentage_points']):.0f} percentage-point change",
-                        "accent": "#EBA35B",
-                    },
-                    {
-                        "label": "Companies compared",
-                        "value": f"{len(company_changes):,}",
-                        "note": "Ranked using Medium/High-risk share",
-                        "accent": "#E8CD6A",
-                    },
-                ]
-            )
-
-            maximum_value = company_changes[
-                "risk_improvement_percentage_points"
-            ].max()
-            minimum_value = company_changes[
-                "risk_improvement_percentage_points"
-            ].min()
-
-            def company_bar_colour(value):
-                if value < 0:
-                    return "#D97A76"
-                if np.isclose(value, maximum_value):
-                    return "#62A887"
-                if np.isclose(value, minimum_value):
-                    return "#EBA35B"
-                return "#E8CD6A"
-
-            company_changes["bar_colour"] = company_changes[
-                "risk_improvement_percentage_points"
-            ].map(company_bar_colour)
-            company_changes["display_change"] = company_changes[
-                "risk_improvement_percentage_points"
-            ].map(lambda value: f"{int(np.ceil(value)):+d} points")
-            company_changes["popup"] = company_changes.apply(
-                lambda row: (
-                    f"<b>{row['water_company_name']}</b><br>"
-                    "Medium/High-risk locations before 2025: "
-                    f"{int(np.ceil(row['baseline_medium_high_percent']))}%<br>"
-                    "Medium/High-risk locations in 2025: "
-                    f"{int(np.ceil(row['medium_high_percent_2025']))}%<br>"
-                    "Improvement: "
-                    f"{int(np.ceil(row['risk_improvement_percentage_points']))} percentage points"
-                ),
-                axis=1,
-            )
-
-            company_figure = go.Figure(
-                go.Bar(
-                    x=company_changes["risk_improvement_percentage_points"],
-                    y=company_changes["water_company_name"],
-                    orientation="h",
-                    marker=dict(
-                        color=company_changes["bar_colour"],
-                        line=dict(color="#FFFFFF", width=1.5),
-                    ),
-                    text=company_changes["display_change"],
-                    textposition="outside",
-                    customdata=company_changes["popup"],
-                    hovertemplate="%{customdata}<extra></extra>",
-                )
-            )
-            company_figure.update_layout(
-                title="Reduction in Medium/High-risk locations by 2025",
-                xaxis_title="Improvement from the 2021–2024 average (percentage points)",
-                yaxis_title="",
-                height=max(560, 55 * len(company_changes)),
-                margin=dict(l=175, r=100, t=85, b=85),
-                showlegend=False,
-            )
-            company_figure.add_vline(x=0, line_color="#5D7772", line_width=1)
-            st.plotly_chart(
-                plot_style(company_figure, max(560, 55 * len(company_changes))),
-                use_container_width=True,
-            )
-            st.caption(
-                "Green = greatest improvement · Yellow = improvement · Orange = smallest improvement · Red = increase."
-            )
-
-            company_table = company_changes[
-                [
-                    "water_company_name",
-                    "baseline_medium_high_percent",
-                    "medium_high_percent_2025",
-                    "risk_improvement_percentage_points",
-                ]
-            ].sort_values("risk_improvement_percentage_points", ascending=False)
-            company_table.columns = [
-                "Water company",
-                "2023–2024 Medium/High average (%)",
-                "2025 Medium/High (%)",
-                "Improvement (percentage points)",
-            ]
-            st.dataframe(
-                company_table.round(0), use_container_width=True, hide_index=True
-            )
-
-    with town_change_tab:
-        town_changes = load_table("town_trends")
-        required_town_columns = {
-            "official_place_name",
-            "counted_spills_2023",
-            "counted_spills_2024",
-            "counted_spills_2025",
-        }
-        if town_changes.empty or not required_town_columns.issubset(
-            town_changes.columns
-        ):
-            st.info("The town/city change export is unavailable.")
-        else:
-            town_changes = town_changes.copy()
-            for column in [
-                "counted_spills_2023",
-                "counted_spills_2024",
-                "counted_spills_2025",
-            ]:
-                town_changes[column] = pd.to_numeric(
-                    town_changes[column], errors="coerce"
-                )
-            town_changes["average_before_2025"] = town_changes[
-                [f"counted_spills_{year}" for year in OBSERVED_YEARS if year < 2025]
-            ].mean(axis=1)
-            town_changes["change_to_2025"] = (
-                town_changes["counted_spills_2025"]
-                - town_changes["average_before_2025"]
-            )
-            town_changes["change_percent"] = np.where(
-                town_changes["average_before_2025"].gt(0),
-                town_changes["change_to_2025"]
-                / town_changes["average_before_2025"]
-                * 100,
-                np.nan,
-            )
-            town_changes["Direction"] = np.select(
-                [
-                    town_changes["change_to_2025"].lt(0),
-                    town_changes["change_to_2025"].gt(0),
-                ],
-                ["Decreased", "Increased"],
-                default="Stayed the same",
-            )
-            direction_filter = st.segmented_control(
-                "Show towns and cities where counted spills:",
-                ["All", "Decreased", "Increased", "Stayed the same"],
-                default="All",
-                key="town_change_direction",
-            )
-            town_options_frame = town_changes
-            if direction_filter and direction_filter != "All":
-                town_options_frame = town_changes.loc[
-                    town_changes["Direction"].eq(direction_filter)
-                ]
-            town_options = available_values(
-                town_options_frame, "official_place_name"
-            )
-            if not town_options:
-                st.info("No towns or cities match that change category.")
-            else:
-                selected_town = st.selectbox(
-                    "Choose any town or city",
-                    town_options,
-                    key="town_change_place",
-                )
-                town_row = town_options_frame.loc[
-                    town_options_frame["official_place_name"]
-                    .astype(str)
-                    .eq(selected_town)
-                ].iloc[0]
-                town_direction = str(town_row["Direction"])
-                town_colour = {
-                    "Decreased": "#62A887",
-                    "Increased": "#D97A76",
-                    "Stayed the same": "#EBA35B",
-                }[town_direction]
-                if pd.notna(town_row["change_percent"]):
-                    change_size = int(np.ceil(abs(town_row["change_percent"])))
-                    town_change_text = (
-                        f"{change_size}% fewer"
-                        if town_direction == "Decreased"
-                        else f"{change_size}% more"
-                        if town_direction == "Increased"
-                        else "No change"
-                    )
-                else:
-                    town_change_text = town_direction
-                metric_cards(
-                    [
-                        {
-                            "label": "Town or city",
-                            "value": selected_town,
-                            "note": str(town_row.get("water_companies", "Company not recorded")),
-                            "accent": "#B7DDE5",
-                        },
-                        {
-                            "label": "Recorded direction",
-                            "value": town_direction,
-                            "note": town_change_text,
-                            "accent": town_colour,
-                        },
-                        {
-                            "label": "2025 counted spills",
-                            "value": value_text(town_row["counted_spills_2025"]),
-                            "note": "Counted events—not spill volume",
-                            "accent": "#E8CD6A",
-                        },
-                    ]
-                )
-                town_figure_data = pd.DataFrame(
-                    {
-                        "Year": list(OBSERVED_YEARS),
-                        "Counted spills": [
-                            town_row["counted_spills_2023"],
-                            town_row["counted_spills_2024"],
-                            town_row["counted_spills_2025"],
-                        ],
-                    }
-                )
-                town_figure = go.Figure(
-                    go.Scatter(
-                        x=town_figure_data["Year"],
-                        y=town_figure_data["Counted spills"],
-                        mode="lines+markers+text",
-                        text=town_figure_data["Counted spills"].map(
-                            lambda value: value_text(value)
-                        ),
-                        textposition="top center",
-                        line=dict(color=town_colour, width=6, shape="spline"),
-                        marker=dict(size=16, color=town_colour),
-                        fill="tozeroy",
-                        fillcolor=f"{town_colour}22",
-                        hovertemplate="%{x}: %{y:,.0f} counted spills<extra></extra>",
-                    )
-                )
-                town_figure.update_layout(
-                    title=f"Recorded counted-spill change · {selected_town}",
-                    xaxis_title="Year",
-                    yaxis_title="Counted spills",
-                    height=470,
-                    showlegend=False,
-                )
-                town_figure.update_xaxes(dtick=1)
-                st.plotly_chart(
-                    plot_style(town_figure, 470), use_container_width=True
-                )
-
-            town_change_table = town_changes[
-                [
-                    "official_place_name",
-                    "water_companies",
-                    "counted_spills_2023",
-                    "counted_spills_2024",
-                    "counted_spills_2025",
-                    "Direction",
-                    "change_percent",
-                ]
-            ].copy()
-            town_change_table.columns = [
-                "Town or city",
-                "Water company",
-                "2023",
-                "2024",
-                "2025",
-                "Change",
-                "Change (%)",
-            ]
-            town_change_table["Change (%)"] = town_change_table[
-                "Change (%)"
-            ].round(0)
-            with st.expander("View every town and city"):
-                st.dataframe(
-                    town_change_table,
-                    use_container_width=True,
-                    hide_index=True,
-                )
-
-    with water_change_tab:
-        water_changes = load_table("receiving_water_changes")
-        required_water_columns = {
-            "location_id",
-            "water_company_name",
-            "site_name",
-            "receiving_water",
-            "official_place_name",
-            "counted_spills_2023",
-            "counted_spills_2024",
-            "counted_spills_2025",
-            "spill_direction",
-        }
-        if water_changes.empty or not required_water_columns.issubset(
-            water_changes.columns
-        ):
-            st.info(
-                "Run the updated company-improvement cell and dashboard installer to publish receiving-water changes."
-            )
-        else:
-            water_changes = water_changes.copy()
-            for column in [
-                "counted_spills_2023",
-                "counted_spills_2024",
-                "counted_spills_2025",
-                "spill_change_percent",
-            ]:
-                if column in water_changes.columns:
-                    water_changes[column] = pd.to_numeric(
-                        water_changes[column], errors="coerce"
-                    )
-            water_changes["Display location"] = water_changes.apply(
-                lambda row: (
-                    f"{safe_text(row.get('receiving_water'), 'Receiving water not recorded')} — "
-                    f"{safe_text(row.get('site_name'), 'Site not recorded')} — "
-                    f"{safe_text(row.get('official_place_name'), 'Place not recorded')}"
-                ),
-                axis=1,
-            )
-            water_direction = st.segmented_control(
-                "Show receiving-water locations where counted spills:",
-                ["All", "Decreased", "Increased", "No change"],
-                default="All",
-                key="water_change_direction",
-            )
-            water_options_frame = water_changes
-            if water_direction and water_direction != "All":
-                water_options_frame = water_changes.loc[
-                    water_changes["spill_direction"].astype(str).eq(water_direction)
-                ]
-            water_options = available_values(
-                water_options_frame, "Display location"
-            )
-            if not water_options:
-                st.info("No receiving-water locations match that change category.")
-            else:
-                selected_water = st.selectbox(
-                    "Choose a receiving-water location",
-                    water_options,
-                    key="receiving_water_change_location",
-                )
-                water_row = water_options_frame.loc[
-                    water_options_frame["Display location"]
-                    .astype(str)
-                    .eq(selected_water)
-                ].iloc[0]
-                water_result = str(water_row["spill_direction"])
-                water_colour = {
-                    "Decreased": "#62A887",
-                    "Increased": "#D97A76",
-                    "No change": "#EBA35B",
-                }.get(water_result, "#68AFC2")
-                water_change_value = pd.to_numeric(
-                    water_row.get("spill_change_percent"), errors="coerce"
-                )
-                if pd.notna(water_change_value):
-                    water_change_note = (
-                        f"{int(np.ceil(abs(water_change_value)))}% "
-                        + ("fewer" if water_change_value < 0 else "more")
-                        if not np.isclose(water_change_value, 0)
-                        else "No change"
-                    )
-                else:
-                    water_change_note = "Percentage unavailable"
-                metric_cards(
-                    [
-                        {
-                            "label": "Receiving water",
-                            "value": str(water_row["receiving_water"]),
-                            "note": str(water_row["site_name"]),
-                            "accent": "#B7DDE5",
-                        },
-                        {
-                            "label": "Nearest town or city",
-                            "value": str(water_row["official_place_name"]),
-                            "note": str(water_row["water_company_name"]),
-                            "accent": "#C9DDE8",
-                        },
-                        {
-                            "label": "Recorded direction",
-                            "value": water_result,
-                            "note": water_change_note,
-                            "accent": water_colour,
-                        },
-                    ]
-                )
-                water_figure_data = pd.DataFrame(
-                    {
-                        "Year": list(OBSERVED_YEARS),
-                        "Counted spills": [
-                            water_row["counted_spills_2023"],
-                            water_row["counted_spills_2024"],
-                            water_row["counted_spills_2025"],
-                        ],
-                    }
-                )
-                water_figure = go.Figure(
-                    go.Bar(
-                        x=water_figure_data["Year"],
-                        y=water_figure_data["Counted spills"],
-                        marker_color=["#C9DCE5", "#E8CD6A", water_colour],
-                        text=water_figure_data["Counted spills"].map(
-                            lambda value: value_text(value)
-                        ),
-                        textposition="outside",
-                        hovertemplate="%{x}: %{y:,.0f} counted spills<extra></extra>",
-                    )
-                )
-                water_figure.update_layout(
-                    title=f"Recorded counted spills · {water_row['receiving_water']}",
-                    xaxis_title="Year",
-                    yaxis_title="Counted spills",
-                    height=470,
-                    showlegend=False,
-                )
-                water_figure.update_xaxes(dtick=1)
-                st.plotly_chart(
-                    plot_style(water_figure, 470), use_container_width=True
-                )
-
-            water_table_columns = [
-                "receiving_water",
-                "site_name",
-                "official_place_name",
-                "water_company_name",
-                "counted_spills_2023",
-                "counted_spills_2024",
-                "counted_spills_2025",
-                "spill_direction",
-            ]
-            with st.expander("View every receiving-water location"):
-                st.dataframe(
-                    water_changes[water_table_columns].rename(
-                        columns={
-                            "receiving_water": "Receiving water",
-                            "site_name": "Outlet/site",
-                            "official_place_name": "Nearest town or city",
-                            "water_company_name": "Water company",
-                            "counted_spills_2023": "2023",
-                            "counted_spills_2024": "2024",
-                            "counted_spills_2025": "2025",
-                            "spill_direction": "Change",
-                        }
-                    ),
-                    use_container_width=True,
-                    hide_index=True,
-                )
-
-
-# =============================================================================
-# PAGE 6 — 2026 PREDICTIONS AND AFFECTED LOCATIONS
-# =============================================================================
-
-elif page == "2026 predictions":
-    st.html(
-        """
-        <style>
-          .block-container {
-            width:100% !important;
-            max-width:none !important;
-            padding-left:.55rem !important;
-            padding-right:.55rem !important;
-          }
-        </style>
-        """
-    )
-    section_header(
-        "Predicted 2026 spill risks and affected locations",
-        "Explore the forecast by risk, town or city, water company and exact mapped outlet.",
-    )
-    banner(
-        "<b>2026 forecast:</b> these are model-generated risk estimates for planning and review. "
-        "They are not confirmed 2026 spill events.",
-        icon="🔮",
-        background=PALE_AMBER,
-        edge="#D59A3C",
-    )
-
-    forecast = load_table("forecast_map_points")
-    forecast_risk = "predicted_2026_risk"
-
-    if forecast.empty or forecast_risk not in forecast.columns:
-        st.error("The 2026 prediction information is unavailable. Please try again later.")
+            figure.update_yaxes(range=[0, 1], tickformat=".0%")
+            st.plotly_chart(plot_style(figure, 500), use_container_width=True)
+        st.dataframe(models, use_container_width=True, hide_index=True)
     else:
-        forecast_place = first_existing(forecast, ["official_place_name", "town_or_city"])
-        forecast_company = first_existing(forecast, ["water_company_name", "company"])
-        forecast_site = first_existing(
-            forecast,
-            ["site_name", "source_site_name_ea_consents_database"],
-        )
+        st.info("The model-comparison export is unavailable.")
 
-        filter_columns = st.columns([1.05, 1.05, 1.05, 1.35])
-        with filter_columns[0]:
-            forecast_risks = st.multiselect(
-                "Predicted risk",
-                RISK_ORDER,
-                default=RISK_ORDER,
-                key="forecast_page_risks",
-            )
-        with filter_columns[1]:
-            forecast_company_choice = st.selectbox(
-                "Water company",
-                ["All companies"] + available_values(forecast, forecast_company)
-                if forecast_company
-                else ["All companies"],
-                key="forecast_page_company",
-            )
-        with filter_columns[2]:
-            forecast_place_choice = st.selectbox(
-                "Town or city",
-                ["All towns/cities"] + available_values(forecast, forecast_place)
-                if forecast_place
-                else ["All towns/cities"],
-                key="forecast_page_place",
-            )
-        with filter_columns[3]:
-            forecast_search = st.text_input(
-                "Find a location, company or receiving water",
-                key="forecast_page_search",
-            ).strip()
-
-        forecast_filtered = forecast.loc[
-            forecast[forecast_risk].isin(forecast_risks)
-        ].copy() if forecast_risks else forecast.iloc[0:0].copy()
-
-        if forecast_company and forecast_company_choice != "All companies":
-            forecast_filtered = forecast_filtered.loc[
-                forecast_filtered[forecast_company].astype(str).eq(forecast_company_choice)
-            ]
-        if forecast_place and forecast_place_choice != "All towns/cities":
-            forecast_filtered = forecast_filtered.loc[
-                forecast_filtered[forecast_place].astype(str).eq(forecast_place_choice)
-            ]
-        if forecast_search:
-            search_columns = [
-                column
-                for column in [
-                    forecast_place,
-                    forecast_company,
-                    forecast_site,
-                    "receiving_water",
-                    "source_receiving_water",
-                    "permit_reference",
-                ]
-                if column and column in forecast_filtered.columns
-            ]
-            forecast_match = pd.Series(False, index=forecast_filtered.index)
-            for column in search_columns:
-                forecast_match |= forecast_filtered[column].astype("string").str.contains(
-                    forecast_search,
-                    case=False,
-                    regex=False,
-                    na=False,
-                )
-            forecast_filtered = forecast_filtered.loc[forecast_match]
-
-        if forecast_filtered.empty:
-            st.warning("No predicted locations match these choices. Clear a filter and try again.")
+    metric_tab, class_tab = st.tabs(["2025 validation metrics", "Class-level results"])
+    with metric_tab:
+        if not metrics.empty:
+            st.dataframe(metrics.rename(columns=lambda value: str(value).replace("Test", "2025 validation")), use_container_width=True, hide_index=True)
         else:
-            forecast_counts = (
-                forecast_filtered[forecast_risk]
-                .value_counts()
-                .reindex(RISK_ORDER, fill_value=0)
-            )
-            metric_cards(
-                [
-                    {
-                        "label": "Predicted locations",
-                        "value": value_text(len(forecast_filtered)),
-                        "note": "Mapped outlets in this view",
-                        "accent": "#B7DDE5",
-                    },
-                    {
-                        "label": "Predicted High",
-                        "value": value_text(forecast_counts["High"]),
-                        "note": "Priority review category",
-                        "accent": "#E9A7A7",
-                    },
-                    {
-                        "label": "Predicted Medium",
-                        "value": value_text(forecast_counts["Medium"]),
-                        "note": "Closer-attention category",
-                        "accent": "#F1D39D",
-                    },
-                    {
-                        "label": "Affected towns/cities",
-                        "value": value_text(
-                            forecast_filtered[forecast_place].nunique()
-                            if forecast_place
-                            else np.nan
-                        ),
-                        "note": "Places represented in the forecast",
-                        "accent": "#A8D8D0",
-                    },
-                ]
-            )
+            st.info("The validation-metric export is unavailable.")
+    with class_tab:
+        if not report.empty:
+            st.dataframe(report, use_container_width=True, hide_index=True)
+        else:
+            st.info("The classification-report export is unavailable.")
 
-            map_tab, place_tab, company_tab, location_tab = st.tabs(
-                [
-                    "Interactive forecast map",
-                    "Affected towns and cities",
-                    "Water companies",
-                    "Exact predicted locations",
-                ]
-            )
-
-            with map_tab:
-                with st.spinner("Drawing the 2026 prediction map..."):
-                    forecast_map = build_folium_map(
-                        forecast_filtered,
-                        forecast_risk,
-                        True,
-                        "Clustered spill locations",
-                    )
-                st_folium(
-                    forecast_map,
-                    height=980,
-                    use_container_width=True,
-                    returned_objects=[],
-                    key="dedicated_2026_prediction_map",
-                )
-                st.caption(
-                    "Select a cluster to zoom in, then select a marker for the predicted "
-                    "risk, probabilities, town/city and water company."
-                )
-
-            with place_tab:
-                if forecast_place:
-                    forecast_place_ranking = make_risk_ranking(
-                        forecast_filtered,
-                        forecast_risk,
-                        forecast_place,
-                    )
-                    place_chart = forecast_place_ranking.head(25).copy()
-                    place_long = place_chart.melt(
-                        id_vars=[forecast_place],
-                        value_vars=RISK_ORDER,
-                        var_name="Predicted risk",
-                        value_name="Mapped locations",
-                    )
-                    place_figure = px.bar(
-                        place_long,
-                        x="Mapped locations",
-                        y=forecast_place,
-                        color="Predicted risk",
-                        orientation="h",
-                        barmode="stack",
-                        color_discrete_map=RISK_COLOURS,
-                        category_orders={"Predicted risk": RISK_ORDER},
-                        title="Affected towns and cities ranked by predicted risk",
-                    )
-                    place_figure.update_yaxes(
-                        title="",
-                        categoryorder="array",
-                        categoryarray=place_chart[forecast_place].iloc[::-1].tolist(),
-                    )
-                    st.plotly_chart(
-                        plot_style(place_figure, max(520, 29 * len(place_chart))),
-                        use_container_width=True,
-                        config={"displayModeBar": False},
-                    )
-                    st.dataframe(
-                        forecast_place_ranking,
-                        use_container_width=True,
-                        hide_index=True,
-                    )
-                else:
-                    st.info("Town/city information is unavailable for these predictions.")
-
-            with company_tab:
-                if forecast_company:
-                    forecast_company_ranking = make_risk_ranking(
-                        forecast_filtered,
-                        forecast_risk,
-                        forecast_company,
-                    )
-                    company_chart = forecast_company_ranking.copy()
-                    company_long = company_chart.melt(
-                        id_vars=[forecast_company],
-                        value_vars=RISK_ORDER,
-                        var_name="Predicted risk",
-                        value_name="Mapped locations",
-                    )
-                    company_figure = px.bar(
-                        company_long,
-                        x="Mapped locations",
-                        y=forecast_company,
-                        color="Predicted risk",
-                        orientation="h",
-                        barmode="stack",
-                        color_discrete_map=RISK_COLOURS,
-                        category_orders={"Predicted risk": RISK_ORDER},
-                        title="Water companies ranked by predicted 2026 risk",
-                    )
-                    company_figure.update_yaxes(
-                        title="",
-                        categoryorder="array",
-                        categoryarray=company_chart[forecast_company].iloc[::-1].tolist(),
-                    )
-                    st.plotly_chart(
-                        plot_style(company_figure, max(450, 44 * len(company_chart))),
-                        use_container_width=True,
-                        config={"displayModeBar": False},
-                    )
-                    st.dataframe(
-                        forecast_company_ranking,
-                        use_container_width=True,
-                        hide_index=True,
-                    )
-                else:
-                    st.info("Water-company information is unavailable for these predictions.")
-
-            with location_tab:
-                prediction_columns = [
-                    column
-                    for column in [
-                        forecast_site,
-                        forecast_place,
-                        forecast_company,
-                        "receiving_water",
-                        "source_receiving_water",
-                        forecast_risk,
-                        "probability_low",
-                        "probability_medium",
-                        "probability_high",
-                        "prediction_confidence",
-                        "confidence_flag",
-                        "permit_reference",
-                        "latitude",
-                        "longitude",
-                    ]
-                    if column and column in forecast_filtered.columns
-                ]
-                prediction_records = forecast_filtered[prediction_columns].copy()
-                risk_sort = {"High": 0, "Medium": 1, "Low": 2}
-                prediction_records["_risk_order"] = prediction_records[forecast_risk].map(risk_sort)
-                prediction_records = prediction_records.sort_values(
-                    ["_risk_order", forecast_place]
-                    if forecast_place in prediction_records.columns
-                    else ["_risk_order"]
-                ).drop(columns="_risk_order")
-                st.dataframe(
-                    prediction_records,
-                    use_container_width=True,
-                    hide_index=True,
-                )
-                download_table(prediction_records, "predicted_2026_affected_locations.csv")
-
-
-# =============================================================================
-# PAGE 5 — 2025 WATER-QUALITY MEASUREMENTS
-# =============================================================================
-
-elif page == "2026 rainfall predictions":
-    # 2026-08-22-existing-dashboard-rainfall-patch-v1
-    from pathlib import Path as _DashboardPath
-    import pandas as _dashboard_pd
-    import plotly.express as _dashboard_px
-
-    _risk_order = ["Low", "Medium", "High"]
-    _risk_colours = {
-        "Low": "#8FC8A8",
-        "Medium": "#E8C77B",
-        "High": "#D98C8C",
-    }
-    _data_folder = _DashboardPath(__file__).resolve().parent / "data"
-    _prediction_path = _data_folder / "rainfall_risk_predictions_2026_ytd.csv.gz"
-    _cv_path = _data_folder / "rainfall_model_cross_validation_results.csv.gz"
-
-    st.title("2026 rainfall-enhanced risk predictions")
-    st.caption(
-        "Year-to-date screening predictions using the recorded 2026 rainfall "
-        "available at the model cut-off. These are not confirmed 2026 discharges."
+    st.markdown(
+        """
+        <div class="edm-journey">
+          <div class="edm-journey-step"><span class="edm-journey-number">1</span><h4>Train</h4><p>Fit preprocessing and candidate models on earlier-year transitions only.</p></div>
+          <div class="edm-journey-step"><span class="edm-journey-number">2</span><h4>Validate</h4><p>Evaluate the selected configuration chronologically on 2025 outcomes.</p></div>
+          <div class="edm-journey-step"><span class="edm-journey-number">3</span><h4>Forecast</h4><p>Refit on eligible history and generate calibrated probabilities for 2026.</p></div>
+        </div>
+        """,
+        unsafe_allow_html=True,
     )
 
-    if not _prediction_path.exists():
-        st.error(
-            "The 2026 prediction file is missing. Run Dashboard Cell 2 in Colab."
-        )
-    else:
-        _predictions = _dashboard_pd.read_csv(_prediction_path, low_memory=False)
-        _predictions["predicted_2026_risk_category"] = (
-            _predictions["predicted_2026_risk_category"]
-            .astype("string")
-            .str.strip()
-            .str.title()
-        )
-        _predictions["prediction_confidence"] = _dashboard_pd.to_numeric(
-            _predictions["prediction_confidence"], errors="coerce"
-        )
-
-        _companies = sorted(
-            _predictions["water_company"].dropna().astype(str).unique()
-        )
-        _filter_columns = st.columns([1.3, 1, 1])
-        with _filter_columns[0]:
-            _selected_companies = st.multiselect(
-                "Water company", _companies, default=_companies,
-                key="rainfall_prediction_companies",
-            )
-        with _filter_columns[1]:
-            _selected_risks = st.multiselect(
-                "Predicted risk", _risk_order, default=_risk_order,
-                key="rainfall_prediction_risks",
-            )
-        with _filter_columns[2]:
-            _minimum_confidence = st.slider(
-                "Minimum confidence", 0.0, 1.0, 0.0, 0.05,
-                key="rainfall_prediction_confidence",
-            )
-
-        _filtered = _predictions.loc[
-            _predictions["water_company"].astype(str).isin(_selected_companies)
-            & _predictions["predicted_2026_risk_category"].isin(_selected_risks)
-            & _predictions["prediction_confidence"].ge(_minimum_confidence)
-        ].copy()
-
-        _risk_counts = (
-            _filtered["predicted_2026_risk_category"]
-            .value_counts().reindex(_risk_order, fill_value=0)
-        )
-        _high_count = int(_risk_counts.get("High", 0))
-        _mean_confidence = _filtered["prediction_confidence"].mean()
-        _agreement = (
-            _dashboard_pd.to_numeric(
-                _filtered.get("models_agreeing"), errors="coerce"
-            ).eq(4).mean()
-            if "models_agreeing" in _filtered.columns and len(_filtered)
-            else float("nan")
-        )
-
-        _kpis = st.columns(4)
-        _kpis[0].metric("Predictions shown", f"{len(_filtered):,}")
-        _kpis[1].metric("High-risk outlets", f"{_high_count:,}")
-        _kpis[2].metric(
-            "Mean confidence",
-            f"{_mean_confidence:.1%}" if _dashboard_pd.notna(_mean_confidence) else "—",
-        )
-        _kpis[3].metric(
-            "All four models agree",
-            f"{_agreement:.1%}" if _dashboard_pd.notna(_agreement) else "—",
-        )
-
-        _chart_columns = st.columns(2)
-        with _chart_columns[0]:
-            _risk_frame = _risk_counts.rename_axis("Risk").reset_index(name="Outlets")
-            _risk_figure = _dashboard_px.pie(
-                _risk_frame, names="Risk", values="Outlets", hole=0.58,
-                color="Risk", color_discrete_map=_risk_colours,
-                category_orders={"Risk": _risk_order},
-                title="Predicted risk categories for 2026",
-            )
-            _risk_figure.update_traces(textinfo="label+percent+value")
-            st.plotly_chart(_risk_figure, use_container_width=True)
-
-        with _chart_columns[1]:
-            _company_risk = (
-                _filtered.groupby(
-                    ["water_company", "predicted_2026_risk_category"],
-                    observed=True,
-                ).size().rename("Outlets").reset_index()
-            )
-            _company_figure = _dashboard_px.bar(
-                _company_risk, x="Outlets", y="water_company",
-                color="predicted_2026_risk_category", orientation="h",
-                color_discrete_map=_risk_colours,
-                category_orders={"predicted_2026_risk_category": _risk_order},
-                title="Predictions by water company",
-                labels={
-                    "water_company": "Water company",
-                    "predicted_2026_risk_category": "Risk",
-                },
-            )
-            st.plotly_chart(_company_figure, use_container_width=True)
-
-        if {"latitude", "longitude"}.issubset(_filtered.columns):
-            _mapped = _filtered.copy()
-            _mapped["latitude"] = _dashboard_pd.to_numeric(
-                _mapped["latitude"], errors="coerce"
-            )
-            _mapped["longitude"] = _dashboard_pd.to_numeric(
-                _mapped["longitude"], errors="coerce"
-            )
-            _mapped = _mapped.dropna(subset=["latitude", "longitude"])
-            if not _mapped.empty:
-                st.subheader("2026 prediction map")
-                _map_figure = _dashboard_px.scatter_mapbox(
-                    _mapped, lat="latitude", lon="longitude",
-                    color="predicted_2026_risk_category",
-                    color_discrete_map=_risk_colours,
-                    category_orders={"predicted_2026_risk_category": _risk_order},
-                    hover_name="site_name",
-                    hover_data={
-                        "water_company": True, "outlet_ngr": True,
-                        "prediction_confidence": ":.1%",
-                        "ytd_rainfall_mm": ":.1f",
-                        "latitude": False, "longitude": False,
-                    },
-                    zoom=5, height=650, opacity=0.72,
-                )
-                _map_figure.update_layout(
-                    mapbox_style="open-street-map",
-                    margin=dict(l=0, r=0, t=0, b=0),
-                )
-                st.plotly_chart(_map_figure, use_container_width=True)
-
-        if "ytd_rainfall_mm" in _filtered.columns:
-            _filtered["ytd_rainfall_mm"] = _dashboard_pd.to_numeric(
-                _filtered["ytd_rainfall_mm"], errors="coerce"
-            )
-            _rain_figure = _dashboard_px.box(
-                _filtered, x="predicted_2026_risk_category",
-                y="ytd_rainfall_mm", color="predicted_2026_risk_category",
-                color_discrete_map=_risk_colours,
-                category_orders={"predicted_2026_risk_category": _risk_order},
-                points="outliers",
-                title="Observed 2026 YTD rainfall by predicted risk",
-                labels={
-                    "predicted_2026_risk_category": "Predicted risk",
-                    "ytd_rainfall_mm": "YTD rainfall (mm)",
-                },
-            )
-            st.plotly_chart(_rain_figure, use_container_width=True)
-
-        if _cv_path.exists():
-            _cv = _dashboard_pd.read_csv(_cv_path)
-            _metric_columns = [
-                column for column in [
-                    "CV accuracy mean", "CV balanced accuracy mean",
-                    "CV macro F1 mean",
-                ] if column in _cv.columns
-            ]
-            if _metric_columns:
-                st.subheader("Rainfall-enhanced model comparison")
-                _cv_long = _cv.melt(
-                    id_vars="Model", value_vars=_metric_columns,
-                    var_name="Metric", value_name="Score",
-                )
-                _cv_figure = _dashboard_px.bar(
-                    _cv_long, x="Model", y="Score", color="Metric",
-                    barmode="group",
-                    color_discrete_sequence=["#789F8A", "#92ABC6", "#C5A3C8"],
-                    text_auto=".3f",
-                )
-                _cv_figure.update_yaxes(range=[0, 1])
-                st.plotly_chart(_cv_figure, use_container_width=True)
-
-        _preferred_columns = [
-            "water_company", "site_name", "outlet_ngr", "storm_asset_type",
-            "source_edm_year", "ytd_rainfall_mm", "ytd_wet_days_ge_1mm",
-            "ytd_heavy_days_ge_10mm", "predicted_2026_risk_category",
-            "prediction_confidence", "models_agreeing",
-            "random_forest_predicted_risk", "gbm_predicted_risk",
-            "xgboost_predicted_risk", "catboost_predicted_risk",
-        ]
-        _table_columns = [
-            column for column in _preferred_columns if column in _filtered.columns
-        ]
-        st.subheader("Outlet-level predictions")
-        st.dataframe(
-            _filtered[_table_columns], use_container_width=True, hide_index=True
-        )
-        st.download_button(
-            "Download the filtered predictions",
-            _filtered.to_csv(index=False).encode("utf-8"),
-            file_name="filtered_2026_rainfall_risk_predictions.csv",
-            mime="text/csv",
-        )
-        st.info(
-            "Use these results for screening and prioritisation. A predicted risk "
-            "category is not proof of a discharge or an infrastructure fault."
-        )
-
 
 # =============================================================================
-# PAGE 6 — INDIVIDUAL PREDICTION
+# PAGE 5 — INDIVIDUAL PREDICTION
 # =============================================================================
 
-elif page == "Check one location":
+elif page == "Individual prediction":
     section_header(
-        "Check one location",
-        "Enter the information known for the previous year to see the system's suggested 2026 risk category.",
+        "Individual 2026 risk prediction",
+        "Enter previous-year information using the saved model's fitted preprocessing and calibrated probability pipeline.",
     )
     banner(
-        "This is an estimate for investigation and planning. It does not confirm that a future spill will occur.",
+        "This calculator produces a model prediction for investigation and prioritisation. "
+        "It does not confirm that a future event will occur.",
         icon="⚠️",
         background=PALE_AMBER,
         edge="#D59A3C",
@@ -4465,11 +1239,11 @@ elif page == "Check one location":
         st.error(f"The saved prediction model could not be loaded: {error}")
         st.stop()
 
-    st.caption("The same prediction method used for the public 2026 map is used here.")
+    st.caption(f"Selected model: {bundle.get('selected_model_name', 'Not recorded')}")
     values = {}
 
     with st.form("prediction_form"):
-        st.subheader("1. Information from the previous year")
+        st.subheader("Previous-year measurements")
         numeric_columns = metadata.get("numeric_columns", [])
         numeric_widgets = st.columns(2)
         for position, column in enumerate(numeric_columns):
@@ -4477,7 +1251,7 @@ elif page == "Check one location":
             with numeric_widgets[position % 2]:
                 values[column] = st.number_input(pretty(column), value=default, format="%.3f")
 
-        st.subheader("2. About the location")
+        st.subheader("Site characteristics")
         categorical_columns = metadata.get("categorical_columns", [])
         categorical_widgets = st.columns(2)
         for position, column in enumerate(categorical_columns):
@@ -4487,7 +1261,7 @@ elif page == "Check one location":
                 selected = st.selectbox(pretty(column), display_options)
                 values[column] = "__MISSING__" if selected == "Not recorded" else selected
 
-        submitted = st.form_submit_button("Show the estimated 2026 risk", type="primary", use_container_width=True)
+        submitted = st.form_submit_button("Calculate calibrated prediction", type="primary", use_container_width=True)
 
     if submitted:
         raw_input = pd.DataFrame([values])
@@ -4540,20 +1314,330 @@ elif page == "Check one location":
                 edge="#4A9C7D",
             )
 
+elif page == "Rainfall and spills":
+    from pathlib import Path as _RainfallPath
+
+    import pandas as _rainfall_pd
+    import plotly.express as _rainfall_px
+
+    _rainfall_directory = (
+        _RainfallPath(__file__).resolve().parent
+        / "data"
+    )
+
+    _annual_path = (
+        _rainfall_directory
+        / "rainfall_annual_2021_2025.csv.gz"
+    )
+
+    _monthly_path = (
+        _rainfall_directory
+        / "rainfall_monthly_2021_2025.csv.gz"
+    )
+
+    st.title(
+        "Official rainfall and recorded spills"
+    )
+
+    st.caption(
+        "Observed Met Office regional rainfall for 2021–2025. "
+        "Rainfall provides supporting evidence of weather exposure, "
+        "but does not prove why an individual outlet discharged."
+    )
+
+    if not _annual_path.exists():
+        st.error(
+            "The annual rainfall file is missing. "
+            "Run Rainfall Cells 1 and 2 again."
+        )
+
+    elif not _monthly_path.exists():
+        st.error(
+            "The monthly rainfall file is missing. "
+            "Run Rainfall Cells 1 and 2 again."
+        )
+
+    else:
+        _annual = _rainfall_pd.read_csv(
+            _annual_path
+        )
+
+        _monthly = _rainfall_pd.read_csv(
+            _monthly_path
+        )
+
+        _annual["year"] = (
+            _rainfall_pd.to_numeric(
+                _annual["year"],
+                errors="coerce",
+            )
+        )
+
+        _monthly["year"] = (
+            _rainfall_pd.to_numeric(
+                _monthly["year"],
+                errors="coerce",
+            )
+        )
+
+        _regions = sorted(
+            _annual["region"]
+            .dropna()
+            .astype(str)
+            .unique()
+            .tolist()
+        )
+
+        if not _regions:
+            st.error(
+                "No regional rainfall records were found."
+            )
+
+        else:
+            _default_region = (
+                _regions.index(
+                    "England and Wales"
+                )
+                if "England and Wales"
+                in _regions
+                else 0
+            )
+
+            _selected_region = (
+                st.selectbox(
+                    "Choose an official rainfall region",
+                    _regions,
+                    index=_default_region,
+                    key="official_rainfall_region",
+                )
+            )
+
+            _annual_view = (
+                _annual.loc[
+                    _annual["region"]
+                    .astype(str)
+                    .eq(_selected_region)
+                ]
+                .sort_values("year")
+                .copy()
+            )
+
+            _monthly_view = (
+                _monthly.loc[
+                    _monthly["region"]
+                    .astype(str)
+                    .eq(_selected_region)
+                ]
+                .copy()
+            )
+
+            if not _annual_view.empty:
+
+                _latest = (
+                    _annual_view.iloc[-1]
+                )
+
+                _latest_year = int(
+                    _latest["year"]
+                )
+
+                (
+                    _card1,
+                    _card2,
+                    _card3,
+                    _card4,
+                ) = st.columns(4)
+
+                _card1.metric(
+                    f"{_latest_year} rainfall",
+                    (
+                        f"{_latest['annual_rainfall_mm']:,.0f} mm"
+                    ),
+                )
+
+                _card2.metric(
+                    "Wet days",
+                    f"{_latest['wet_days']:,.0f}",
+                )
+
+                _card3.metric(
+                    "Heavy-rain days",
+                    (
+                        f"{_latest['heavy_rain_days']:,.0f}"
+                    ),
+                )
+
+                _card4.metric(
+                    "Wettest day",
+                    (
+                        f"{_latest['maximum_daily_rainfall_mm']:,.1f} mm"
+                    ),
+                )
+
+                _annual_figure = (
+                    _rainfall_px.bar(
+                        _annual_view,
+                        x="year",
+                        y="annual_rainfall_mm",
+                        color="annual_rainfall_mm",
+                        text_auto=".0f",
+                        color_continuous_scale=[
+                            "#E8F5F2",
+                            "#BDE0FE",
+                            "#6C8EBF",
+                        ],
+                        title=(
+                            "Annual rainfall — "
+                            + _selected_region
+                        ),
+                        labels={
+                            "year": "Year",
+                            "annual_rainfall_mm":
+                                "Rainfall (mm)",
+                        },
+                    )
+                )
+
+                _annual_figure.update_layout(
+                    template="plotly_white",
+                    coloraxis_showscale=False,
+                )
+
+                st.plotly_chart(
+                    _annual_figure,
+                    use_container_width=True,
+                )
+
+            if not _monthly_view.empty:
+
+                _monthly_view["month"] = (
+                    _rainfall_pd.to_numeric(
+                        _monthly_view["month"],
+                        errors="coerce",
+                    )
+                )
+
+                _monthly_view["period"] = (
+                    _rainfall_pd.to_datetime(
+                        _monthly_view["year"]
+                        .astype("Int64")
+                        .astype(str)
+                        + "-"
+                        + _monthly_view["month"]
+                        .astype("Int64")
+                        .astype(str)
+                        + "-01",
+                        errors="coerce",
+                    )
+                )
+
+                _monthly_view = (
+                    _monthly_view
+                    .dropna(
+                        subset=[
+                            "period",
+                            "monthly_rainfall_mm",
+                        ]
+                    )
+                    .sort_values("period")
+                )
+
+                _monthly_figure = (
+                    _rainfall_px.area(
+                        _monthly_view,
+                        x="period",
+                        y="monthly_rainfall_mm",
+                        color_discrete_sequence=[
+                            "#78B7C5"
+                        ],
+                        title=(
+                            "Monthly rainfall pattern — "
+                            + _selected_region
+                        ),
+                        labels={
+                            "period": "Month",
+                            "monthly_rainfall_mm":
+                                "Rainfall (mm)",
+                        },
+                    )
+                )
+
+                _monthly_figure.update_layout(
+                    template="plotly_white",
+                )
+
+                st.plotly_chart(
+                    _monthly_figure,
+                    use_container_width=True,
+                )
+
+            st.info(
+                "Wetter periods may increase hydraulic pressure "
+                "on combined sewer systems. This comparison is "
+                "descriptive and does not establish the cause of "
+                "a particular outlet's discharge."
+            )
+
+            st.markdown(
+                "Source: [Met Office HadUKP daily precipitation]"
+                "(https://www.metoffice.gov.uk/hadobs/"
+                "hadukp/data/download.html)"
+            )
+
 
 # =============================================================================
-# PAGE 7 — AUDIT, SEARCH AND LIMITATIONS
+# PAGE 6 — WATER QUALITY, AUDIT, SEARCH AND LIMITATIONS
 # =============================================================================
 
 else:
     section_header(
-        "About the evidence",
-        "See how the records were checked, find source information and understand what this website can and cannot show.",
+        "Environmental evidence, audit and limitations",
+        "Inspect nearby-station observations, data-quality evidence, searchable records and responsible-use boundaries.",
     )
 
-    audit_tab, search_tab, method_tab = st.tabs(
-        ["How the data was checked", "Find a record", "How it works"]
+    water_tab, audit_tab, search_tab, method_tab = st.tabs(
+        ["Water quality", "Data-quality audit", "Evidence search", "Method & limitations"]
     )
+
+    with water_tab:
+        water_kpis = load_table("water_quality_kpis")
+        quality = load_table("water_quality_records")
+        coverage = load_table("water_quality_coverage")
+
+        banner(
+            "Nearby Environment Agency monitoring records provide environmental context. "
+            "Geographic proximity does not prove that an EDM outlet caused a measured result.",
+            icon="🌱",
+            background=PALE_MINT,
+            edge="#4A9C7D",
+        )
+        if not water_kpis.empty and {"KPI", "Value"}.issubset(water_kpis.columns):
+            cards = []
+            for position, (_, row) in enumerate(water_kpis.head(4).iterrows()):
+                cards.append({"label": str(row["KPI"]), "value": value_text(row["Value"]), "note": str(row.get("Meaning", "Official nearby-station evidence")), "accent": ["#A8D8D0", "#B7DDE5", "#CDBDDE", "#F1D39D"][position % 4]})
+            metric_cards(cards)
+
+        if not coverage.empty:
+            with st.expander("Water-quality coverage by company"):
+                st.dataframe(coverage, use_container_width=True, hide_index=True)
+
+        if quality.empty:
+            st.info("No public water-quality export is available.")
+        else:
+            filters = st.columns(2)
+            filtered = quality.copy()
+            with filters[0]:
+                company_options = ["All companies"] + available_values(filtered, "company")
+                company = st.selectbox("Company", company_options, key="water_company")
+            with filters[1]:
+                parameter_options = ["All parameters"] + available_values(filtered, "project_parameter_name")
+                parameter = st.selectbox("Measured parameter", parameter_options)
+            if company != "All companies" and "company" in filtered.columns:
+                filtered = filtered.loc[filtered["company"].astype(str).eq(company)]
+            if parameter != "All parameters" and "project_parameter_name" in filtered.columns:
+                filtered = filtered.loc[filtered["project_parameter_name"].astype(str).eq(parameter)]
+            st.dataframe(filtered.head(5000), use_container_width=True, hide_index=True)
+            download_table(filtered, "filtered_water_quality_evidence.csv")
 
     with audit_tab:
         audit_tables = [
@@ -4601,19 +1685,15 @@ else:
                 st.warning("No verified dashboard records matched that search.")
 
     with method_tab:
-        section_header(
-            "How a combined sewer works",
-            "Normal flow goes to treatment; heavy rain can use the overflow route.",
-        )
-        render_sewer_story()
-        st.html(
+        st.markdown(
             """
             <div class="edm-journey">
-              <div class="edm-journey-step"><span class="edm-journey-number">1</span><h4>Recorded information</h4><p>The map starts with cleaned records supplied for 2021–2025.</p></div>
-              <div class="edm-journey-step"><span class="edm-journey-number">2</span><h4>Year-by-year checks</h4><p>Earlier years are used to estimate the following year, so future information is not used too early.</p></div>
-              <div class="edm-journey-step"><span class="edm-journey-number">3</span><h4>Clear results</h4><p>Every map and ranking labels recorded information separately from forecasts.</p></div>
+              <div class="edm-journey-step"><span class="edm-journey-number">1</span><h4>Verified observations</h4><p>Observed categories come from cleaned historical records and remain distinguishable from forecasts.</p></div>
+              <div class="edm-journey-step"><span class="edm-journey-number">2</span><h4>Chronological modelling</h4><p>Earlier-year measurements predict the following year's category; later outcomes assess performance.</p></div>
+              <div class="edm-journey-step"><span class="edm-journey-number">3</span><h4>Traceable presentation</h4><p>Maps, rankings, probabilities, uncertainty flags and audit tables retain source context.</p></div>
             </div>
             """,
+            unsafe_allow_html=True,
         )
         banner(
             "<b>Interpretation boundary:</b> this prototype supports investigation and prioritisation. "
@@ -4634,11 +1714,12 @@ else:
         )
 
 
-st.html(
+st.markdown(
     """
     <div style="margin-top:2.5rem;padding-top:1rem;border-top:1px solid rgba(55,120,110,.18);
                 color:#5D7772;font-size:.78rem;text-align:center;">
-      Sewage Overflow Insights · verified evidence, transparent forecasts and responsible interpretation
+      England EDM Water &amp; Spill-Risk Observatory · verified evidence, transparent forecasts and responsible interpretation
     </div>
     """,
+    unsafe_allow_html=True,
 )
