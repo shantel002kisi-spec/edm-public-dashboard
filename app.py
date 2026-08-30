@@ -16,7 +16,12 @@ from folium.plugins import FastMarkerCluster, Fullscreen, HeatMap, MeasureContro
 from streamlit_folium import st_folium
 
 
-DASHBOARD_RELEASE = "2026-08-30-professional-sewer-figure-v15"
+DASHBOARD_RELEASE = "2026-08-30-full-2021-2025-dashboard-v16"
+
+OBSERVED_YEARS = tuple(range(2021, 2026))
+BASELINE_YEARS = tuple(year for year in OBSERVED_YEARS if year < 2025)
+OBSERVED_PERIOD = "2021–2025"
+BASELINE_PERIOD = "2021–2024"
 
 
 # =============================================================================
@@ -1410,7 +1415,7 @@ def render_hero():
             <div class="edm-kicker">💧 England and Wales</div>
             <h1>Sewage Overflow Insights</h1>
             <p>
-              Explore mapped discharge outlets, receiving waters and recorded 2023–2025 risk,
+              Explore mapped discharge outlets, receiving waters and recorded 2021–2025 risk,
               then view the separate, clearly labelled 2026 forecast.
             </p>
             <div class="edm-hero-badges" aria-label="Dashboard highlights">
@@ -1646,7 +1651,7 @@ def mapped_annual_spill_totals(
     place_column: str | None,
 ) -> dict[int, float]:
     """Return annual counted spills without repeating town/city totals per outlet."""
-    years = (2023, 2024, 2025)
+    years = OBSERVED_YEARS
     annual_columns = [f"place_counted_spills_{year}" for year in years]
     if (
         frame.empty
@@ -1960,7 +1965,7 @@ def popup_for_row(row: pd.Series, risk_column: str, prediction: bool) -> str:
     catchment = row.get("catchment_name", row.get("catchment", "Not available"))
     grid = row.get("parsed_grid_reference", "Not available")
     permit = row.get("permit_reference", "Not available")
-    years_observed = row.get("years_observed", "2023–2025")
+    years_observed = row.get("years_observed", OBSERVED_PERIOD)
     risk_history = row.get("risk_history", "Not available")
     risk = row.get(risk_column, "Not available")
     relationship = safe_text(row.get("official_place_relationship"))
@@ -1968,7 +1973,7 @@ def popup_for_row(row: pd.Series, risk_column: str, prediction: bool) -> str:
     x_coordinate = value_text(row.get("easting_x"), 1)
     y_coordinate = value_text(row.get("northing_y"), 1)
     annual_boxes = []
-    for year in (2023, 2024, 2025):
+    for year in OBSERVED_YEARS:
         annual_value = row.get(f"place_counted_spills_{year}")
         annual_boxes.append(
             f"<div style='padding:5px;text-align:center;background:#F4FAF8;"
@@ -2085,7 +2090,7 @@ def add_colab_map_panels(
                 company_rows["reporting_year"], errors="coerce"
             )
             yearly = []
-            for year in (2023, 2024, 2025):
+            for year in OBSERVED_YEARS:
                 match = company_rows.loc[company_rows["reporting_year"].eq(year)]
                 count_value = (
                     pd.to_numeric(match["counted_spills"], errors="coerce").iloc[0]
@@ -2113,20 +2118,20 @@ def add_colab_map_panels(
             f"""
             <button type="button" class="edm-map-rank edm-company-trend-button"
                     data-company="{html.escape(company_name, quote=True)}"
-                    aria-label="Show the 2023 to 2025 spill trend for {html.escape(company_name, quote=True)}">
+                    aria-label="Show the 2021 to 2025 spill trend for {html.escape(company_name, quote=True)}">
               <span class="edm-map-rank-number">{int(row['Rank'])}</span>
               <b>{html.escape(company_name)}</b>
               <div><span class="risk-high">&#9650; {int(row.get('High', 0)):,}</span>
               <span class="risk-medium">&#9670; {int(row.get('Medium', 0)):,}</span>
               <span class="risk-low">&#9679; {int(row.get('Low', 0)):,}</span></div>
-              <small>View 2023–2025 spill trend</small>
+              <small>View 2021–2025 spill trend</small>
             </button>
             """
         )
 
     risk_counts = plotting[risk_column].value_counts().reindex(RISK_ORDER, fill_value=0)
     map_title = "Predicted 2026 risk" if prediction else "Observed spill risk"
-    period_text = "Forecast - not a confirmed event" if prediction else "Recorded 2023-2025 evidence"
+    period_text = "Forecast - not a confirmed event" if prediction else "Recorded 2021–2025 evidence"
     place_detail_label = "Forecast status" if prediction else "Recorded spills"
     panels = f"""
     <style>
@@ -2311,7 +2316,7 @@ def add_colab_map_panels(
       root.innerHTML='<h4>'+edmEscape(company)+'</h4><div class="edm-place-detail">Recorded counted spills</div>'+ 
         '<div class="edm-trend-status">'+edmEscape(status)+'</div><div class="edm-trend-bars">'+bars+'</div>'+ 
         '<div class="edm-trend-duration"><b>Recorded duration</b><br>'+durations+'</div>'+ 
-        '<div class="edm-place-detail" style="margin-top:5px">The 2023–2025 trend is recorded evidence; any 2026 category remains a forecast.</div>';
+        '<div class="edm-place-detail" style="margin-top:5px">The 2021–2025 trend is recorded evidence; any 2026 category remains a forecast.</div>';
       root.scrollIntoView({{block:'nearest',behavior:'smooth'}});
     }}
     function edmBuildPlaces(){{
@@ -2741,7 +2746,7 @@ if page == "Start here":
         """
         <div class="edm-home-chart-note">
           Each percentage is the share of <b>mapped discharge outlets</b> in a risk category.
-          Recorded 2023–2025 evidence and predicted 2026 risk are deliberately kept separate.
+          Recorded 2021–2025 evidence and predicted 2026 risk are deliberately kept separate.
         </div>
         """
     )
@@ -2757,7 +2762,7 @@ if page == "Start here":
             (
                 observed_overview,
                 "period_risk_category",
-                "Recorded risk categories for mapped discharge outlets, 2023–2025",
+                "Recorded risk categories for mapped discharge outlets, 2021–2025",
                 "outlets classified",
                 "home_observed_risk_share",
             )
@@ -2828,7 +2833,7 @@ elif page == "Explore the map":
 
     layer = st.radio(
         "What would you like to see?",
-        ["Recorded 2023–2025 (what happened)", "2026 forecast (what may happen)"],
+        ["Recorded 2021–2025 (what happened)", "2026 forecast (what may happen)"],
         horizontal=True,
     )
     display_style = st.radio(
@@ -2857,7 +2862,7 @@ elif page == "Explore the map":
             )
         else:
             banner(
-                "<b>Recorded information:</b> every marker is a mapped discharge outlet using the supplied 2023–2025 records.",
+                "<b>Recorded information:</b> every marker is a mapped discharge outlet using the supplied 2021–2025 records.",
                 icon="💧",
                 background=PALE_MINT,
                 edge="#4A9C7D",
@@ -2897,34 +2902,25 @@ elif page == "Explore the map":
             )
         else:
             annual_spills = mapped_annual_spill_totals(filtered, place_column)
-            metric_cards(
-                [
-                    {
-                        "label": "Receiving-water outlets shown",
-                        "value": value_text(len(filtered)),
-                        "note": "Mapped outlets · this is not a spill count",
-                        "accent": "#B7DDE5",
-                    },
-                    {
-                        "label": "2023 counted spills",
-                        "value": value_text(annual_spills[2023]),
-                        "note": "Recorded across the receiving-water locations shown",
-                        "accent": "#A8D8D0",
-                    },
-                    {
-                        "label": "2024 counted spills",
-                        "value": value_text(annual_spills[2024]),
-                        "note": "Recorded across the receiving-water locations shown",
-                        "accent": "#B9DCCF",
-                    },
-                    {
-                        "label": "2025 counted spills",
-                        "value": value_text(annual_spills[2025]),
-                        "note": "Recorded across the receiving-water locations shown",
-                        "accent": "#F1D39D",
-                    },
-                ]
+            recorded_cards = [
+                {
+                    "label": "Receiving-water outlets shown",
+                    "value": value_text(len(filtered)),
+                    "note": "Mapped outlets — this is not a spill count",
+                    "accent": "#B7DDE5",
+                }
+            ]
+            year_accents = ["#C6DFEA", "#B9DCCF", "#A8D8D0", "#E8CD6A", "#F1D39D"]
+            recorded_cards.extend(
+                {
+                    "label": f"{year} counted spills",
+                    "value": value_text(annual_spills[year]),
+                    "note": "Recorded across the receiving-water locations shown",
+                    "accent": accent,
+                }
+                for year, accent in zip(OBSERVED_YEARS, year_accents)
             )
+            metric_cards(recorded_cards)
 
         if filtered.empty:
             st.warning("No locations match those choices. Remove one or more filters and try again.")
@@ -2990,7 +2986,7 @@ elif page == "Priority locations":
 
     priority_view = st.radio(
         "Choose the evidence",
-        ["Recorded 2023–2025", "Predicted 2026"],
+        ["Recorded 2021–2025", "Predicted 2026"],
         horizontal=True,
         key="priority_evidence_view",
     )
@@ -3309,19 +3305,23 @@ elif page == "Places and companies":
             place_options = available_values(towns, "official_place_name")
             place = st.selectbox("Select a town or city", place_options)
             row = towns.loc[towns["official_place_name"].astype(str).eq(place)].iloc[0]
+            direction_value = row.get(
+                "trend_2021_to_2025",
+                row.get("trend_2023_to_2025", "Not available"),
+            )
             metric_cards(
                 [
                     {"label": "Place", "value": place, "note": str(row.get("water_companies", "Company not recorded")), "accent": "#B7DDE5"},
-                    {"label": "2023 → 2025 direction", "value": str(row.get("trend_2023_to_2025", "Not available")), "note": "Observed counted-spill direction", "accent": "#A8D8D0"},
+                    {"label": "2021 → 2025 direction", "value": str(direction_value), "note": "Observed counted-spill direction", "accent": "#A8D8D0"},
                     {"label": "Risk history", "value": str(row.get("town_risk_transition", "Not available")), "note": "Highest annual mapped risk", "accent": "#F1D39D"},
                     {"label": "2025 counted spills", "value": value_text(row.get("counted_spills_2025")), "note": "Recorded evidence—not volume", "accent": "#E9A7A7"},
                 ]
             )
             trend = pd.DataFrame(
                 {
-                    "Year": [2023, 2024, 2025],
-                    "Counted spills": [row.get(f"counted_spills_{year}") for year in [2023, 2024, 2025]],
-                    "Duration hours": [row.get(f"duration_hours_{year}") for year in [2023, 2024, 2025]],
+                    "Year": list(OBSERVED_YEARS),
+                    "Counted spills": [row.get(f"counted_spills_{year}") for year in OBSERVED_YEARS],
+                    "Duration hours": [row.get(f"duration_hours_{year}") for year in OBSERVED_YEARS],
                 }
             )
             left, right = st.columns(2)
@@ -3379,8 +3379,10 @@ elif page == "Improvements and changes":
         "Compare water companies, then explore every available town, city and receiving-water outlet.",
     )
     banner(
-        "A decrease means the recorded 2025 result is lower than the same-location "
-        "2023–2024 average. These figures describe recorded change; they do not prove why it happened.",
+        "A decrease means the recorded 2025 result is lower than the corresponding "
+        "2021–2024 average for that company or location. Missing years remain missing; "
+        "they are not replaced with artificial values. These figures describe recorded "
+        "change and do not prove why it happened.",
         icon="↕",
         background="#EDF7F3",
         edge="#62A887",
@@ -3396,6 +3398,19 @@ elif page == "Improvements and changes":
 
     with company_change_tab:
         company_changes = load_table("company_improvement_results")
+        if (
+            not company_changes.empty
+            and (
+                "baseline_period" not in company_changes.columns
+                or not company_changes["baseline_period"]
+                .astype(str)
+                .eq("2021-2024")
+                .all()
+            )
+        ):
+            # Never display the obsolete 2023–2024 comparison under a
+            # 2021–2025 heading. Recalculate from the five-year annual table.
+            company_changes = pd.DataFrame()
 
         # A transparent fallback keeps the page usable during deployment. The
         # common-location Colab export replaces this descriptive annual result.
@@ -3419,7 +3434,7 @@ elif page == "Improvements and changes":
                 ):
                     yearly_percentages = {}
                     yearly_totals = {}
-                    for year in [2023, 2024, 2025]:
+                    for year in OBSERVED_YEARS:
                         row_match = company_rows.loc[
                             company_rows["reporting_year"].eq(year)
                         ]
@@ -3433,9 +3448,9 @@ elif page == "Improvements and changes":
                         if pd.notna(total) and total > 0:
                             yearly_percentages[year] = (medium + high) / total * 100
                             yearly_totals[year] = total
-                    if all(year in yearly_percentages for year in [2023, 2024, 2025]):
+                    if all(year in yearly_percentages for year in OBSERVED_YEARS):
                         baseline = np.mean(
-                            [yearly_percentages[2023], yearly_percentages[2024]]
+                            [yearly_percentages[year] for year in BASELINE_YEARS]
                         )
                         fallback_rows.append(
                             {
@@ -3559,7 +3574,7 @@ elif page == "Improvements and changes":
             )
             company_figure.update_layout(
                 title="Reduction in Medium/High-risk locations by 2025",
-                xaxis_title="Improvement from the 2023–2024 average (percentage points)",
+                xaxis_title="Improvement from the 2021–2024 average (percentage points)",
                 yaxis_title="",
                 height=max(560, 55 * len(company_changes)),
                 margin=dict(l=175, r=100, t=85, b=85),
@@ -3584,7 +3599,7 @@ elif page == "Improvements and changes":
             ].sort_values("risk_improvement_percentage_points", ascending=False)
             company_table.columns = [
                 "Water company",
-                "2023–2024 Medium/High average (%)",
+                "2021–2024 Medium/High average (%)",
                 "2025 Medium/High (%)",
                 "Improvement (percentage points)",
             ]
@@ -3594,11 +3609,8 @@ elif page == "Improvements and changes":
 
     with town_change_tab:
         town_changes = load_table("town_trends")
-        required_town_columns = {
-            "official_place_name",
-            "counted_spills_2023",
-            "counted_spills_2024",
-            "counted_spills_2025",
+        required_town_columns = {"official_place_name"} | {
+            f"counted_spills_{year}" for year in OBSERVED_YEARS
         }
         if town_changes.empty or not required_town_columns.issubset(
             town_changes.columns
@@ -3606,16 +3618,12 @@ elif page == "Improvements and changes":
             st.info("The town/city change export is unavailable.")
         else:
             town_changes = town_changes.copy()
-            for column in [
-                "counted_spills_2023",
-                "counted_spills_2024",
-                "counted_spills_2025",
-            ]:
+            for column in [f"counted_spills_{year}" for year in OBSERVED_YEARS]:
                 town_changes[column] = pd.to_numeric(
                     town_changes[column], errors="coerce"
                 )
             town_changes["average_before_2025"] = town_changes[
-                ["counted_spills_2023", "counted_spills_2024"]
+                [f"counted_spills_{year}" for year in BASELINE_YEARS]
             ].mean(axis=1)
             town_changes["change_to_2025"] = (
                 town_changes["counted_spills_2025"]
@@ -3704,11 +3712,10 @@ elif page == "Improvements and changes":
                 )
                 town_figure_data = pd.DataFrame(
                     {
-                        "Year": [2023, 2024, 2025],
+                        "Year": list(OBSERVED_YEARS),
                         "Counted spills": [
-                            town_row["counted_spills_2023"],
-                            town_row["counted_spills_2024"],
-                            town_row["counted_spills_2025"],
+                            town_row[f"counted_spills_{year}"]
+                            for year in OBSERVED_YEARS
                         ],
                     }
                 )
@@ -3722,7 +3729,10 @@ elif page == "Improvements and changes":
                         ),
                         textposition="top center",
                         line=dict(color=town_colour, width=6, shape="spline"),
-                        marker=dict(size=16, color=["#C9DCE5", "#B8D8D1", town_colour]),
+                        marker=dict(
+                            size=16,
+                            color=["#C9DCE5", "#BED9DB", "#B8D8D1", "#E8CD6A", town_colour],
+                        ),
                         fill="tozeroy",
                         fillcolor=f"{town_colour}22",
                         hovertemplate="%{x}: %{y:,.0f} counted spills<extra></extra>",
@@ -3744,9 +3754,7 @@ elif page == "Improvements and changes":
                 [
                     "official_place_name",
                     "water_companies",
-                    "counted_spills_2023",
-                    "counted_spills_2024",
-                    "counted_spills_2025",
+                    *[f"counted_spills_{year}" for year in OBSERVED_YEARS],
                     "Direction",
                     "change_percent",
                 ]
@@ -3754,9 +3762,7 @@ elif page == "Improvements and changes":
             town_change_table.columns = [
                 "Town or city",
                 "Water company",
-                "2023",
-                "2024",
-                "2025",
+                *[str(year) for year in OBSERVED_YEARS],
                 "Change",
                 "Change (%)",
             ]
@@ -3778,11 +3784,8 @@ elif page == "Improvements and changes":
             "site_name",
             "receiving_water",
             "official_place_name",
-            "counted_spills_2023",
-            "counted_spills_2024",
-            "counted_spills_2025",
             "spill_direction",
-        }
+        } | {f"counted_spills_{year}" for year in OBSERVED_YEARS}
         if water_changes.empty or not required_water_columns.issubset(
             water_changes.columns
         ):
@@ -3792,9 +3795,7 @@ elif page == "Improvements and changes":
         else:
             water_changes = water_changes.copy()
             for column in [
-                "counted_spills_2023",
-                "counted_spills_2024",
-                "counted_spills_2025",
+                *[f"counted_spills_{year}" for year in OBSERVED_YEARS],
                 "spill_change_percent",
             ]:
                 if column in water_changes.columns:
@@ -3878,11 +3879,10 @@ elif page == "Improvements and changes":
                 )
                 water_figure_data = pd.DataFrame(
                     {
-                        "Year": [2023, 2024, 2025],
+                        "Year": list(OBSERVED_YEARS),
                         "Counted spills": [
-                            water_row["counted_spills_2023"],
-                            water_row["counted_spills_2024"],
-                            water_row["counted_spills_2025"],
+                            water_row[f"counted_spills_{year}"]
+                            for year in OBSERVED_YEARS
                         ],
                     }
                 )
@@ -3890,7 +3890,7 @@ elif page == "Improvements and changes":
                     go.Bar(
                         x=water_figure_data["Year"],
                         y=water_figure_data["Counted spills"],
-                        marker_color=["#C9DCE5", "#E8CD6A", water_colour],
+                        marker_color=["#C9DCE5", "#BED9DB", "#B8D8D1", "#E8CD6A", water_colour],
                         text=water_figure_data["Counted spills"].map(
                             lambda value: value_text(value)
                         ),
@@ -3915,9 +3915,7 @@ elif page == "Improvements and changes":
                 "site_name",
                 "official_place_name",
                 "water_company_name",
-                "counted_spills_2023",
-                "counted_spills_2024",
-                "counted_spills_2025",
+                *[f"counted_spills_{year}" for year in OBSERVED_YEARS],
                 "spill_direction",
             ]
             with st.expander("View every receiving-water location"):
@@ -3928,9 +3926,10 @@ elif page == "Improvements and changes":
                             "site_name": "Outlet/site",
                             "official_place_name": "Nearest town or city",
                             "water_company_name": "Water company",
-                            "counted_spills_2023": "2023",
-                            "counted_spills_2024": "2024",
-                            "counted_spills_2025": "2025",
+                            **{
+                                f"counted_spills_{year}": str(year)
+                                for year in OBSERVED_YEARS
+                            },
                             "spill_direction": "Change",
                         }
                     ),
@@ -5579,7 +5578,7 @@ else:
         st.html(
             """
             <div class="edm-journey">
-              <div class="edm-journey-step"><span class="edm-journey-number">1</span><h4>Recorded information</h4><p>The map starts with cleaned records supplied for 2023–2025.</p></div>
+              <div class="edm-journey-step"><span class="edm-journey-number">1</span><h4>Recorded information</h4><p>The map starts with cleaned records supplied for 2021–2025.</p></div>
               <div class="edm-journey-step"><span class="edm-journey-number">2</span><h4>Year-by-year checks</h4><p>Earlier years are used to estimate the following year, so future information is not used too early.</p></div>
               <div class="edm-journey-step"><span class="edm-journey-number">3</span><h4>Clear results</h4><p>Every map and ranking labels recorded information separately from forecasts.</p></div>
             </div>
