@@ -18,7 +18,7 @@ from folium.plugins import FastMarkerCluster, Fullscreen, HeatMap, MeasureContro
 from streamlit_folium import st_folium
 
 
-DASHBOARD_RELEASE = "2026-08-30-future-report-screening-v17"
+DASHBOARD_RELEASE = "2026-08-31-company-cluster-filter-v18"
 
 OBSERVED_YEARS = tuple(range(2021, 2026))
 BASELINE_YEARS = tuple(year for year in OBSERVED_YEARS if year < 2025)
@@ -2384,13 +2384,14 @@ def add_colab_map_panels(
             f"""
             <button type="button" class="edm-map-rank edm-company-trend-button"
                     data-company="{html.escape(company_name, quote=True)}"
-                    aria-label="Show the 2021 to 2025 spill trend for {html.escape(company_name, quote=True)}">
+                    aria-pressed="false"
+                    aria-label="Show only {html.escape(company_name, quote=True)} spill clusters and its 2021 to 2025 trend">
               <span class="edm-map-rank-number">{int(row['Rank'])}</span>
               <b>{html.escape(company_name)}</b>
               <div><span class="risk-high">&#9650; {int(row.get('High', 0)):,}</span>
               <span class="risk-medium">&#9670; {int(row.get('Medium', 0)):,}</span>
               <span class="risk-low">&#9679; {int(row.get('Low', 0)):,}</span></div>
-              <small>View 2021–2025 spill trend</small>
+              <small>Show only this company · view spill trend</small>
             </button>
             """
         )
@@ -2446,6 +2447,8 @@ def add_colab_map_panels(
         cursor:pointer;font:12px/1.38 'Atkinson Hyperlegible',Verdana,Arial,sans-serif;}}
       .edm-map-rank:hover,.edm-map-rank:focus {{background:#EAF6F0;transform:translateX(-2px);
         box-shadow:0 4px 10px rgba(35,89,81,.12);}}
+      .edm-map-rank.edm-company-selected {{background:#DDF2EB;border-color:#4A9C7D;
+        border-left-color:#2F7D67;box-shadow:0 0 0 2px rgba(74,156,125,.18);}}
       .edm-map-rank-number {{display:inline-flex;align-items:center;justify-content:center;width:23px;
         height:23px;margin-right:5px;border-radius:50%;background:#DDEFF4;color:#245B61;font-weight:800;}}
       .edm-map-rank div {{margin:3px 0 0 29px;font-size:11px;word-spacing:5px;}}
@@ -2465,6 +2468,12 @@ def add_colab_map_panels(
       .edm-trend-year-label {{margin-top:4px;font-weight:800;}}
       .edm-trend-duration {{margin-top:7px;padding:6px;border-radius:7px;background:#FFFFFF;
         color:#52716C;font-size:10px;line-height:1.55;}}
+      #edm-company-map-filter {{display:none;margin:7px 0;padding:8px;border:1px solid #83B9A8;
+        border-radius:10px;background:#EAF6F0;color:#244F49;font-size:11px;font-weight:700;}}
+      #edm-company-map-filter strong {{display:block;margin-bottom:5px;font-size:12px;}}
+      #edm-company-clear {{width:100%;padding:6px 8px;border:1px solid #75A99A;border-radius:8px;
+        background:#FFFFFF;color:#245B61;cursor:pointer;font:800 11px/1.2 'Atkinson Hyperlegible',Verdana,Arial,sans-serif;}}
+      #edm-company-clear:hover,#edm-company-clear:focus {{background:#DDEFF4;}}
       .risk-high {{color:#A84B4B;font-weight:800;}} .risk-medium {{color:#93611D;font-weight:800;}}
       .risk-low {{color:#357A63;font-weight:800;}}
       @media(max-width:1000px) {{.edm-map-panel{{width:235px;max-height:86vh;}}
@@ -2479,9 +2488,9 @@ def add_colab_map_panels(
       <button class="edm-panel-close" type="button" data-edm-hide-panels aria-label="Hide the map panels">&times;</button></div>
       <div class="edm-map-period">{period_text}</div>
       <div class="edm-map-legend">
-        <div style="color:#357A63;">&#9679; Low<br>{int(risk_counts['Low']):,}</div>
-        <div style="color:#93611D;">&#9670; Medium<br>{int(risk_counts['Medium']):,}</div>
-        <div style="color:#A84B4B;">&#9650; High<br>{int(risk_counts['High']):,}</div>
+        <div style="color:#357A63;">&#9679; Low<br><span id="edm-legend-low">{int(risk_counts['Low']):,}</span></div>
+        <div style="color:#93611D;">&#9670; Medium<br><span id="edm-legend-medium">{int(risk_counts['Medium']):,}</span></div>
+        <div style="color:#A84B4B;">&#9650; High<br><span id="edm-legend-high">{int(risk_counts['High']):,}</span></div>
       </div>
       <label for="edm-place-search">Find a town or city</label>
       <input id="edm-place-search" type="search" placeholder="Type a name or browse below">
@@ -2498,7 +2507,11 @@ def add_colab_map_panels(
       <div class="edm-map-title"><span>Water-company ranking</span>
       <button class="edm-panel-close" type="button" data-edm-hide-panels aria-label="Hide the map panels">&times;</button></div>
       <div class="edm-map-period">High-risk locations first</div>
-      <div class="edm-place-detail" style="margin-bottom:6px;">Select a company to view its recorded spill trend.</div>
+      <div class="edm-place-detail" style="margin-bottom:6px;">Select a company to show only its spill clusters and recorded trend.</div>
+      <div id="edm-company-map-filter" aria-live="polite">
+        <strong id="edm-company-filter-label"></strong>
+        <button id="edm-company-clear" type="button">Show all companies</button>
+      </div>
       <div id="edm-company-trend" aria-live="polite"></div>
       {''.join(ranking_rows)}
     </aside>
@@ -2541,6 +2554,9 @@ def add_colab_map_panels(
     var edmCompanyTrends={company_trend_json};
     var edmMap={map_name};
     var edmFocusMarker=null;
+    var edmClusterGroups=[];
+    var edmCompanyMarkers=[];
+    var edmActiveCompany='';
     var edmPanelsManuallyHidden=false;
     function edmHidePanels(manual){{
       document.body.classList.add('edm-panels-hidden');
@@ -2554,6 +2570,65 @@ def add_colab_map_panels(
     function edmNumber(value,decimals){{
       if(value===null||value===undefined||Number.isNaN(Number(value)))return 'Not reported';
       return Number(value).toLocaleString(undefined,{{minimumFractionDigits:decimals,maximumFractionDigits:decimals}});
+    }}
+    function edmCollectClusterLayers(layer){{
+      if(typeof L.MarkerClusterGroup!=='undefined'&&layer instanceof L.MarkerClusterGroup){{
+        if(edmClusterGroups.indexOf(layer)===-1){{
+          edmClusterGroups.push(layer);
+          layer.eachLayer(function(marker){{
+            if(marker.edmCompany)edmCompanyMarkers.push({{group:layer,marker:marker}});
+          }});
+        }}
+        return;
+      }}
+      if(layer&&typeof layer.eachLayer==='function')layer.eachLayer(edmCollectClusterLayers);
+    }}
+    edmMap.eachLayer(edmCollectClusterLayers);
+    function edmUpdateCompanyLegend(company){{
+      var visible=edmSites.filter(function(site){{return !company||site.company===company;}});
+      var counts={{Low:0,Medium:0,High:0}};
+      visible.forEach(function(site){{if(Object.prototype.hasOwnProperty.call(counts,site.risk))counts[site.risk]++;}});
+      document.getElementById('edm-legend-low').textContent=counts.Low.toLocaleString();
+      document.getElementById('edm-legend-medium').textContent=counts.Medium.toLocaleString();
+      document.getElementById('edm-legend-high').textContent=counts.High.toLocaleString();
+      return visible;
+    }}
+    function edmApplyCompanyFilter(company,focusMap){{
+      edmActiveCompany=company||'';
+      if(edmFocusMarker){{edmMap.removeLayer(edmFocusMarker);edmFocusMarker=null;}}
+      edmClusterGroups.forEach(function(group){{
+        var markers=edmCompanyMarkers.filter(function(item){{
+          return item.group===group&&(!edmActiveCompany||item.marker.edmCompany===edmActiveCompany);
+        }}).map(function(item){{return item.marker;}});
+        group.clearLayers();
+        if(markers.length)group.addLayers(markers);
+      }});
+      var companySelect=document.getElementById('edm-company-filter');
+      if(companySelect)companySelect.value=edmActiveCompany;
+      document.querySelectorAll('.edm-company-trend-button').forEach(function(button){{
+        var selected=edmActiveCompany&&button.dataset.company===edmActiveCompany;
+        button.classList.toggle('edm-company-selected',Boolean(selected));
+        button.setAttribute('aria-pressed',selected?'true':'false');
+      }});
+      var visible=edmUpdateCompanyLegend(edmActiveCompany);
+      var filterPanel=document.getElementById('edm-company-map-filter');
+      var filterLabel=document.getElementById('edm-company-filter-label');
+      if(edmActiveCompany){{
+        filterPanel.style.display='block';
+        filterLabel.textContent='Showing '+edmActiveCompany+' only · '+visible.length.toLocaleString()+' outlets';
+      }}else{{
+        filterPanel.style.display='none';
+        filterLabel.textContent='';
+        var trendRoot=document.getElementById('edm-company-trend');
+        trendRoot.style.display='none';
+        trendRoot.replaceChildren();
+      }}
+      edmRenderPlaces();
+      if(focusMap&&visible.length){{
+        var bounds=L.latLngBounds(visible.map(function(site){{return[site.lat,site.lon];}}));
+        if(visible.length===1)edmMap.setView([visible[0].lat,visible[0].lon],13);
+        else edmMap.fitBounds(bounds.pad(.08),{{maxZoom:10}});
+      }}
     }}
     function edmShowCompanyTrend(company){{
       var root=document.getElementById('edm-company-trend');
@@ -2628,9 +2703,19 @@ def add_colab_map_panels(
     Array.from(new Set(edmSites.map(function(s){{return s.company;}}))).sort().forEach(function(company){{var o=document.createElement('option');o.value=company;o.textContent=company;companySelect.appendChild(o);}});
     document.getElementById('edm-place-search').addEventListener('input',edmRenderPlaces);
     document.getElementById('edm-risk-filter').addEventListener('change',edmRenderPlaces);
-    document.getElementById('edm-company-filter').addEventListener('change',edmRenderPlaces);
+    document.getElementById('edm-company-filter').addEventListener('change',function(){{
+      edmApplyCompanyFilter(companySelect.value,true);
+      if(companySelect.value)edmShowCompanyTrend(companySelect.value);
+    }});
     document.querySelectorAll('.edm-company-trend-button').forEach(function(button){{
-      button.addEventListener('click',function(){{edmShowCompanyTrend(button.dataset.company);}});
+      button.addEventListener('click',function(){{
+        var company=button.dataset.company===edmActiveCompany?'':button.dataset.company;
+        edmApplyCompanyFilter(company,true);
+        if(company)edmShowCompanyTrend(company);
+      }});
+    }});
+    document.getElementById('edm-company-clear').addEventListener('click',function(){{
+      edmApplyCompanyFilter('',true);
     }});
     document.querySelectorAll('[data-edm-hide-panels]').forEach(function(button){{
       button.addEventListener('click',function(){{edmHidePanels(true);}});
@@ -2762,6 +2847,7 @@ def build_folium_map(
             fillColor: colours[row[2]] || '#78909C',
             fillOpacity: 0.92
           });
+          marker.edmCompany = String(row[5] || 'Unknown company');
           marker.bindPopup(row[3], {maxWidth: 365});
           marker.bindTooltip(row[4], {direction: 'top', opacity: 0.96});
           return marker;
@@ -2775,6 +2861,10 @@ def build_folium_map(
             for _, row in risk_rows.iterrows():
                 place = row.get("official_place_name", row.get("town_or_city", "Unknown place"))
                 site = row.get("site_name", "Spill outlet")
+                company = row.get(
+                    "water_company_name",
+                    row.get("company", "Unknown company"),
+                )
                 tooltip = f"{RISK_SYMBOLS[risk]} {risk} risk · {site} · {place}"
                 cluster_data.append(
                     [
@@ -2783,6 +2873,7 @@ def build_folium_map(
                         risk,
                         popup_for_row(row, risk_column, prediction),
                         safe_text(tooltip),
+                        str(company),
                     ]
                 )
             layer = folium.FeatureGroup(
