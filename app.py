@@ -2,7 +2,9 @@ from __future__ import annotations
 
 import base64
 import html
+import io
 import json
+import re
 from pathlib import Path
 
 import folium
@@ -16,7 +18,7 @@ from folium.plugins import FastMarkerCluster, Fullscreen, HeatMap, MeasureContro
 from streamlit_folium import st_folium
 
 
-DASHBOARD_RELEASE = "2026-08-30-full-2021-2025-dashboard-v16"
+DASHBOARD_RELEASE = "2026-08-30-future-report-screening-v17"
 
 OBSERVED_YEARS = tuple(range(2021, 2026))
 BASELINE_YEARS = tuple(year for year in OBSERVED_YEARS if year < 2025)
@@ -1248,6 +1250,265 @@ def first_existing(frame: pd.DataFrame, candidates: list[str]) -> str | None:
     return next((column for column in candidates if column in frame.columns), None)
 
 
+UPLOAD_COLUMN_ALIASES = {
+    "duration_hours": [
+        "Total Duration (hh:mm:ss) all spills prior to processing through 12-24h count method",
+        "total duration",
+        "total spill duration",
+        "spill duration hours",
+        "duration hours",
+        "duration (hours)",
+    ],
+    "counted_spills": [
+        "Counted spills using 12-24h count method",
+        "counted spills",
+        "spill count",
+        "number of spills",
+        "12-24h count",
+    ],
+    "site_name": [
+        "Site Name (EA Consents Database)",
+        "Site Name (WaSC operational) [optional]",
+        "site name",
+        "treatment site",
+        "outlet name",
+        "asset name",
+    ],
+    "receiving_water": [
+        "Receiving Water / Environment (common name) (EA Consents Database)",
+        "receiving water",
+        "receiving environment",
+        "waterbody name",
+        "river name",
+    ],
+    "recreational_water": [
+        "Bathing Water(s) (only populate for storm overflow with a Bathing Water EDM requirement)",
+        "bathing water",
+        "recreational water",
+        "swimming site",
+        "beach name",
+    ],
+    "town_city": [
+        "official place name",
+        "town or city",
+        "town/city",
+        "town",
+        "city",
+        "place name",
+        "local authority",
+    ],
+    "catchment": [
+        "WFD Waterbody Catchment Name (Cycle 3) (discharge outlet)",
+        "catchment name",
+        "catchment",
+    ],
+    "permit": [
+        "EA Permit Reference (EA Consents Database)",
+        "permit reference",
+        "permit number",
+        "activity reference on permit",
+    ],
+    "company": [
+        "Water Company Name",
+        "water company",
+        "company name",
+        "operator",
+        "wasc",
+    ],
+    "reporting_year": [
+        "Reporting Year",
+        "reporting period",
+        "calendar year",
+        "data start calendar year",
+        "year",
+    ],
+    "latitude": ["latitude", "lat", "outlet latitude"],
+    "longitude": ["longitude", "lon", "long", "outlet longitude"],
+    "grid_reference": [
+        "Outlet Discharge NGR (EA Consents Database)",
+        "national grid reference",
+        "grid reference",
+        "ngr",
+    ],
+    "record_id": ["Unique ID", "record id", "location id", "site id"],
+}
+
+
+def normalise_upload_header(value) -> str:
+    return re.sub(r"[^a-z0-9]+", "", str(value).casefold())
+
+
+def suggested_upload_column(columns, field_name: str) -> str | None:
+    column_names = [str(column) for column in columns]
+    normalised_columns = {
+        column: normalise_upload_header(column) for column in column_names
+    }
+    aliases = [
+        normalise_upload_header(alias)
+        for alias in UPLOAD_COLUMN_ALIASES[field_name]
+    ]
+    for alias in aliases:
+        for column, normalised in normalised_columns.items():
+            if normalised == alias:
+                return column
+    for alias in aliases:
+        if len(alias) < 5:
+            continue
+        for column, normalised in normalised_columns.items():
+            if alias in normalised or normalised in alias:
+                return column
+    return None
+
+
+def upload_column_selector(
+    label: str,
+    frame: pd.DataFrame,
+    field_name: str,
+    key: str,
+) -> str | None:
+    columns = [str(column) for column in frame.columns]
+    suggested = suggested_upload_column(columns, field_name)
+    options = ["Not supplied", *columns]
+    selected = st.selectbox(
+        label,
+        options,
+        index=options.index(suggested) if suggested in options else 0,
+        key=key,
+    )
+    return None if selected == "Not supplied" else selected
+
+
+@st.cache_data(show_spinner=False)
+def uploaded_report_sheet_names(file_bytes: bytes, filename: str) -> list[str]:
+    extension = Path(filename).suffix.casefold()
+    if extension == ".csv":
+        return ["CSV data"]
+    if extension == ".xlsx":
+        return pd.ExcelFile(
+            io.BytesIO(file_bytes),
+            engine="openpyxl",
+        ).sheet_names
+    raise ValueError("Upload a CSV or XLSX file.")
+
+
+@st.cache_data(show_spinner=False)
+def read_uploaded_report(
+    file_bytes: bytes,
+    filename: str,
+    sheet_name: str,
+) -> pd.DataFrame:
+    extension = Path(filename).suffix.casefold()
+    if extension == ".csv":
+        last_error = None
+        for encoding in ("utf-8-sig", "cp1252"):
+            try:
+                frame = pd.read_csv(
+                    io.BytesIO(file_bytes),
+                    sep=None,
+                    engine="python",
+                    encoding=encoding,
+                )
+                break
+            except UnicodeDecodeError as error:
+                last_error = error
+        else:
+            raise ValueError("The CSV text encoding could not be read.") from last_error
+    elif extension == ".xlsx":
+        frame = pd.read_excel(
+            io.BytesIO(file_bytes),
+            sheet_name=sheet_name,
+            engine="openpyxl",
+        )
+    else:
+        raise ValueError("Upload a CSV or XLSX file.")
+
+    frame = frame.dropna(how="all").dropna(axis=1, how="all").copy()
+    frame.columns = [
+        str(column).strip() if str(column).strip() else f"Unnamed column {position}"
+        for position, column in enumerate(frame.columns, start=1)
+    ]
+    return frame
+
+
+def duration_value_to_hours(value) -> float:
+    if value is None or isinstance(value, (bool, np.bool_)):
+        return np.nan
+    try:
+        if pd.isna(value):
+            return np.nan
+    except (TypeError, ValueError):
+        return np.nan
+    if isinstance(value, (int, float, np.number)):
+        numeric = float(value)
+        return numeric if np.isfinite(numeric) else np.nan
+    if isinstance(value, pd.Timedelta):
+        return value.total_seconds() / 3600
+    if hasattr(value, "total_seconds") and callable(value.total_seconds):
+        try:
+            return float(value.total_seconds()) / 3600
+        except (TypeError, ValueError, OverflowError):
+            pass
+    if all(hasattr(value, part) for part in ("hour", "minute", "second")):
+        return (
+            float(value.hour)
+            + float(value.minute) / 60
+            + float(value.second) / 3600
+        )
+
+    text = str(value).strip()
+    if not text:
+        return np.nan
+    try:
+        numeric = float(text.replace(",", ""))
+        return numeric if np.isfinite(numeric) else np.nan
+    except ValueError:
+        pass
+    clock_match = re.fullmatch(
+        r"(?:(\d+)\s+days?\s+)?(\d+):([0-5]?\d)(?::([0-5]?\d(?:\.\d+)?))?",
+        text,
+        flags=re.IGNORECASE,
+    )
+    if clock_match:
+        days, hours, minutes, seconds = clock_match.groups()
+        return (
+            float(days or 0) * 24
+            + float(hours)
+            + float(minutes) / 60
+            + float(seconds or 0) / 3600
+        )
+    try:
+        duration = pd.to_timedelta(text)
+        return duration.total_seconds() / 3600
+    except (TypeError, ValueError, OverflowError):
+        return np.nan
+
+
+def classify_uploaded_edm(
+    frame: pd.DataFrame,
+    duration_column: str,
+    spills_column: str,
+) -> tuple[pd.Series, pd.Series, pd.Series]:
+    duration_hours = frame[duration_column].map(duration_value_to_hours).astype(float)
+    counted_spills = pd.to_numeric(
+        frame[spills_column]
+        .astype("string")
+        .str.replace(",", "", regex=False)
+        .str.strip(),
+        errors="coerce",
+    )
+    duration_hours = duration_hours.where(np.isfinite(duration_hours))
+    counted_spills = counted_spills.where(np.isfinite(counted_spills))
+    valid = duration_hours.notna() & counted_spills.notna()
+    high = valid & counted_spills.gt(80) & duration_hours.gt(400)
+    low = valid & counted_spills.lt(20) & duration_hours.lt(100)
+    medium = valid & ~high & ~low
+    categories = pd.Series(pd.NA, index=frame.index, dtype="string")
+    categories.loc[high] = "High"
+    categories.loc[medium] = "Medium"
+    categories.loc[low] = "Low"
+    return duration_hours, counted_spills, categories
+
+
 def make_risk_ranking(
     frame: pd.DataFrame,
     risk_column: str,
@@ -1465,6 +1726,10 @@ def render_page_cards():
             <div class="edm-page-icon">🌧️</div><h3>Rainfall and spills</h3>
             <p>Explore official 2021–2025 regional rainfall measurements.</p>
           </div>
+          <div class="edm-page-card" style="--page-tint:#F8E9F1;">
+            <div class="edm-page-icon">📤</div><h3>Upload a future report</h3>
+            <p>Apply the verified Excel rules to a new EDM report.</p>
+          </div>
           <div class="edm-page-card" style="--page-tint:#EDF3DE;">
             <div class="edm-page-icon">💧</div><h3>Evidence</h3>
             <p>Sources, quality checks and limitations.</p>
@@ -1479,6 +1744,7 @@ def render_page_cards():
         ("Changes", "Improvements and changes"),
         ("2026 forecast", "2026 predictions"),
         ("Rainfall", "Rainfall and spills"),
+        ("Upload report", "Upload future EDM report"),
         ("Find a site", "Check one location"),
         ("Evidence", "About the evidence"),
     ]
@@ -2707,6 +2973,7 @@ PAGES = [
     "Improvements and changes",
     "2026 predictions",
     "Rainfall and spills",
+    "Upload future EDM report",
     "Check one location",
     "About the evidence",
 ]
@@ -5412,7 +5679,513 @@ elif page == "Rainfall and spills":
 
 
 # =============================================================================
-# PAGE 6 — INDIVIDUAL PREDICTION
+# PAGE 6 — UPLOAD AND SCREEN A FUTURE EDM REPORT
+# =============================================================================
+
+elif page == "Upload future EDM report":
+    st.html(
+        """
+        <section style="position:relative;overflow:hidden;margin:.15rem 0 1.1rem;
+          padding:1.7rem 2rem;border:1px solid rgba(123,91,137,.20);border-radius:28px;
+          background:linear-gradient(125deg,#F6EAF2 0%,#E8F5F1 52%,#E6F2F8 100%);
+          box-shadow:0 20px 48px rgba(54,92,96,.12);">
+          <div style="max-width:920px">
+            <div style="display:inline-block;padding:.35rem .8rem;border-radius:999px;
+              background:rgba(255,255,255,.78);color:#6E4D75;font-weight:800;
+              letter-spacing:.07em;">📤 FUTURE EDM REPORT SCREENING</div>
+            <h1 style="margin:.75rem 0 .35rem;color:#173D3A;
+              font-size:clamp(2rem,4vw,3.35rem);">Upload and screen a recorded report</h1>
+            <p style="max-width:850px;margin:0;color:#4F706C;font-size:1.06rem;">
+              Upload one annual EDM report or a compatible treatment-site report.
+              The dashboard applies the same strict Low, Medium and High rules used
+              in the supplied Excel workbook and keeps missing results unclassified.
+            </p>
+          </div>
+        </section>
+        """
+    )
+    banner(
+        "<b>Screening only:</b> an EDM category describes recorded spill frequency "
+        "and duration. It cannot determine whether recreational water is currently "
+        "safe, because official bathing advice also uses microbiological monitoring "
+        "and current pollution warnings.",
+        icon="🛟",
+        background="#FFF3DD",
+        edge="#D59A3C",
+    )
+
+    with st.expander("Exact Excel classification rules used", expanded=True):
+        st.markdown(
+            """
+            - **High:** counted spills **greater than 80** and total duration **greater than 400 hours**.
+            - **Low:** counted spills **less than 20** and total duration **less than 100 hours**.
+            - **Medium:** every other combination where both values are numeric.
+            - **Unclassified:** counted spills or total duration is missing/non-numeric.
+
+            The comparisons are strict: values of exactly 20, 80, 100 or 400 are
+            classified as **Medium**, matching the workbook formula.
+            """
+        )
+
+    uploaded_report = st.file_uploader(
+        "Choose one future EDM or treatment-site report",
+        type=["xlsx", "csv"],
+        help=(
+            "The report must contain counted spills and total spill duration. "
+            "XLSX and CSV files are supported."
+        ),
+        key="future_edm_report_upload",
+    )
+    st.caption(
+        "The uploaded file is analysed for this dashboard session. Do not upload "
+        "personal, confidential or security-sensitive information."
+    )
+
+    if uploaded_report is not None:
+        uploaded_bytes = uploaded_report.getvalue()
+        try:
+            report_sheets = uploaded_report_sheet_names(
+                uploaded_bytes,
+                uploaded_report.name,
+            )
+            selected_sheet = (
+                st.selectbox(
+                    "Worksheet to analyse",
+                    report_sheets,
+                    key="future_edm_sheet",
+                )
+                if len(report_sheets) > 1
+                else report_sheets[0]
+            )
+            uploaded_frame = read_uploaded_report(
+                uploaded_bytes,
+                uploaded_report.name,
+                selected_sheet,
+            )
+        except Exception as error:
+            st.error(f"The uploaded report could not be read: {error}")
+            uploaded_frame = pd.DataFrame()
+
+        if uploaded_frame.empty:
+            st.warning("The selected report or worksheet contains no usable rows.")
+        else:
+            st.success(
+                f"Loaded {len(uploaded_frame):,} rows and "
+                f"{len(uploaded_frame.columns):,} columns from "
+                f"{uploaded_report.name}."
+            )
+            with st.expander("Preview the uploaded source rows"):
+                st.dataframe(
+                    uploaded_frame.head(50),
+                    use_container_width=True,
+                    hide_index=True,
+                )
+
+            section_header(
+                "Match the report columns",
+                "Standard EDM headings are selected automatically. Change a selection when another operator uses a different heading.",
+            )
+            required_left, required_right = st.columns(2)
+            with required_left:
+                upload_duration_column = upload_column_selector(
+                    "Total spill duration (required)",
+                    uploaded_frame,
+                    "duration_hours",
+                    "upload_duration_column",
+                )
+            with required_right:
+                upload_spills_column = upload_column_selector(
+                    "Counted spills (required)",
+                    uploaded_frame,
+                    "counted_spills",
+                    "upload_spills_column",
+                )
+
+            with st.expander("Site, water and location columns", expanded=True):
+                location_columns = st.columns(3)
+                with location_columns[0]:
+                    upload_site_column = upload_column_selector(
+                        "Site or outlet name",
+                        uploaded_frame,
+                        "site_name",
+                        "upload_site_column",
+                    )
+                    upload_company_column = upload_column_selector(
+                        "Water company / operator",
+                        uploaded_frame,
+                        "company",
+                        "upload_company_column",
+                    )
+                    upload_year_column = upload_column_selector(
+                        "Reporting year",
+                        uploaded_frame,
+                        "reporting_year",
+                        "upload_year_column",
+                    )
+                with location_columns[1]:
+                    upload_receiving_column = upload_column_selector(
+                        "Receiving water",
+                        uploaded_frame,
+                        "receiving_water",
+                        "upload_receiving_column",
+                    )
+                    upload_recreation_column = upload_column_selector(
+                        "Recreational / bathing water",
+                        uploaded_frame,
+                        "recreational_water",
+                        "upload_recreation_column",
+                    )
+                    upload_catchment_column = upload_column_selector(
+                        "Catchment",
+                        uploaded_frame,
+                        "catchment",
+                        "upload_catchment_column",
+                    )
+                with location_columns[2]:
+                    upload_place_column = upload_column_selector(
+                        "Town or city",
+                        uploaded_frame,
+                        "town_city",
+                        "upload_place_column",
+                    )
+                    upload_permit_column = upload_column_selector(
+                        "Permit reference",
+                        uploaded_frame,
+                        "permit",
+                        "upload_permit_column",
+                    )
+                    upload_grid_column = upload_column_selector(
+                        "National Grid Reference",
+                        uploaded_frame,
+                        "grid_reference",
+                        "upload_grid_column",
+                    )
+                coordinate_columns = st.columns(2)
+                with coordinate_columns[0]:
+                    upload_latitude_column = upload_column_selector(
+                        "Latitude",
+                        uploaded_frame,
+                        "latitude",
+                        "upload_latitude_column",
+                    )
+                with coordinate_columns[1]:
+                    upload_longitude_column = upload_column_selector(
+                        "Longitude",
+                        uploaded_frame,
+                        "longitude",
+                        "upload_longitude_column",
+                    )
+
+            if not upload_duration_column or not upload_spills_column:
+                st.warning(
+                    "Select both required measurement columns to classify the report."
+                )
+            else:
+                upload_duration_hours, upload_counted_spills, upload_categories = (
+                    classify_uploaded_edm(
+                        uploaded_frame,
+                        upload_duration_column,
+                        upload_spills_column,
+                    )
+                )
+
+                selected_upload_columns = {
+                    "Site / outlet": upload_site_column,
+                    "Water company / operator": upload_company_column,
+                    "Reporting year": upload_year_column,
+                    "Town / city": upload_place_column,
+                    "Receiving water": upload_receiving_column,
+                    "Recreational / bathing water": upload_recreation_column,
+                    "Catchment": upload_catchment_column,
+                    "Permit reference": upload_permit_column,
+                    "National Grid Reference": upload_grid_column,
+                    "Latitude": upload_latitude_column,
+                    "Longitude": upload_longitude_column,
+                }
+                screening_results = pd.DataFrame(index=uploaded_frame.index)
+                screening_results["Source row"] = np.arange(
+                    2,
+                    len(uploaded_frame) + 2,
+                )
+                for output_name, source_column in selected_upload_columns.items():
+                    if source_column:
+                        screening_results[output_name] = uploaded_frame[source_column]
+                screening_results["Total duration (hours)"] = upload_duration_hours
+                screening_results["Counted spills"] = upload_counted_spills
+                screening_results["EDM screening category"] = upload_categories
+
+                classified_download = uploaded_frame.copy()
+                classified_download["EDM total duration hours"] = upload_duration_hours
+                classified_download["EDM counted spills numeric"] = upload_counted_spills
+                classified_download["EDM screening category"] = upload_categories
+
+                analysis_results = screening_results.copy()
+                selected_report_year = "All reporting years"
+                if "Reporting year" in analysis_results.columns:
+                    numeric_report_year = pd.to_numeric(
+                        analysis_results["Reporting year"],
+                        errors="coerce",
+                    )
+                    available_report_years = sorted(
+                        numeric_report_year.dropna().astype(int).unique().tolist(),
+                        reverse=True,
+                    )
+                    if available_report_years:
+                        selected_report_year = st.selectbox(
+                            "Reporting year to show",
+                            [*available_report_years, "All reporting years"],
+                            key="uploaded_report_year_filter",
+                        )
+                        if selected_report_year != "All reporting years":
+                            analysis_results = analysis_results.loc[
+                                numeric_report_year.eq(selected_report_year)
+                            ].copy()
+
+                upload_category_counts = (
+                    analysis_results["EDM screening category"]
+                    .value_counts()
+                    .reindex(RISK_ORDER, fill_value=0)
+                )
+                upload_classified_count = int(upload_category_counts.sum())
+                upload_unclassified_count = int(
+                    analysis_results["EDM screening category"].isna().sum()
+                )
+                upload_period_note = str(selected_report_year)
+                metric_cards(
+                    [
+                        {
+                            "label": "Rows reviewed",
+                            "value": f"{len(analysis_results):,}",
+                            "note": upload_period_note,
+                            "accent": "#68AFC2",
+                        },
+                        {
+                            "label": "Rows classified",
+                            "value": f"{upload_classified_count:,}",
+                            "note": "Both measurements available",
+                            "accent": "#79BEAB",
+                        },
+                        {
+                            "label": "High-risk records",
+                            "value": f"{int(upload_category_counts['High']):,}",
+                            "note": "Workbook rule applied",
+                            "accent": "#D66565",
+                        },
+                        {
+                            "label": "Unclassified rows",
+                            "value": f"{upload_unclassified_count:,}",
+                            "note": "Missing/non-numeric input",
+                            "accent": "#C8A8DD",
+                        },
+                    ]
+                )
+
+                if upload_classified_count:
+                    upload_chart_data = upload_category_counts.rename_axis(
+                        "Risk category"
+                    ).reset_index(name="Records")
+                    upload_risk_figure = px.bar(
+                        upload_chart_data,
+                        x="Risk category",
+                        y="Records",
+                        color="Risk category",
+                        text_auto=",.0f",
+                        category_orders={"Risk category": RISK_ORDER},
+                        color_discrete_map=RISK_COLOURS,
+                        title="Uploaded report screening results",
+                    )
+                    upload_risk_figure.update_layout(showlegend=False)
+                    st.plotly_chart(
+                        plot_style(upload_risk_figure, 430),
+                        use_container_width=True,
+                        key="uploaded_report_risk_chart",
+                        config={"displayModeBar": False},
+                    )
+
+                if upload_unclassified_count:
+                    st.warning(
+                        f"{upload_unclassified_count:,} row(s) remain unclassified "
+                        "because counted spills or duration is missing/non-numeric."
+                    )
+                invalid_negative_rows = int(
+                    (
+                        upload_duration_hours.lt(0)
+                        | upload_counted_spills.lt(0)
+                    ).sum()
+                )
+                if invalid_negative_rows:
+                    st.warning(
+                        f"Data-quality check: {invalid_negative_rows:,} row(s) contain "
+                        "a negative duration or spill count. Review the source report."
+                    )
+
+                section_header(
+                    "High-risk sites in the uploaded report",
+                    "These are exact report rows meeting the workbook's High rule; they are not a real-time bathing-water closure list.",
+                )
+                uploaded_high_risk = analysis_results.loc[
+                    analysis_results["EDM screening category"].eq("High")
+                ].copy()
+                if uploaded_high_risk.empty:
+                    st.info(
+                        "No rows in the selected report view meet both High thresholds. "
+                        "This is not evidence that a receiving or recreational water is safe."
+                    )
+                else:
+                    st.error(
+                        f"{len(uploaded_high_risk):,} High-risk record(s) need priority review."
+                    )
+                    if {"Latitude", "Longitude"}.issubset(uploaded_high_risk.columns):
+                        high_risk_map = pd.DataFrame(
+                            {
+                                "lat": pd.to_numeric(
+                                    uploaded_high_risk["Latitude"],
+                                    errors="coerce",
+                                ),
+                                "lon": pd.to_numeric(
+                                    uploaded_high_risk["Longitude"],
+                                    errors="coerce",
+                                ),
+                            }
+                        ).dropna()
+                        high_risk_map = high_risk_map.loc[
+                            high_risk_map["lat"].between(-90, 90)
+                            & high_risk_map["lon"].between(-180, 180)
+                        ]
+                        if not high_risk_map.empty:
+                            st.map(high_risk_map)
+                    st.dataframe(
+                        uploaded_high_risk,
+                        use_container_width=True,
+                        hide_index=True,
+                    )
+                    download_table(
+                        uploaded_high_risk,
+                        "uploaded_report_high_risk_sites.csv",
+                    )
+
+                safe_stem = re.sub(
+                    r"[^A-Za-z0-9_-]+",
+                    "_",
+                    Path(uploaded_report.name).stem,
+                ).strip("_") or "uploaded_edm_report"
+                st.download_button(
+                    "Download the complete classified report",
+                    data=classified_download.to_csv(index=False).encode("utf-8"),
+                    file_name=f"{safe_stem}_classified.csv",
+                    mime="text/csv",
+                    type="primary",
+                    use_container_width=False,
+                )
+
+                section_header(
+                    "Search a city or recreational-water site",
+                    "Search the uploaded evidence by town, site, receiving water, bathing water, catchment, operator or permit reference.",
+                )
+                uploaded_place_query = st.text_input(
+                    "City, recreational water, receiving water or site",
+                    placeholder="For example: Leeds, River Avon or Bournemouth Beach",
+                    key="uploaded_place_query",
+                ).strip()
+                if uploaded_place_query:
+                    upload_search_columns = [
+                        column
+                        for column in [
+                            "Town / city",
+                            "Site / outlet",
+                            "Receiving water",
+                            "Recreational / bathing water",
+                            "Catchment",
+                            "Water company / operator",
+                            "Permit reference",
+                            "National Grid Reference",
+                        ]
+                        if column in analysis_results.columns
+                    ]
+                    if not upload_search_columns:
+                        st.warning(
+                            "Map at least one site or location column before searching."
+                        )
+                    else:
+                        upload_search_text = (
+                            analysis_results[upload_search_columns]
+                            .fillna("")
+                            .astype(str)
+                            .agg(" | ".join, axis=1)
+                        )
+                        upload_search_matches = analysis_results.loc[
+                            upload_search_text.str.contains(
+                                uploaded_place_query,
+                                case=False,
+                                regex=False,
+                                na=False,
+                            )
+                        ].copy()
+                        if upload_search_matches.empty:
+                            st.info(
+                                "No matching row was found in this uploaded report. "
+                                "Absence from the report is not confirmation that the water is safe."
+                            )
+                        else:
+                            upload_high_matches = upload_search_matches.loc[
+                                upload_search_matches[
+                                    "EDM screening category"
+                                ].eq("High")
+                            ]
+                            if not upload_high_matches.empty:
+                                st.error(
+                                    f"The uploaded report contains "
+                                    f"{len(upload_high_matches):,} High-risk record(s) "
+                                    f"associated with ‘{uploaded_place_query}’. Check "
+                                    "official current bathing advice before entering the water."
+                                )
+                            else:
+                                st.warning(
+                                    f"Found {len(upload_search_matches):,} matching "
+                                    "record(s), but none meet both High thresholds in "
+                                    "this report view. This is not a safety clearance."
+                                )
+                            risk_order_lookup = {"High": 0, "Medium": 1, "Low": 2}
+                            upload_search_matches["_risk_order"] = (
+                                upload_search_matches[
+                                    "EDM screening category"
+                                ].map(risk_order_lookup).fillna(3)
+                            )
+                            upload_search_matches = upload_search_matches.sort_values(
+                                ["_risk_order", "Source row"]
+                            ).drop(columns="_risk_order")
+                            st.dataframe(
+                                upload_search_matches,
+                                use_container_width=True,
+                                hide_index=True,
+                            )
+                            download_table(
+                                upload_search_matches,
+                                "uploaded_report_location_search.csv",
+                            )
+
+                st.markdown("#### Check official recreational-water advice")
+                st.caption(
+                    "For a decision about swimming or other water use, check the "
+                    "official regulator's current site profile, warnings and local signage."
+                )
+                official_link_columns = st.columns(2)
+                with official_link_columns[0]:
+                    st.link_button(
+                        "England: check official bathing-water status",
+                        "https://environment.data.gov.uk/bwq/profiles/",
+                        use_container_width=True,
+                    )
+                with official_link_columns[1]:
+                    st.link_button(
+                        "Wales: check official bathing-water information",
+                        "https://www.gov.wales/bathing-waters",
+                        use_container_width=True,
+                    )
+
+
+# =============================================================================
+# PAGE 7 — INDIVIDUAL PREDICTION
 # =============================================================================
 
 elif page == "Check one location":
