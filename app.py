@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import base64
 import html
 import json
 from pathlib import Path
@@ -15,7 +16,7 @@ from folium.plugins import FastMarkerCluster, Fullscreen, HeatMap, MeasureContro
 from streamlit_folium import st_folium
 
 
-DASHBOARD_RELEASE = "2026-08-30-full-dashboard-rainfall-v14"
+DASHBOARD_RELEASE = "2026-08-30-professional-sewer-figure-v15"
 
 
 # =============================================================================
@@ -1379,8 +1380,31 @@ def download_table(frame: pd.DataFrame, filename: str):
 # =============================================================================
 
 def render_hero():
-    st.html(
+    sewer_figure_path = (
+        ROOT / "assets" / "combined_sewer_overflow_professional_v1.png"
+    )
+    if sewer_figure_path.exists():
+        encoded_figure = base64.b64encode(
+            sewer_figure_path.read_bytes()
+        ).decode("ascii")
+        sewer_figure_html = f"""
+          <figure style="margin:0; width:100%;">
+            <img
+              src="data:image/png;base64,{encoded_figure}"
+              alt="Professional diagram explaining how rainfall and household wastewater enter a combined sewer, with normal flow to treatment and a storm-overflow route to a receiving river during heavy rainfall."
+              style="display:block; width:100%; height:auto; border-radius:22px; border:1px solid rgba(53,112,104,.18);"
+            />
+          </figure>
         """
+    else:
+        sewer_figure_html = """
+          <div role="status" style="padding:2rem; border-radius:22px; background:#EAF6F0; color:#173D3A;">
+            Combined sewer process figure is temporarily unavailable.
+          </div>
+        """
+
+    st.html(
+        f"""
         <section class="edm-hero">
           <div>
             <div class="edm-kicker">💧 England and Wales</div>
@@ -1396,27 +1420,7 @@ def render_hero():
             </div>
           </div>
           <div class="edm-water-art">
-            <div
-              class="edm-simple-sewer-art"
-              role="img"
-              aria-label="Static combined sewer illustration showing connected underground pipes, an outfall pipe and slight brown discolouration where the outfall reaches receiving water."
-            >
-              <div class="edm-simple-house edm-simple-house-a">
-                <span class="edm-simple-window"></span><span class="edm-simple-door"></span>
-              </div>
-              <div class="edm-simple-house edm-simple-house-b">
-                <span class="edm-simple-window"></span><span class="edm-simple-door"></span>
-              </div>
-              <div class="edm-simple-ground"></div>
-              <div class="edm-simple-drain"></div>
-              <div class="edm-simple-connector edm-simple-connector-a"></div>
-              <div class="edm-simple-connector edm-simple-connector-b"></div>
-              <div class="edm-simple-connector edm-simple-connector-c"></div>
-              <div class="edm-static-main-pipe"><div class="edm-static-main-water"></div></div>
-              <div class="edm-static-chamber"></div>
-              <div class="edm-static-outfall-pipe"><div class="edm-outfall-stain"></div></div>
-              <div class="edm-static-receiving-water"><div class="edm-water-stain"></div></div>
-            </div>
+            {sewer_figure_html}
           </div>
         </section>
         """,
@@ -1490,7 +1494,28 @@ def render_page_cards():
 
 
 def render_sewer_story():
-    """Compact animated explanation of a combined sewer and overflow route."""
+    """Show the professional combined-sewer process figure."""
+    sewer_figure_path = (
+        ROOT / "assets" / "combined_sewer_overflow_professional_v1.png"
+    )
+    if sewer_figure_path.exists():
+        st.image(
+            str(sewer_figure_path),
+            caption=(
+                "Illustrative combined-sewer process. The diagram explains the "
+                "system generally and is not evidence about a particular site."
+            ),
+            use_container_width=True,
+        )
+    else:
+        st.warning(
+            "The combined sewer process figure is unavailable. "
+            "Check that assets/combined_sewer_overflow_professional_v1.png "
+            "was deployed with app.py."
+        )
+    return
+
+    # Retained below only as a legacy fallback reference; it is not rendered.
     st.html(
         """
         <div class="edm-sewer-story">
