@@ -14,11 +14,12 @@ import pandas as pd
 import plotly.express as px
 import plotly.graph_objects as go
 import streamlit as st
+from branca.element import MacroElement, Template
 from folium.plugins import FastMarkerCluster, Fullscreen, HeatMap, MeasureControl, MiniMap
 from streamlit_folium import st_folium
 
 
-DASHBOARD_RELEASE = "2026-08-31-company-cluster-filter-v18"
+DASHBOARD_RELEASE = "2026-08-31-company-cluster-filter-v19"
 
 OBSERVED_YEARS = tuple(range(2021, 2026))
 BASELINE_YEARS = tuple(year for year in OBSERVED_YEARS if year < 2025)
@@ -2727,17 +2728,18 @@ def add_colab_map_panels(
     }});
     window.setTimeout(edmRenderPlaces,0);
     """
-    # streamlit-folium does not reliably emit custom code placed in
-    # ``root.script``. Add a real script element and wait until Leaflet loads.
-    water_map.get_root().html.add_child(
-        folium.Element(
-            "<script>\n"
-            "window.addEventListener('load', function(){\n"
-            + script
-            + "\n});\n"
-            "</script>"
-        )
+    # streamlit-folium evaluates Folium's main map script after Leaflet and all
+    # marker layers are created. A MacroElement keeps these controls in that
+    # executable script; an extra <script> tag in the HTML is only displayed by
+    # the component and its load handler is never attached.
+    panel_script = MacroElement()
+    panel_script._name = "EdmCompanyClusterFilter"
+    panel_script._template = Template(
+        "{% macro script(this, kwargs) %}\n"
+        + script
+        + "\n{% endmacro %}"
     )
+    water_map.add_child(panel_script)
 
 
 def build_folium_map(
