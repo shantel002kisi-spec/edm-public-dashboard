@@ -16,7 +16,7 @@ from folium.plugins import FastMarkerCluster, Fullscreen, HeatMap, MeasureContro
 from streamlit_folium import st_folium
 
 
-DASHBOARD_RELEASE = "2026-09-10-spill-ranking-accuracy-v21"
+DASHBOARD_RELEASE = "2026-09-12-animated-homepage-illustration-v22"
 HOMEPAGE_ILLUSTRATION_DATA_URI = (
     "data:image/png;base64,"
     "iVBORw0KGgoAAAANSUhEUgAAAMsAAACeCAYAAACcuP53AAAAAXNSR0IArs4c6QAAAARnQU1BAACxjwv8YQUAAAAJcEhZcwAAEnQAABJ0Ad5mH3gAAP+lSURB"
@@ -977,6 +977,7 @@ AUDITED_COMPANY_ANNUAL_SPILLS = {
 # Compatibility markers for earlier Colab installer cells. These do not change
 # the dashboard release; they only allow an older validator to accept this file.
 LEGACY_INSTALLER_RELEASE_MARKERS = (
+    "2026-09-12-animated-homepage-illustration-v22",
     "2026-09-09-complete-2021-2025-dashboard-v20",
     "2026-09-08-homepage-priority-sections-v19",
     "2026-09-07-priority-2025-persistence-v18",
@@ -1232,14 +1233,377 @@ st.markdown(
       .edm-homepage-illustration {
         display: block;
         width: 100%;
-        max-width: 520px;
-        height: auto;
-        max-height: 330px;
+        max-width: 560px;
+        height: 330px;
+        min-height: 300px;
         object-fit: contain;
         border: 1px solid rgba(53,112,104,.18);
         border-radius: 22px;
         background: #EAF8FC;
         box-shadow: 0 14px 32px rgba(34,82,75,.16);
+      }
+
+      .edm-clear-flow-figure {
+        position: relative;
+        overflow: hidden;
+        background:
+          linear-gradient(to bottom, #F9FDFC 0 47%, #DFF1F3 47% 48%, #C9DED8 48% 100%);
+      }
+
+      .edm-clear-flow-figure::before {
+        content: "";
+        position: absolute;
+        left: -8%;
+        right: -8%;
+        top: 154px;
+        height: 66px;
+        background: #AEBBB8;
+        border-top: 6px solid #94B58D;
+        border-bottom: 5px solid #768885;
+      }
+
+      .edm-flow-path-tag {
+        position: absolute;
+        z-index: 12;
+        left: 18px;
+        top: 14px;
+        padding: 8px 12px;
+        border: 1px solid rgba(55,120,110,.16);
+        border-radius: 999px;
+        background: rgba(255,255,255,.84);
+        color: #365F5B;
+        font-size: .78rem;
+        font-weight: 900;
+      }
+
+      .edm-clear-cloud {
+        position: absolute;
+        z-index: 3;
+        right: 76px;
+        top: 36px;
+        width: 160px;
+        height: 48px;
+        border-radius: 50px;
+        background: #A9BBC6;
+        box-shadow:
+          -42px 10px 0 #B8C9D2,
+          42px 9px 0 #98ACB7,
+          -5px -16px 0 14px #B8C9D2;
+      }
+
+      .edm-clear-rain {
+        position: absolute;
+        z-index: 4;
+        top: 90px;
+        width: 5px;
+        height: 40px;
+        border-radius: 999px;
+        background: #68AFC2;
+        transform: rotate(24deg);
+        animation: edmHomepageRain 1.35s linear infinite;
+      }
+
+      .edm-clear-rain.r1 { right: 230px; animation-delay: -.1s; }
+      .edm-clear-rain.r2 { right: 190px; animation-delay: -.48s; }
+      .edm-clear-rain.r3 { right: 150px; animation-delay: -.86s; }
+      .edm-clear-rain.r4 { right: 110px; animation-delay: -.24s; }
+
+      .edm-clear-house {
+        position: absolute;
+        z-index: 7;
+        left: 52px;
+        top: 105px;
+        width: 104px;
+        height: 72px;
+        border: 3px solid #54746F;
+        border-radius: 6px 6px 2px 2px;
+        background: #FFF8E8;
+      }
+
+      .edm-clear-house::before {
+        content: "";
+        position: absolute;
+        left: 10px;
+        top: -42px;
+        width: 78px;
+        height: 78px;
+        border-top: 3px solid #54746F;
+        border-left: 3px solid #54746F;
+        background: #CFA99E;
+        transform: rotate(45deg);
+        z-index: -1;
+      }
+
+      .edm-clear-house::after {
+        content: "";
+        position: absolute;
+        right: 14px;
+        bottom: 0;
+        width: 24px;
+        height: 40px;
+        border: 2px solid #54746F;
+        background: #DCEDE5;
+      }
+
+      .edm-clear-window {
+        position: absolute;
+        left: 15px;
+        top: 23px;
+        width: 26px;
+        height: 24px;
+        border: 2px solid #54746F;
+        background: #C9E7ED;
+      }
+
+      .edm-clear-drain {
+        position: absolute;
+        z-index: 8;
+        left: 265px;
+        top: 172px;
+        width: 54px;
+        height: 14px;
+        border-radius: 4px;
+        background: repeating-linear-gradient(90deg, #344D4A 0 4px, #91A39F 4px 9px);
+      }
+
+      .edm-clear-connector {
+        position: absolute;
+        z-index: 5;
+        top: 176px;
+        width: 16px;
+        border: 4px solid #586B68;
+        background: #DDE6E2;
+      }
+
+      .edm-clear-connector.house { left: 116px; height: 90px; }
+      .edm-clear-connector.drain { left: 285px; height: 90px; background: #C7E5EA; }
+
+      .edm-clear-main-pipe {
+        position: absolute;
+        z-index: 8;
+        left: 58px;
+        top: 250px;
+        width: 365px;
+        height: 54px;
+        overflow: hidden;
+        border: 6px solid #586B68;
+        border-radius: 30px;
+        background: #EEF2EF;
+        box-shadow: 0 5px 12px rgba(62,77,73,.13);
+      }
+
+      .edm-clear-main-water {
+        position: absolute;
+        left: -35px;
+        right: -35px;
+        bottom: 5px;
+        height: 27px;
+        border-radius: 18px;
+        background: repeating-linear-gradient(115deg, #6FC2D5 0 18px, #A8E3EC 18px 32px);
+        animation: edmHomepageWater 2.1s linear infinite;
+      }
+
+      .edm-clear-chamber {
+        position: absolute;
+        z-index: 10;
+        left: 392px;
+        top: 232px;
+        width: 54px;
+        height: 92px;
+        overflow: hidden;
+        border: 5px solid #526A66;
+        border-radius: 10px 10px 22px 22px;
+        background: #EDF3F1;
+      }
+
+      .edm-clear-chamber::after {
+        content: "";
+        position: absolute;
+        left: 0;
+        right: 0;
+        bottom: -9px;
+        height: 58px;
+        background: #68AFC2;
+        animation: edmHomepageCapacity 3.6s ease-in-out infinite;
+      }
+
+      .edm-clear-outfall {
+        position: absolute;
+        z-index: 9;
+        left: 440px;
+        top: 270px;
+        width: 136px;
+        height: 30px;
+        overflow: hidden;
+        border: 5px solid #586B68;
+        border-radius: 16px;
+        background: #EEF2EF;
+        transform: rotate(17deg);
+        transform-origin: left center;
+      }
+
+      .edm-clear-outfall::after {
+        content: "";
+        position: absolute;
+        left: -35px;
+        right: -35px;
+        bottom: 4px;
+        height: 14px;
+        border-radius: 999px;
+        background: repeating-linear-gradient(110deg, #6BC4DB 0 14px, #D9F5FA 14px 27px);
+        animation: edmHomepageWater 1.8s linear infinite;
+      }
+
+      .edm-clear-river {
+        position: absolute;
+        z-index: 6;
+        right: -30px;
+        bottom: -28px;
+        width: 220px;
+        height: 120px;
+        overflow: hidden;
+        border: 5px solid rgba(62,145,167,.34);
+        border-radius: 62% 38% 0 0;
+        background: linear-gradient(90deg, #8CD1DE, #65B6CA 58%, #3B91AB);
+      }
+
+      .edm-clear-river span {
+        position: absolute;
+        left: -30px;
+        right: -30px;
+        height: 9px;
+        border-radius: 999px;
+        background: rgba(236,255,255,.78);
+        animation: edmHomepageRiver 4.2s ease-in-out infinite;
+      }
+
+      .edm-clear-river span:nth-child(1) { top: 24px; }
+      .edm-clear-river span:nth-child(2) { top: 57px; animation-delay: -.8s; opacity: .75; }
+      .edm-clear-river span:nth-child(3) { top: 90px; animation-delay: -1.4s; opacity: .65; }
+
+      .edm-clear-label {
+        position: absolute;
+        z-index: 15;
+        max-width: 150px;
+        padding: 7px 9px;
+        border: 1px solid rgba(255,255,255,.82);
+        border-radius: 10px;
+        background: rgba(23,61,58,.94);
+        color: #FFFFFF;
+        box-shadow: 0 6px 15px rgba(34,82,75,.16);
+      }
+
+      .edm-clear-label strong {
+        display: block;
+        margin-bottom: 1px;
+        font-size: .78rem;
+        line-height: 1.1;
+      }
+
+      .edm-clear-label span {
+        display: block;
+        color: #EAF8FC;
+        font-size: .62rem;
+        line-height: 1.18;
+      }
+
+      .edm-clear-label.rainfall { right: 52px; top: 110px; }
+      .edm-clear-label.source { left: 31px; top: 205px; }
+      .edm-clear-label.sewer { left: 184px; top: 312px; }
+      .edm-clear-label.capacity { left: 354px; top: 164px; }
+      .edm-clear-label.outlet { right: 98px; top: 221px; }
+      .edm-clear-label.river { right: 16px; bottom: 32px; }
+
+      .edm-clear-label::after {
+        content: "";
+        position: absolute;
+        width: 44px;
+        height: 2px;
+        background: rgba(23,61,58,.74);
+      }
+
+      .edm-clear-label.rainfall::after { left: -36px; top: 28px; transform: rotate(-12deg); }
+      .edm-clear-label.source::after { right: -34px; top: 28px; transform: rotate(10deg); }
+      .edm-clear-label.sewer::after { left: 56px; top: -16px; transform: rotate(-28deg); }
+      .edm-clear-label.capacity::after { left: 38px; bottom: -20px; transform: rotate(68deg); }
+      .edm-clear-label.outlet::after { left: -32px; top: 35px; transform: rotate(26deg); }
+      .edm-clear-label.river::after { left: -31px; top: 28px; transform: rotate(-19deg); }
+
+      .edm-homepage-diagram-label {
+        fill: rgba(23,61,58,.94);
+        stroke: rgba(255,255,255,.82);
+        stroke-width: 1.4;
+      }
+
+      .edm-homepage-diagram-title {
+        fill: #FFFFFF;
+        font-size: 19px;
+        font-weight: 850;
+      }
+
+      .edm-homepage-diagram-note {
+        fill: #EAF8FC;
+        font-size: 13px;
+        font-weight: 650;
+      }
+
+      .edm-homepage-leader {
+        fill: none;
+        stroke: #173D3A;
+        stroke-width: 2.6;
+        stroke-linecap: round;
+        stroke-linejoin: round;
+        opacity: .72;
+      }
+
+      .edm-homepage-water {
+        stroke-dasharray: 22 15;
+        animation: edmHomepageWater 2.1s linear infinite;
+      }
+
+      .edm-homepage-river-wave {
+        animation: edmHomepageRiver 4.2s ease-in-out infinite;
+        transform-origin: center;
+      }
+
+      .edm-homepage-rain {
+        animation: edmHomepageRain 1.35s linear infinite;
+      }
+
+      .edm-homepage-rain:nth-child(2n) { animation-delay: -.42s; }
+      .edm-homepage-rain:nth-child(3n) { animation-delay: -.82s; }
+
+      .edm-homepage-overflow {
+        animation: edmHomepagePulse 1.8s ease-in-out infinite;
+      }
+
+      .edm-homepage-capacity {
+        animation: edmHomepageCapacity 3.6s ease-in-out infinite;
+      }
+
+      @keyframes edmHomepageWater {
+        to { stroke-dashoffset: -74; }
+      }
+
+      @keyframes edmHomepageRiver {
+        0%, 100% { transform: translateX(-7px); }
+        50% { transform: translateX(9px); }
+      }
+
+      @keyframes edmHomepageRain {
+        0% { transform: translateY(-24px); opacity: 0; }
+        18% { opacity: 1; }
+        100% { transform: translateY(82px); opacity: 0; }
+      }
+
+      @keyframes edmHomepagePulse {
+        0%, 100% { opacity: .56; }
+        50% { opacity: 1; }
+      }
+
+      @keyframes edmHomepageCapacity {
+        0%, 100% { transform: translateY(8px); }
+        50% { transform: translateY(-10px); }
       }
 
       .edm-sewer-diagram {
@@ -2739,11 +3103,33 @@ def render_hero():
             </div>
           </div>
           <div class="edm-water-art">
-            <img
-              class="edm-homepage-illustration"
-              src="{HOMEPAGE_ILLUSTRATION_DATA_URI}"
-              alt="Illustration showing heavy rainfall, urban growth, groundwater infiltration, limited sewer capacity, ageing infrastructure and blockages contributing to overflow pressure."
+            <div
+              class="edm-homepage-illustration edm-clear-flow-figure"
+              role="img"
+              aria-label="Heavy rainfall and road runoff enter a combined sewer. When the pipe reaches capacity, moving overflow water leaves through an outlet and enters the receiving water."
             >
+              <div class="edm-flow-path-tag">Flow path: rain → sewer → overflow → river</div>
+              <div class="edm-clear-cloud"></div>
+              <span class="edm-clear-rain r1"></span>
+              <span class="edm-clear-rain r2"></span>
+              <span class="edm-clear-rain r3"></span>
+              <span class="edm-clear-rain r4"></span>
+              <div class="edm-clear-house"><span class="edm-clear-window"></span></div>
+              <div class="edm-clear-drain"></div>
+              <div class="edm-clear-connector house"></div>
+              <div class="edm-clear-connector drain"></div>
+              <div class="edm-clear-main-pipe"><span class="edm-clear-main-water"></span></div>
+              <div class="edm-clear-chamber"></div>
+              <div class="edm-clear-outfall"></div>
+              <div class="edm-clear-river"><span></span><span></span><span></span></div>
+
+              <div class="edm-clear-label rainfall"><strong>Heavy rainfall</strong><span>more surface runoff</span></div>
+              <div class="edm-clear-label source"><strong>Homes and roads</strong><span>rain and wastewater enter drains</span></div>
+              <div class="edm-clear-label sewer"><strong>Combined sewer</strong><span>one pipe carries both flows</span></div>
+              <div class="edm-clear-label capacity"><strong>Capacity limit</strong><span>water level rises</span></div>
+              <div class="edm-clear-label outlet"><strong>Overflow outlet</strong><span>excess flow released</span></div>
+              <div class="edm-clear-label river"><strong>Receiving water</strong><span>river, stream or coast</span></div>
+            </div>
           </div>
         </section>
         """,
@@ -2795,7 +3181,7 @@ def render_page_cards():
         ("Priority list", "Priority locations"),
         ("Compare", "Places and companies"),
         ("Changes", "Improvements and changes"),
-        ("2026 forecast", "2026 rainfall predictions"),
+        ("2026 forecast", "2026 predictions"),
         ("Rainfall", "Rainfall and spills"),
         ("Find a site", "Check one location"),
         ("Evidence", "About the evidence"),
@@ -4038,7 +4424,7 @@ PAGES = [
     "Priority locations",
     "Places and companies",
     "Improvements and changes",
-    "2026 rainfall predictions",
+    "2026 predictions",
     "Rainfall and spills",
     "Check one location",
     "About the evidence",
@@ -6447,413 +6833,300 @@ elif page == "Improvements and changes":
 # PAGE 6 — 2026 PREDICTIONS AND AFFECTED LOCATIONS
 # =============================================================================
 
-elif page == "2026 rainfall predictions":
-    # 2026-08-22-existing-dashboard-rainfall-patch-v1
-    from pathlib import Path as _DashboardPath
-    import pandas as _dashboard_pd
-    import plotly.express as _dashboard_px
-
-    _risk_order = ["Low", "Medium", "High"]
-    _risk_colours = {
-        "Low": "#8FC8A8",
-        "Medium": "#E8C77B",
-        "High": "#D98C8C",
-    }
-
-    _data_folder = _DashboardPath(__file__).resolve().parent / "data"
-    _prediction_path = (
-        _data_folder / "rainfall_risk_predictions_2026_ytd.csv.gz"
+elif page == "2026 predictions":
+    st.html(
+        """
+        <style>
+          .block-container {
+            width:100% !important;
+            max-width:none !important;
+            padding-left:.55rem !important;
+            padding-right:.55rem !important;
+          }
+        </style>
+        """
     )
-    _cv_path = (
-        _data_folder / "rainfall_model_cross_validation_results.csv.gz"
+    section_header(
+        "Predicted 2026 spill risks and affected locations",
+        "Explore the forecast by risk, town or city, water company and exact mapped outlet.",
     )
-
-    st.title("2026 rainfall-enhanced risk predictions")
-    st.caption(
-        "Year-to-date screening predictions using the recorded 2026 rainfall "
-        "available at the model cut-off. These are not confirmed 2026 discharges."
+    banner(
+        "<b>2026 forecast:</b> these are model-generated risk estimates for planning and review. "
+        "They are not confirmed 2026 spill events.",
+        icon="🔮",
+        background=PALE_AMBER,
+        edge="#D59A3C",
     )
 
-    if not _prediction_path.exists():
-        st.error(
-            "The 2026 prediction file is missing. "
-            "Run Dashboard Cell 2 in Colab."
-        )
+    forecast = load_table("forecast_map_points")
+    forecast_risk = "predicted_2026_risk"
+
+    if forecast.empty or forecast_risk not in forecast.columns:
+        st.error("The 2026 prediction information is unavailable. Please try again later.")
     else:
-        _predictions = _dashboard_pd.read_csv(
-            _prediction_path,
-            low_memory=False,
+        forecast_place = first_existing(forecast, ["official_place_name", "town_or_city"])
+        forecast_company = first_existing(forecast, ["water_company_name", "company"])
+        forecast_site = first_existing(
+            forecast,
+            ["site_name", "source_site_name_ea_consents_database"],
         )
 
-        _predictions["predicted_2026_risk_category"] = (
-            _predictions["predicted_2026_risk_category"]
-            .astype("string")
-            .str.strip()
-            .str.title()
-        )
-
-        _predictions["prediction_confidence"] = (
-            _dashboard_pd.to_numeric(
-                _predictions["prediction_confidence"],
-                errors="coerce",
-            )
-        )
-
-        _companies = sorted(
-            _predictions["water_company"]
-            .dropna()
-            .astype(str)
-            .unique()
-        )
-
-        _filter_columns = st.columns([1.3, 1, 1])
-
-        with _filter_columns[0]:
-            _selected_companies = st.multiselect(
-                "Water company",
-                _companies,
-                default=_companies,
-                key="rainfall_prediction_companies",
-            )
-
-        with _filter_columns[1]:
-            _selected_risks = st.multiselect(
+        filter_columns = st.columns([1.05, 1.05, 1.05, 1.35])
+        with filter_columns[0]:
+            forecast_risks = st.multiselect(
                 "Predicted risk",
-                _risk_order,
-                default=_risk_order,
-                key="rainfall_prediction_risks",
+                RISK_ORDER,
+                default=RISK_ORDER,
+                key="forecast_page_risks",
             )
-
-        with _filter_columns[2]:
-            _minimum_confidence = st.slider(
-                "Minimum confidence",
-                0.0,
-                1.0,
-                0.0,
-                0.05,
-                key="rainfall_prediction_confidence",
+        with filter_columns[1]:
+            forecast_company_choice = st.selectbox(
+                "Water company",
+                ["All companies"] + available_values(forecast, forecast_company)
+                if forecast_company
+                else ["All companies"],
+                key="forecast_page_company",
             )
-
-        _filtered = _predictions.loc[
-            _predictions["water_company"]
-            .astype(str)
-            .isin(_selected_companies)
-            & _predictions[
-                "predicted_2026_risk_category"
-            ].isin(_selected_risks)
-            & _predictions[
-                "prediction_confidence"
-            ].ge(_minimum_confidence)
-        ].copy()
-
-        _risk_counts = (
-            _filtered["predicted_2026_risk_category"]
-            .value_counts()
-            .reindex(_risk_order, fill_value=0)
-        )
-
-        _high_count = int(_risk_counts.get("High", 0))
-        _mean_confidence = _filtered["prediction_confidence"].mean()
-
-        _agreement = (
-            _dashboard_pd.to_numeric(
-                _filtered["models_agreeing"],
-                errors="coerce",
+        with filter_columns[2]:
+            forecast_place_choice = st.selectbox(
+                "Town or city",
+                ["All towns/cities"] + available_values(forecast, forecast_place)
+                if forecast_place
+                else ["All towns/cities"],
+                key="forecast_page_place",
             )
-            .eq(4)
-            .mean()
-            if (
-                "models_agreeing" in _filtered.columns
-                and len(_filtered)
-            )
-            else float("nan")
-        )
+        with filter_columns[3]:
+            forecast_search = st.text_input(
+                "Find a location, company or receiving water",
+                key="forecast_page_search",
+            ).strip()
 
-        _kpis = st.columns(4)
+        forecast_filtered = forecast.loc[
+            forecast[forecast_risk].isin(forecast_risks)
+        ].copy() if forecast_risks else forecast.iloc[0:0].copy()
 
-        _kpis[0].metric(
-            "Predictions shown",
-            f"{len(_filtered):,}",
-        )
-
-        _kpis[1].metric(
-            "High-risk outlets",
-            f"{_high_count:,}",
-        )
-
-        _kpis[2].metric(
-            "Mean confidence",
-            (
-                f"{_mean_confidence:.1%}"
-                if _dashboard_pd.notna(_mean_confidence)
-                else "—"
-            ),
-        )
-
-        _kpis[3].metric(
-            "All four models agree",
-            (
-                f"{_agreement:.1%}"
-                if _dashboard_pd.notna(_agreement)
-                else "—"
-            ),
-        )
-
-        _chart_columns = st.columns(2)
-
-        with _chart_columns[0]:
-            _risk_frame = (
-                _risk_counts
-                .rename_axis("Risk")
-                .reset_index(name="Outlets")
-            )
-
-            _risk_figure = _dashboard_px.pie(
-                _risk_frame,
-                names="Risk",
-                values="Outlets",
-                hole=0.58,
-                color="Risk",
-                color_discrete_map=_risk_colours,
-                category_orders={"Risk": _risk_order},
-                title="Predicted risk categories for 2026",
-            )
-
-            _risk_figure.update_traces(
-                textinfo="label+percent+value"
-            )
-
-            st.plotly_chart(
-                _risk_figure,
-                use_container_width=True,
-            )
-
-        with _chart_columns[1]:
-            _company_risk = (
-                _filtered
-                .groupby(
-                    [
-                        "water_company",
-                        "predicted_2026_risk_category",
-                    ],
-                    observed=True,
-                )
-                .size()
-                .rename("Outlets")
-                .reset_index()
-            )
-
-            _company_figure = _dashboard_px.bar(
-                _company_risk,
-                x="Outlets",
-                y="water_company",
-                color="predicted_2026_risk_category",
-                orientation="h",
-                color_discrete_map=_risk_colours,
-                category_orders={
-                    "predicted_2026_risk_category": _risk_order
-                },
-                title="Predictions by water company",
-                labels={
-                    "water_company": "Water company",
-                    "predicted_2026_risk_category": "Risk",
-                },
-            )
-
-            st.plotly_chart(
-                _company_figure,
-                use_container_width=True,
-            )
-
-        if {"latitude", "longitude"}.issubset(_filtered.columns):
-            _mapped = _filtered.copy()
-
-            _mapped["latitude"] = _dashboard_pd.to_numeric(
-                _mapped["latitude"],
-                errors="coerce",
-            )
-
-            _mapped["longitude"] = _dashboard_pd.to_numeric(
-                _mapped["longitude"],
-                errors="coerce",
-            )
-
-            _mapped = _mapped.dropna(
-                subset=["latitude", "longitude"]
-            )
-
-            if not _mapped.empty:
-                st.subheader("2026 prediction map")
-
-                _hover_data = {
-                    column: setting
-                    for column, setting in {
-                        "water_company": True,
-                        "outlet_ngr": True,
-                        "prediction_confidence": ":.1%",
-                        "ytd_rainfall_mm": ":.1f",
-                        "latitude": False,
-                        "longitude": False,
-                    }.items()
-                    if column in _mapped.columns
-                }
-
-                _hover_name = (
-                    "site_name"
-                    if "site_name" in _mapped.columns
-                    else None
-                )
-
-                _map_figure = _dashboard_px.scatter_mapbox(
-                    _mapped,
-                    lat="latitude",
-                    lon="longitude",
-                    color="predicted_2026_risk_category",
-                    color_discrete_map=_risk_colours,
-                    category_orders={
-                        "predicted_2026_risk_category": _risk_order
-                    },
-                    hover_name=_hover_name,
-                    hover_data=_hover_data,
-                    zoom=5,
-                    height=650,
-                    opacity=0.72,
-                )
-
-                _map_figure.update_layout(
-                    mapbox_style="open-street-map",
-                    margin=dict(l=0, r=0, t=0, b=0),
-                )
-
-                st.plotly_chart(
-                    _map_figure,
-                    use_container_width=True,
-                )
-
-        if "ytd_rainfall_mm" in _filtered.columns:
-            _filtered["ytd_rainfall_mm"] = (
-                _dashboard_pd.to_numeric(
-                    _filtered["ytd_rainfall_mm"],
-                    errors="coerce",
-                )
-            )
-
-            _rain_figure = _dashboard_px.box(
-                _filtered,
-                x="predicted_2026_risk_category",
-                y="ytd_rainfall_mm",
-                color="predicted_2026_risk_category",
-                color_discrete_map=_risk_colours,
-                category_orders={
-                    "predicted_2026_risk_category": _risk_order
-                },
-                points="outliers",
-                title=(
-                    "Observed 2026 YTD rainfall by predicted risk"
-                ),
-                labels={
-                    "predicted_2026_risk_category": "Predicted risk",
-                    "ytd_rainfall_mm": "YTD rainfall (mm)",
-                },
-            )
-
-            st.plotly_chart(
-                _rain_figure,
-                use_container_width=True,
-            )
-
-        if _cv_path.exists():
-            _cv = _dashboard_pd.read_csv(_cv_path)
-
-            _metric_columns = [
+        if forecast_company and forecast_company_choice != "All companies":
+            forecast_filtered = forecast_filtered.loc[
+                forecast_filtered[forecast_company].astype(str).eq(forecast_company_choice)
+            ]
+        if forecast_place and forecast_place_choice != "All towns/cities":
+            forecast_filtered = forecast_filtered.loc[
+                forecast_filtered[forecast_place].astype(str).eq(forecast_place_choice)
+            ]
+        if forecast_search:
+            search_columns = [
                 column
                 for column in [
-                    "CV accuracy mean",
-                    "CV balanced accuracy mean",
-                    "CV macro F1 mean",
+                    forecast_place,
+                    forecast_company,
+                    forecast_site,
+                    "receiving_water",
+                    "source_receiving_water",
+                    "permit_reference",
                 ]
-                if column in _cv.columns
+                if column and column in forecast_filtered.columns
             ]
-
-            if _metric_columns:
-                st.subheader(
-                    "Rainfall-enhanced model comparison"
+            forecast_match = pd.Series(False, index=forecast_filtered.index)
+            for column in search_columns:
+                forecast_match |= forecast_filtered[column].astype("string").str.contains(
+                    forecast_search,
+                    case=False,
+                    regex=False,
+                    na=False,
                 )
+            forecast_filtered = forecast_filtered.loc[forecast_match]
 
-                _cv_long = _cv.melt(
-                    id_vars="Model",
-                    value_vars=_metric_columns,
-                    var_name="Metric",
-                    value_name="Score",
-                )
+        if forecast_filtered.empty:
+            st.warning("No predicted locations match these choices. Clear a filter and try again.")
+        else:
+            forecast_counts = (
+                forecast_filtered[forecast_risk]
+                .value_counts()
+                .reindex(RISK_ORDER, fill_value=0)
+            )
+            metric_cards(
+                [
+                    {
+                        "label": "Predicted locations",
+                        "value": value_text(len(forecast_filtered)),
+                        "note": "Mapped outlets in this view",
+                        "accent": "#B7DDE5",
+                    },
+                    {
+                        "label": "Predicted High",
+                        "value": value_text(forecast_counts["High"]),
+                        "note": "Priority review category",
+                        "accent": "#E9A7A7",
+                    },
+                    {
+                        "label": "Predicted Medium",
+                        "value": value_text(forecast_counts["Medium"]),
+                        "note": "Closer-attention category",
+                        "accent": "#F1D39D",
+                    },
+                    {
+                        "label": "Affected towns/cities",
+                        "value": value_text(
+                            forecast_filtered[forecast_place].nunique()
+                            if forecast_place
+                            else np.nan
+                        ),
+                        "note": "Places represented in the forecast",
+                        "accent": "#A8D8D0",
+                    },
+                ]
+            )
 
-                _cv_figure = _dashboard_px.bar(
-                    _cv_long,
-                    x="Model",
-                    y="Score",
-                    color="Metric",
-                    barmode="group",
-                    color_discrete_sequence=[
-                        "#789F8A",
-                        "#92ABC6",
-                        "#C5A3C8",
-                    ],
-                    text_auto=".3f",
-                )
+            map_tab, place_tab, company_tab, location_tab = st.tabs(
+                [
+                    "Interactive forecast map",
+                    "Affected towns and cities",
+                    "Water companies",
+                    "Exact predicted locations",
+                ]
+            )
 
-                _cv_figure.update_yaxes(range=[0, 1])
-
-                st.plotly_chart(
-                    _cv_figure,
+            with map_tab:
+                with st.spinner("Drawing the 2026 prediction map..."):
+                    forecast_map = build_folium_map(
+                        forecast_filtered,
+                        forecast_risk,
+                        True,
+                        "Clustered spill locations",
+                    )
+                st_folium(
+                    forecast_map,
+                    height=980,
                     use_container_width=True,
+                    returned_objects=[],
+                    key="dedicated_2026_prediction_map",
+                )
+                st.caption(
+                    "Select a cluster to zoom in, then select a marker for the predicted "
+                    "risk, probabilities, town/city and water company."
                 )
 
-        _preferred_columns = [
-            "water_company",
-            "site_name",
-            "outlet_ngr",
-            "storm_asset_type",
-            "source_edm_year",
-            "ytd_rainfall_mm",
-            "ytd_wet_days_ge_1mm",
-            "ytd_heavy_days_ge_10mm",
-            "predicted_2026_risk_category",
-            "prediction_confidence",
-            "models_agreeing",
-            "random_forest_predicted_risk",
-            "gbm_predicted_risk",
-            "xgboost_predicted_risk",
-            "catboost_predicted_risk",
-        ]
+            with place_tab:
+                if forecast_place:
+                    forecast_place_ranking = make_risk_ranking(
+                        forecast_filtered,
+                        forecast_risk,
+                        forecast_place,
+                    )
+                    place_chart = forecast_place_ranking.head(25).copy()
+                    place_long = place_chart.melt(
+                        id_vars=[forecast_place],
+                        value_vars=RISK_ORDER,
+                        var_name="Predicted risk",
+                        value_name="Mapped locations",
+                    )
+                    place_figure = px.bar(
+                        place_long,
+                        x="Mapped locations",
+                        y=forecast_place,
+                        color="Predicted risk",
+                        orientation="h",
+                        barmode="stack",
+                        color_discrete_map=RISK_COLOURS,
+                        category_orders={"Predicted risk": RISK_ORDER},
+                        title="Affected towns and cities ranked by predicted risk",
+                    )
+                    place_figure.update_yaxes(
+                        title="",
+                        categoryorder="array",
+                        categoryarray=place_chart[forecast_place].iloc[::-1].tolist(),
+                    )
+                    st.plotly_chart(
+                        plot_style(place_figure, max(520, 29 * len(place_chart))),
+                        use_container_width=True,
+                        config={"displayModeBar": False},
+                    )
+                    st.dataframe(
+                        forecast_place_ranking,
+                        use_container_width=True,
+                        hide_index=True,
+                    )
+                else:
+                    st.info("Town/city information is unavailable for these predictions.")
 
-        _table_columns = [
-            column
-            for column in _preferred_columns
-            if column in _filtered.columns
-        ]
+            with company_tab:
+                if forecast_company:
+                    forecast_company_ranking = make_risk_ranking(
+                        forecast_filtered,
+                        forecast_risk,
+                        forecast_company,
+                    )
+                    company_chart = forecast_company_ranking.copy()
+                    company_long = company_chart.melt(
+                        id_vars=[forecast_company],
+                        value_vars=RISK_ORDER,
+                        var_name="Predicted risk",
+                        value_name="Mapped locations",
+                    )
+                    company_figure = px.bar(
+                        company_long,
+                        x="Mapped locations",
+                        y=forecast_company,
+                        color="Predicted risk",
+                        orientation="h",
+                        barmode="stack",
+                        color_discrete_map=RISK_COLOURS,
+                        category_orders={"Predicted risk": RISK_ORDER},
+                        title="Water companies ranked by predicted 2026 risk",
+                    )
+                    company_figure.update_yaxes(
+                        title="",
+                        categoryorder="array",
+                        categoryarray=company_chart[forecast_company].iloc[::-1].tolist(),
+                    )
+                    st.plotly_chart(
+                        plot_style(company_figure, max(450, 44 * len(company_chart))),
+                        use_container_width=True,
+                        config={"displayModeBar": False},
+                    )
+                    st.dataframe(
+                        forecast_company_ranking,
+                        use_container_width=True,
+                        hide_index=True,
+                    )
+                else:
+                    st.info("Water-company information is unavailable for these predictions.")
 
-        st.subheader("Outlet-level predictions")
-
-        st.dataframe(
-            _filtered[_table_columns],
-            use_container_width=True,
-            hide_index=True,
-        )
-
-        st.download_button(
-            "Download the filtered predictions",
-            _filtered.to_csv(index=False).encode("utf-8"),
-            file_name=(
-                "filtered_2026_rainfall_risk_predictions.csv"
-            ),
-            mime="text/csv",
-        )
-
-        st.info(
-            "Use these results for screening and prioritisation. "
-            "A predicted risk category is not proof of a discharge "
-            "or an infrastructure fault."
-        )
+            with location_tab:
+                prediction_columns = [
+                    column
+                    for column in [
+                        forecast_site,
+                        forecast_place,
+                        forecast_company,
+                        "receiving_water",
+                        "source_receiving_water",
+                        forecast_risk,
+                        "probability_low",
+                        "probability_medium",
+                        "probability_high",
+                        "prediction_confidence",
+                        "confidence_flag",
+                        "permit_reference",
+                        "latitude",
+                        "longitude",
+                    ]
+                    if column and column in forecast_filtered.columns
+                ]
+                prediction_records = forecast_filtered[prediction_columns].copy()
+                risk_sort = {"High": 0, "Medium": 1, "Low": 2}
+                prediction_records["_risk_order"] = prediction_records[forecast_risk].map(risk_sort)
+                prediction_records = prediction_records.sort_values(
+                    ["_risk_order", forecast_place]
+                    if forecast_place in prediction_records.columns
+                    else ["_risk_order"]
+                ).drop(columns="_risk_order")
+                st.dataframe(
+                    prediction_records,
+                    use_container_width=True,
+                    hide_index=True,
+                )
+                download_table(prediction_records, "predicted_2026_affected_locations.csv")
 
 
 # =============================================================================
