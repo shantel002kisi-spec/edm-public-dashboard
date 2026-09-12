@@ -16,7 +16,7 @@ from folium.plugins import FastMarkerCluster, Fullscreen, HeatMap, MeasureContro
 from streamlit_folium import st_folium
 
 
-DASHBOARD_RELEASE = "2026-09-12-animated-homepage-illustration-v22"
+DASHBOARD_RELEASE = "2026-09-13-edm-monitor-cutaway-illustration-v23"
 HOMEPAGE_ILLUSTRATION_DATA_URI = (
     "data:image/png;base64,"
     "iVBORw0KGgoAAAANSUhEUgAAAMsAAACeCAYAAACcuP53AAAAAXNSR0IArs4c6QAAAARnQU1BAACxjwv8YQUAAAAJcEhZcwAAEnQAABJ0Ad5mH3gAAP+lSURB"
@@ -977,6 +977,7 @@ AUDITED_COMPANY_ANNUAL_SPILLS = {
 # Compatibility markers for earlier Colab installer cells. These do not change
 # the dashboard release; they only allow an older validator to accept this file.
 LEGACY_INSTALLER_RELEASE_MARKERS = (
+    "2026-09-13-edm-monitor-cutaway-illustration-v23",
     "2026-09-12-animated-homepage-illustration-v22",
     "2026-09-09-complete-2021-2025-dashboard-v20",
     "2026-09-08-homepage-priority-sections-v19",
@@ -1528,6 +1529,338 @@ st.markdown(
       .edm-clear-label.capacity::after { left: 38px; bottom: -20px; transform: rotate(68deg); }
       .edm-clear-label.outlet::after { left: -32px; top: 35px; transform: rotate(26deg); }
       .edm-clear-label.river::after { left: -31px; top: 28px; transform: rotate(-19deg); }
+
+      .edm-monitor-cutaway {
+        position: relative;
+        overflow: hidden;
+        background:
+          radial-gradient(circle at 18% 12%, rgba(255,255,255,.86), transparent 8rem),
+          linear-gradient(180deg, #EFF8FA 0 30%, #D8E8E6 30% 43%, #B9CFC9 43% 100%);
+      }
+
+      .edm-monitor-cutaway::before {
+        content: "";
+        position: absolute;
+        left: 34px;
+        right: 34px;
+        bottom: 28px;
+        height: 210px;
+        border: 10px solid #4F6764;
+        border-bottom-width: 18px;
+        border-radius: 210px 210px 34px 34px;
+        background:
+          repeating-linear-gradient(12deg, rgba(255,255,255,.11) 0 13px, transparent 13px 28px),
+          linear-gradient(180deg, #DCE6E3 0 42%, #C5D3CF 42% 100%);
+        box-shadow:
+          inset 0 20px 34px rgba(255,255,255,.48),
+          inset 0 -24px 32px rgba(39,68,64,.23),
+          0 12px 24px rgba(34,82,75,.16);
+      }
+
+      .edm-monitor-cutaway::after {
+        content: "";
+        position: absolute;
+        left: 54px;
+        right: 54px;
+        bottom: 49px;
+        height: 82px;
+        border-radius: 0 0 28px 28px;
+        background:
+          repeating-linear-gradient(115deg, #5EB7CD 0 18px, #BDECF2 18px 34px);
+        opacity: .94;
+        animation: edmHomepageWater 2.15s linear infinite;
+      }
+
+      .edm-monitor-title {
+        position: absolute;
+        z-index: 24;
+        left: 18px;
+        top: 14px;
+        padding: 8px 13px;
+        border: 1px solid rgba(55,120,110,.16);
+        border-radius: 999px;
+        background: rgba(255,255,255,.88);
+        color: #2E5F5A;
+        font-size: .78rem;
+        font-weight: 900;
+      }
+
+      .edm-monitor-ground {
+        position: absolute;
+        z-index: 3;
+        left: -5%;
+        right: -5%;
+        top: 118px;
+        height: 72px;
+        border-top: 6px solid #88AA81;
+        border-bottom: 5px solid #748784;
+        background:
+          radial-gradient(circle at 13% 44%, rgba(126,96,62,.20) 0 5px, transparent 6px),
+          radial-gradient(circle at 39% 58%, rgba(126,96,62,.18) 0 4px, transparent 5px),
+          radial-gradient(circle at 68% 40%, rgba(126,96,62,.18) 0 5px, transparent 6px),
+          #AEBBB8;
+      }
+
+      .edm-monitor-shaft {
+        position: absolute;
+        z-index: 8;
+        top: 92px;
+        width: 44px;
+        height: 164px;
+        border: 6px solid #586B68;
+        border-radius: 22px 22px 8px 8px;
+        background: linear-gradient(180deg, #EEF2EF, #CAD8D5);
+      }
+
+      .edm-monitor-shaft.left { left: 134px; }
+      .edm-monitor-shaft.right { right: 152px; }
+
+      .edm-monitor-shaft::before {
+        content: "";
+        position: absolute;
+        left: -12px;
+        top: -16px;
+        width: 56px;
+        height: 18px;
+        border-radius: 999px;
+        background: #465D59;
+        box-shadow: inset 0 3px 0 rgba(255,255,255,.18);
+      }
+
+      .edm-monitor-device {
+        position: absolute;
+        z-index: 18;
+        width: 86px;
+        height: 58px;
+        border: 3px solid #275E68;
+        border-radius: 12px;
+        background:
+          linear-gradient(180deg, #F8FCFA, #DCEFF4);
+        box-shadow: 0 9px 18px rgba(33,80,75,.18);
+      }
+
+      .edm-monitor-device.one { left: 205px; top: 212px; }
+      .edm-monitor-device.two { right: 218px; top: 198px; }
+
+      .edm-monitor-device::before {
+        content: "EDM";
+        position: absolute;
+        left: 10px;
+        top: 9px;
+        color: #245B61;
+        font-size: .92rem;
+        font-weight: 950;
+        letter-spacing: .04em;
+      }
+
+      .edm-monitor-device::after {
+        content: "";
+        position: absolute;
+        right: 10px;
+        top: 12px;
+        width: 12px;
+        height: 12px;
+        border-radius: 50%;
+        background: #4A9C7D;
+        box-shadow: 0 0 0 0 rgba(74,156,125,.55);
+        animation: edmSignalPulse 1.8s ease-out infinite;
+      }
+
+      .edm-monitor-screen {
+        position: absolute;
+        left: 10px;
+        right: 10px;
+        bottom: 9px;
+        height: 18px;
+        overflow: hidden;
+        border-radius: 5px;
+        background: #173D3A;
+      }
+
+      .edm-monitor-screen::before {
+        content: "";
+        position: absolute;
+        inset: 4px 6px;
+        background: repeating-linear-gradient(90deg, #9DE7F0 0 8px, transparent 8px 15px);
+        animation: edmHomepageRiver 2.8s ease-in-out infinite;
+      }
+
+      .edm-monitor-probe {
+        position: absolute;
+        z-index: 17;
+        width: 4px;
+        height: 78px;
+        border-radius: 999px;
+        background: #275E68;
+      }
+
+      .edm-monitor-probe.one { left: 248px; top: 270px; }
+      .edm-monitor-probe.two { right: 258px; top: 256px; height: 92px; }
+
+      .edm-monitor-probe::after {
+        content: "";
+        position: absolute;
+        left: 50%;
+        bottom: -7px;
+        width: 15px;
+        height: 15px;
+        transform: translateX(-50%);
+        border: 3px solid #EAF8FC;
+        border-radius: 50%;
+        background: #68AFC2;
+        box-shadow: 0 0 0 8px rgba(104,175,194,.22);
+      }
+
+      .edm-monitor-signal {
+        position: absolute;
+        z-index: 16;
+        width: 86px;
+        height: 86px;
+        border: 3px solid rgba(74,156,125,.48);
+        border-radius: 50%;
+        opacity: 0;
+        animation: edmRingSignal 2.2s ease-out infinite;
+      }
+
+      .edm-monitor-signal.one { left: 205px; top: 196px; }
+      .edm-monitor-signal.two { right: 218px; top: 182px; animation-delay: -.7s; }
+
+      .edm-monitor-overflow {
+        position: absolute;
+        z-index: 14;
+        right: 36px;
+        bottom: 118px;
+        width: 146px;
+        height: 32px;
+        overflow: hidden;
+        border: 6px solid #526A66;
+        border-radius: 18px;
+        background: #EEF2EF;
+        transform: rotate(15deg);
+        transform-origin: left center;
+      }
+
+      .edm-monitor-overflow::after {
+        content: "";
+        position: absolute;
+        left: -38px;
+        right: -38px;
+        bottom: 4px;
+        height: 15px;
+        border-radius: 999px;
+        background: repeating-linear-gradient(110deg, #6BC4DB 0 14px, #D9F5FA 14px 27px);
+        animation: edmHomepageWater 1.7s linear infinite;
+      }
+
+      .edm-monitor-alert {
+        position: absolute;
+        z-index: 20;
+        right: 93px;
+        top: 96px;
+        width: 34px;
+        height: 34px;
+        border: 3px solid rgba(255,255,255,.86);
+        border-radius: 50%;
+        background: #E2A45C;
+        box-shadow: 0 0 0 0 rgba(226,164,92,.48);
+        animation: edmSignalPulse 1.7s ease-out infinite;
+      }
+
+      .edm-monitor-alert::after {
+        content: "!";
+        position: absolute;
+        inset: 0;
+        display: grid;
+        place-items: center;
+        color: #FFFFFF;
+        font-weight: 950;
+      }
+
+      .edm-monitor-waterline {
+        position: absolute;
+        z-index: 16;
+        left: 84px;
+        right: 220px;
+        bottom: 128px;
+        height: 3px;
+        border-radius: 999px;
+        background: repeating-linear-gradient(90deg, #EAF8FC 0 18px, transparent 18px 31px);
+        opacity: .78;
+        animation: edmHomepageRiver 3.4s ease-in-out infinite;
+      }
+
+      .edm-monitor-ruler {
+        position: absolute;
+        z-index: 17;
+        left: 90px;
+        bottom: 70px;
+        width: 18px;
+        height: 132px;
+        border-radius: 7px;
+        background:
+          repeating-linear-gradient(180deg, #173D3A 0 3px, transparent 3px 16px),
+          rgba(255,255,255,.82);
+        border: 2px solid rgba(23,61,58,.42);
+      }
+
+      .edm-monitor-label {
+        position: absolute;
+        z-index: 26;
+        max-width: 158px;
+        padding: 7px 9px;
+        border: 1px solid rgba(255,255,255,.85);
+        border-radius: 10px;
+        background: rgba(23,61,58,.94);
+        color: #FFFFFF;
+        box-shadow: 0 6px 15px rgba(34,82,75,.16);
+      }
+
+      .edm-monitor-label strong {
+        display: block;
+        font-size: .78rem;
+        line-height: 1.1;
+      }
+
+      .edm-monitor-label span {
+        display: block;
+        margin-top: 2px;
+        color: #EAF8FC;
+        font-size: .62rem;
+        line-height: 1.18;
+      }
+
+      .edm-monitor-label.inflow { left: 25px; top: 82px; }
+      .edm-monitor-label.device { left: 190px; top: 138px; }
+      .edm-monitor-label.level { left: 18px; bottom: 70px; }
+      .edm-monitor-label.chamber { right: 178px; top: 136px; }
+      .edm-monitor-label.signal { right: 24px; top: 138px; }
+      .edm-monitor-label.outlet { right: 18px; bottom: 48px; }
+
+      .edm-monitor-label::after {
+        content: "";
+        position: absolute;
+        width: 45px;
+        height: 2px;
+        background: rgba(23,61,58,.74);
+      }
+
+      .edm-monitor-label.inflow::after { right: -35px; top: 34px; transform: rotate(22deg); }
+      .edm-monitor-label.device::after { left: 35px; bottom: -18px; transform: rotate(72deg); }
+      .edm-monitor-label.level::after { right: -34px; top: 29px; transform: rotate(-8deg); }
+      .edm-monitor-label.chamber::after { right: -34px; top: 34px; transform: rotate(-14deg); }
+      .edm-monitor-label.signal::after { left: -34px; top: 31px; transform: rotate(14deg); }
+      .edm-monitor-label.outlet::after { left: -30px; top: 20px; transform: rotate(-18deg); }
+
+      @keyframes edmSignalPulse {
+        0% { box-shadow: 0 0 0 0 rgba(74,156,125,.52); }
+        70% { box-shadow: 0 0 0 12px rgba(74,156,125,0); }
+        100% { box-shadow: 0 0 0 0 rgba(74,156,125,0); }
+      }
+
+      @keyframes edmRingSignal {
+        0% { transform: scale(.55); opacity: .62; }
+        100% { transform: scale(1.4); opacity: 0; }
+      }
 
       .edm-homepage-diagram-label {
         fill: rgba(23,61,58,.94);
@@ -3104,31 +3437,31 @@ def render_hero():
           </div>
           <div class="edm-water-art">
             <div
-              class="edm-homepage-illustration edm-clear-flow-figure"
+              class="edm-homepage-illustration edm-monitor-cutaway"
               role="img"
-              aria-label="Heavy rainfall and road runoff enter a combined sewer. When the pipe reaches capacity, moving overflow water leaves through an outlet and enters the receiving water."
+              aria-label="Professional cutaway illustration of the inside of a sewer system, showing EDM monitors, water-level probes, moving flow, an overflow chamber and a monitored outfall."
             >
-              <div class="edm-flow-path-tag">Flow path: rain → sewer → overflow → river</div>
-              <div class="edm-clear-cloud"></div>
-              <span class="edm-clear-rain r1"></span>
-              <span class="edm-clear-rain r2"></span>
-              <span class="edm-clear-rain r3"></span>
-              <span class="edm-clear-rain r4"></span>
-              <div class="edm-clear-house"><span class="edm-clear-window"></span></div>
-              <div class="edm-clear-drain"></div>
-              <div class="edm-clear-connector house"></div>
-              <div class="edm-clear-connector drain"></div>
-              <div class="edm-clear-main-pipe"><span class="edm-clear-main-water"></span></div>
-              <div class="edm-clear-chamber"></div>
-              <div class="edm-clear-outfall"></div>
-              <div class="edm-clear-river"><span></span><span></span><span></span></div>
+              <div class="edm-monitor-title">Inside the sewer system: EDM monitoring</div>
+              <div class="edm-monitor-ground"></div>
+              <div class="edm-monitor-shaft left"></div>
+              <div class="edm-monitor-shaft right"></div>
+              <div class="edm-monitor-ruler"></div>
+              <div class="edm-monitor-waterline"></div>
+              <div class="edm-monitor-signal one"></div>
+              <div class="edm-monitor-signal two"></div>
+              <div class="edm-monitor-device one"><span class="edm-monitor-screen"></span></div>
+              <div class="edm-monitor-device two"><span class="edm-monitor-screen"></span></div>
+              <div class="edm-monitor-probe one"></div>
+              <div class="edm-monitor-probe two"></div>
+              <div class="edm-monitor-overflow"></div>
+              <div class="edm-monitor-alert"></div>
 
-              <div class="edm-clear-label rainfall"><strong>Heavy rainfall</strong><span>more surface runoff</span></div>
-              <div class="edm-clear-label source"><strong>Homes and roads</strong><span>rain and wastewater enter drains</span></div>
-              <div class="edm-clear-label sewer"><strong>Combined sewer</strong><span>one pipe carries both flows</span></div>
-              <div class="edm-clear-label capacity"><strong>Capacity limit</strong><span>water level rises</span></div>
-              <div class="edm-clear-label outlet"><strong>Overflow outlet</strong><span>excess flow released</span></div>
-              <div class="edm-clear-label river"><strong>Receiving water</strong><span>river, stream or coast</span></div>
+              <div class="edm-monitor-label inflow"><strong>Incoming flow</strong><span>rainwater and wastewater enter the tunnel</span></div>
+              <div class="edm-monitor-label device"><strong>EDM monitor</strong><span>records when flow reaches spill conditions</span></div>
+              <div class="edm-monitor-label level"><strong>Water level</strong><span>sensor tracks rising depth</span></div>
+              <div class="edm-monitor-label chamber"><strong>Overflow chamber</strong><span>capacity pressure is checked here</span></div>
+              <div class="edm-monitor-label signal"><strong>Live signal</strong><span>data sent for evidence and review</span></div>
+              <div class="edm-monitor-label outlet"><strong>Monitored outfall</strong><span>overflow route to receiving water</span></div>
             </div>
           </div>
         </section>
