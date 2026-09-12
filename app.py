@@ -16,7 +16,7 @@ from folium.plugins import FastMarkerCluster, Fullscreen, HeatMap, MeasureContro
 from streamlit_folium import st_folium
 
 
-DASHBOARD_RELEASE = "2026-09-13-edm-monitor-cutaway-illustration-v23"
+DASHBOARD_RELEASE = "2026-09-13-professional-sewer-system-illustration-v24"
 HOMEPAGE_ILLUSTRATION_DATA_URI = (
     "data:image/png;base64,"
     "iVBORw0KGgoAAAANSUhEUgAAAMsAAACeCAYAAACcuP53AAAAAXNSR0IArs4c6QAAAARnQU1BAACxjwv8YQUAAAAJcEhZcwAAEnQAABJ0Ad5mH3gAAP+lSURB"
@@ -977,6 +977,7 @@ AUDITED_COMPANY_ANNUAL_SPILLS = {
 # Compatibility markers for earlier Colab installer cells. These do not change
 # the dashboard release; they only allow an older validator to accept this file.
 LEGACY_INSTALLER_RELEASE_MARKERS = (
+    "2026-09-13-professional-sewer-system-illustration-v24",
     "2026-09-13-edm-monitor-cutaway-illustration-v23",
     "2026-09-12-animated-homepage-illustration-v22",
     "2026-09-09-complete-2021-2025-dashboard-v20",
@@ -1148,10 +1149,10 @@ st.markdown(
         position: relative;
         overflow: hidden;
         display: grid;
-        grid-template-columns: minmax(0, 1.1fr) minmax(360px, 0.9fr);
+        grid-template-columns: minmax(320px, 0.78fr) minmax(520px, 1.22fr);
         gap: 1.4rem;
         align-items: center;
-        min-height: 345px;
+        min-height: 500px;
         padding: 2rem 2.2rem;
         margin: 0.15rem 0 1.15rem;
         border: 1px solid rgba(61, 129, 118, 0.22);
@@ -1220,7 +1221,7 @@ st.markdown(
       }
 
       .edm-water-art {
-        min-height: 330px;
+        min-height: 450px;
         display: flex;
         align-items: center;
         justify-content: center;
@@ -1234,9 +1235,9 @@ st.markdown(
       .edm-homepage-illustration {
         display: block;
         width: 100%;
-        max-width: 560px;
-        height: 330px;
-        min-height: 300px;
+        max-width: 760px;
+        height: 430px;
+        min-height: 390px;
         object-fit: contain;
         border: 1px solid rgba(53,112,104,.18);
         border-radius: 22px;
@@ -1860,6 +1861,371 @@ st.markdown(
       @keyframes edmRingSignal {
         0% { transform: scale(.55); opacity: .62; }
         100% { transform: scale(1.4); opacity: 0; }
+      }
+
+      .edm-real-sewer {
+        position: relative;
+        overflow: hidden;
+        background:
+          linear-gradient(180deg, #F8FCFB 0 19%, #CADBD7 19% 29%, #9FB4AE 29% 100%);
+      }
+
+      .edm-real-sewer::before {
+        content: "";
+        position: absolute;
+        left: 36px;
+        right: 36px;
+        bottom: 34px;
+        height: 286px;
+        border: 14px solid #3F5551;
+        border-bottom-width: 22px;
+        border-radius: 250px 250px 34px 34px;
+        background:
+          radial-gradient(circle at 50% 0, rgba(255,255,255,.42), transparent 46%),
+          repeating-linear-gradient(90deg, rgba(255,255,255,.14) 0 5px, transparent 5px 80px),
+          linear-gradient(180deg, #DDE7E4 0 46%, #C3D0CB 46% 100%);
+        box-shadow:
+          inset 0 28px 42px rgba(255,255,255,.46),
+          inset 0 -42px 40px rgba(27,55,51,.28),
+          0 16px 28px rgba(34,82,75,.16);
+      }
+
+      .edm-real-sewer::after {
+        content: "";
+        position: absolute;
+        z-index: 8;
+        left: 66px;
+        right: 66px;
+        bottom: 62px;
+        height: 92px;
+        border-radius: 0 0 24px 24px;
+        background:
+          repeating-linear-gradient(112deg, #4EAFC7 0 22px, #C8F1F6 22px 38px),
+          linear-gradient(90deg, #5EB7CD, #347F94);
+        opacity: .94;
+        animation: edmRealSewerWater 2.2s linear infinite;
+      }
+
+      .edm-real-road {
+        position: absolute;
+        z-index: 3;
+        left: -4%;
+        right: -4%;
+        top: 82px;
+        height: 46px;
+        border-top: 6px solid #728883;
+        border-bottom: 5px solid #65736F;
+        background:
+          repeating-linear-gradient(90deg, transparent 0 42px, rgba(255,255,255,.62) 42px 78px, transparent 78px 150px),
+          #879895;
+      }
+
+      .edm-real-soil {
+        position: absolute;
+        z-index: 2;
+        left: -4%;
+        right: -4%;
+        top: 128px;
+        height: 92px;
+        background:
+          radial-gradient(circle at 12% 40%, rgba(94,75,53,.26) 0 4px, transparent 5px),
+          radial-gradient(circle at 32% 70%, rgba(94,75,53,.22) 0 5px, transparent 6px),
+          radial-gradient(circle at 59% 35%, rgba(94,75,53,.20) 0 5px, transparent 6px),
+          radial-gradient(circle at 78% 68%, rgba(94,75,53,.24) 0 4px, transparent 5px),
+          #A8B9B3;
+      }
+
+      .edm-real-manhole {
+        position: absolute;
+        z-index: 11;
+        top: 68px;
+        width: 88px;
+        height: 26px;
+        border: 5px solid #4A5E5B;
+        border-radius: 999px;
+        background: repeating-linear-gradient(90deg, #394B48 0 7px, #70827E 7px 13px);
+      }
+
+      .edm-real-manhole.left { left: 150px; }
+      .edm-real-manhole.right { right: 158px; }
+
+      .edm-real-shaft {
+        position: absolute;
+        z-index: 10;
+        top: 88px;
+        width: 68px;
+        height: 206px;
+        border: 8px solid #536A66;
+        border-radius: 26px 26px 8px 8px;
+        background:
+          repeating-linear-gradient(180deg, rgba(23,61,58,.28) 0 4px, transparent 4px 28px),
+          linear-gradient(180deg, #EEF4F2, #B8C7C3);
+      }
+
+      .edm-real-shaft.left { left: 160px; }
+      .edm-real-shaft.right { right: 168px; }
+
+      .edm-real-sidepipe {
+        position: absolute;
+        z-index: 12;
+        left: 360px;
+        top: 225px;
+        width: 230px;
+        height: 46px;
+        overflow: hidden;
+        border: 9px solid #4C625E;
+        border-radius: 25px;
+        background: #EEF4F2;
+        transform: rotate(15deg);
+        transform-origin: left center;
+      }
+
+      .edm-real-sidepipe::after {
+        content: "";
+        position: absolute;
+        inset: auto -32px 5px -32px;
+        height: 18px;
+        border-radius: 999px;
+        background: repeating-linear-gradient(108deg, #61BED2 0 16px, #D9F7FA 16px 29px);
+        animation: edmRealSewerWater 1.8s linear infinite;
+      }
+
+      .edm-real-ribs {
+        position: absolute;
+        z-index: 9;
+        left: 96px;
+        right: 116px;
+        bottom: 68px;
+        height: 244px;
+        pointer-events: none;
+      }
+
+      .edm-real-ribs span {
+        position: absolute;
+        top: 0;
+        bottom: 0;
+        width: 4px;
+        border-radius: 999px;
+        background: rgba(63,85,81,.34);
+        box-shadow: 0 0 0 1px rgba(255,255,255,.18);
+      }
+
+      .edm-real-ribs span:nth-child(1) { left: 11%; }
+      .edm-real-ribs span:nth-child(2) { left: 28%; }
+      .edm-real-ribs span:nth-child(3) { left: 45%; }
+      .edm-real-ribs span:nth-child(4) { left: 62%; }
+      .edm-real-ribs span:nth-child(5) { left: 79%; }
+
+      .edm-real-walkway {
+        position: absolute;
+        z-index: 14;
+        left: 92px;
+        right: 192px;
+        bottom: 160px;
+        height: 15px;
+        border-radius: 999px;
+        background: #516965;
+        box-shadow: 0 9px 0 rgba(23,61,58,.28);
+      }
+
+      .edm-real-edm {
+        position: absolute;
+        z-index: 19;
+        width: 92px;
+        height: 62px;
+        border: 3px solid #245B61;
+        border-radius: 10px;
+        background: linear-gradient(180deg, #F8FCFA, #DCEFF4);
+        box-shadow: 0 10px 18px rgba(33,80,75,.18);
+      }
+
+      .edm-real-edm.one { left: 250px; bottom: 182px; }
+      .edm-real-edm.two { right: 258px; bottom: 196px; }
+
+      .edm-real-edm::before {
+        content: "EDM";
+        position: absolute;
+        left: 10px;
+        top: 8px;
+        color: #245B61;
+        font-size: 1rem;
+        font-weight: 950;
+        letter-spacing: .04em;
+      }
+
+      .edm-real-edm::after {
+        content: "";
+        position: absolute;
+        right: 11px;
+        top: 12px;
+        width: 12px;
+        height: 12px;
+        border-radius: 50%;
+        background: #4A9C7D;
+        animation: edmSignalPulse 1.8s ease-out infinite;
+      }
+
+      .edm-real-screen {
+        position: absolute;
+        left: 10px;
+        right: 10px;
+        bottom: 9px;
+        height: 18px;
+        overflow: hidden;
+        border-radius: 5px;
+        background: #173D3A;
+      }
+
+      .edm-real-screen::after {
+        content: "";
+        position: absolute;
+        inset: 4px 6px;
+        background: repeating-linear-gradient(90deg, #9DE7F0 0 7px, transparent 7px 14px);
+        animation: edmHomepageRiver 2.7s ease-in-out infinite;
+      }
+
+      .edm-real-probe {
+        position: absolute;
+        z-index: 18;
+        width: 5px;
+        height: 118px;
+        border-radius: 999px;
+        background: #245B61;
+      }
+
+      .edm-real-probe.one { left: 294px; bottom: 78px; }
+      .edm-real-probe.two { right: 303px; bottom: 78px; }
+
+      .edm-real-probe::after {
+        content: "";
+        position: absolute;
+        left: 50%;
+        bottom: -8px;
+        width: 17px;
+        height: 17px;
+        transform: translateX(-50%);
+        border: 3px solid #EAF8FC;
+        border-radius: 50%;
+        background: #68AFC2;
+        box-shadow: 0 0 0 8px rgba(104,175,194,.22);
+      }
+
+      .edm-real-level {
+        position: absolute;
+        z-index: 17;
+        left: 96px;
+        right: 205px;
+        bottom: 154px;
+        height: 3px;
+        border-radius: 999px;
+        background: repeating-linear-gradient(90deg, #FFFFFF 0 18px, transparent 18px 31px);
+        opacity: .86;
+        animation: edmHomepageRiver 3.1s ease-in-out infinite;
+      }
+
+      .edm-real-outfall {
+        position: absolute;
+        z-index: 11;
+        right: -26px;
+        bottom: 118px;
+        width: 195px;
+        height: 60px;
+        overflow: hidden;
+        border: 10px solid #465D59;
+        border-radius: 32px 0 0 32px;
+        background: #EEF4F2;
+      }
+
+      .edm-real-outfall::after {
+        content: "";
+        position: absolute;
+        inset: auto -38px 8px -38px;
+        height: 26px;
+        border-radius: 999px;
+        background: repeating-linear-gradient(110deg, #56BBD0 0 17px, #D9F7FA 17px 31px);
+        animation: edmRealSewerWater 1.7s linear infinite;
+      }
+
+      .edm-real-telemetry {
+        position: absolute;
+        z-index: 25;
+        right: 120px;
+        top: 28px;
+        width: 58px;
+        height: 58px;
+        border: 3px solid rgba(255,255,255,.9);
+        border-radius: 50%;
+        background: #4A9C7D;
+        box-shadow: 0 0 0 0 rgba(74,156,125,.5);
+        animation: edmSignalPulse 1.9s ease-out infinite;
+      }
+
+      .edm-real-telemetry::before {
+        content: "";
+        position: absolute;
+        left: 27px;
+        bottom: -86px;
+        width: 4px;
+        height: 86px;
+        background: #3F5551;
+      }
+
+      .edm-real-telemetry::after {
+        content: "";
+        position: absolute;
+        inset: 16px;
+        border: 4px solid #FFFFFF;
+        border-left-color: transparent;
+        border-bottom-color: transparent;
+        border-radius: 50%;
+        transform: rotate(-45deg);
+      }
+
+      .edm-real-label {
+        position: absolute;
+        z-index: 30;
+        display: inline-flex;
+        align-items: center;
+        min-height: 28px;
+        padding: 5px 9px;
+        border: 1px solid rgba(55,120,110,.18);
+        border-radius: 999px;
+        background: rgba(255,255,255,.92);
+        color: #244D49;
+        font-size: .67rem;
+        font-weight: 900;
+        line-height: 1;
+        box-shadow: 0 5px 14px rgba(34,82,75,.11);
+      }
+
+      .edm-real-label::after {
+        content: "";
+        position: absolute;
+        width: 38px;
+        height: 2px;
+        background: rgba(36,77,73,.62);
+      }
+
+      .edm-real-label.manhole { left: 104px; top: 25px; }
+      .edm-real-label.shaft { left: 236px; top: 112px; }
+      .edm-real-label.pipe { left: 70px; bottom: 196px; }
+      .edm-real-label.monitor { left: 252px; bottom: 254px; }
+      .edm-real-label.probe { left: 334px; bottom: 112px; }
+      .edm-real-label.level { left: 88px; bottom: 134px; }
+      .edm-real-label.outfall { right: 48px; bottom: 198px; }
+      .edm-real-label.signal { right: 72px; top: 94px; }
+
+      .edm-real-label.manhole::after { right: -31px; top: 15px; transform: rotate(18deg); }
+      .edm-real-label.shaft::after { left: -31px; top: 15px; transform: rotate(-8deg); }
+      .edm-real-label.pipe::after { right: -32px; top: 15px; transform: rotate(10deg); }
+      .edm-real-label.monitor::after { left: 24px; bottom: -20px; transform: rotate(64deg); }
+      .edm-real-label.probe::after { left: -31px; top: 13px; transform: rotate(-18deg); }
+      .edm-real-label.level::after { right: -32px; top: 14px; transform: rotate(-7deg); }
+      .edm-real-label.outfall::after { left: -31px; top: 14px; transform: rotate(-11deg); }
+      .edm-real-label.signal::after { left: -29px; top: 15px; transform: rotate(18deg); }
+
+      @keyframes edmRealSewerWater {
+        to { background-position: 56px 0; }
       }
 
       .edm-homepage-diagram-label {
@@ -3437,31 +3803,35 @@ def render_hero():
           </div>
           <div class="edm-water-art">
             <div
-              class="edm-homepage-illustration edm-monitor-cutaway"
+              class="edm-homepage-illustration edm-real-sewer"
               role="img"
-              aria-label="Professional cutaway illustration of the inside of a sewer system, showing EDM monitors, water-level probes, moving flow, an overflow chamber and a monitored outfall."
+              aria-label="Large professional cutaway illustration of an underground sewer system with manholes, sewer tunnel, side pipe, EDM monitors, level probes, moving water and outfall."
             >
-              <div class="edm-monitor-title">Inside the sewer system: EDM monitoring</div>
-              <div class="edm-monitor-ground"></div>
-              <div class="edm-monitor-shaft left"></div>
-              <div class="edm-monitor-shaft right"></div>
-              <div class="edm-monitor-ruler"></div>
-              <div class="edm-monitor-waterline"></div>
-              <div class="edm-monitor-signal one"></div>
-              <div class="edm-monitor-signal two"></div>
-              <div class="edm-monitor-device one"><span class="edm-monitor-screen"></span></div>
-              <div class="edm-monitor-device two"><span class="edm-monitor-screen"></span></div>
-              <div class="edm-monitor-probe one"></div>
-              <div class="edm-monitor-probe two"></div>
-              <div class="edm-monitor-overflow"></div>
-              <div class="edm-monitor-alert"></div>
+              <div class="edm-real-road"></div>
+              <div class="edm-real-soil"></div>
+              <div class="edm-real-manhole left"></div>
+              <div class="edm-real-manhole right"></div>
+              <div class="edm-real-shaft left"></div>
+              <div class="edm-real-shaft right"></div>
+              <div class="edm-real-ribs"><span></span><span></span><span></span><span></span><span></span></div>
+              <div class="edm-real-walkway"></div>
+              <div class="edm-real-sidepipe"></div>
+              <div class="edm-real-level"></div>
+              <div class="edm-real-edm one"><span class="edm-real-screen"></span></div>
+              <div class="edm-real-edm two"><span class="edm-real-screen"></span></div>
+              <div class="edm-real-probe one"></div>
+              <div class="edm-real-probe two"></div>
+              <div class="edm-real-outfall"></div>
+              <div class="edm-real-telemetry"></div>
 
-              <div class="edm-monitor-label inflow"><strong>Incoming flow</strong><span>rainwater and wastewater enter the tunnel</span></div>
-              <div class="edm-monitor-label device"><strong>EDM monitor</strong><span>records when flow reaches spill conditions</span></div>
-              <div class="edm-monitor-label level"><strong>Water level</strong><span>sensor tracks rising depth</span></div>
-              <div class="edm-monitor-label chamber"><strong>Overflow chamber</strong><span>capacity pressure is checked here</span></div>
-              <div class="edm-monitor-label signal"><strong>Live signal</strong><span>data sent for evidence and review</span></div>
-              <div class="edm-monitor-label outlet"><strong>Monitored outfall</strong><span>overflow route to receiving water</span></div>
+              <span class="edm-real-label manhole">manhole cover</span>
+              <span class="edm-real-label shaft">access shaft</span>
+              <span class="edm-real-label pipe">sewer tunnel</span>
+              <span class="edm-real-label monitor">EDM monitor</span>
+              <span class="edm-real-label probe">level probe</span>
+              <span class="edm-real-label level">water level</span>
+              <span class="edm-real-label outfall">overflow outfall</span>
+              <span class="edm-real-label signal">data signal</span>
             </div>
           </div>
         </section>
