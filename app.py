@@ -16,7 +16,7 @@ from folium.plugins import FastMarkerCluster, Fullscreen, HeatMap, MeasureContro
 from streamlit_folium import st_folium
 
 
-DASHBOARD_RELEASE = "2026-09-10-spill-ranking-accuracy-v21"
+DASHBOARD_RELEASE = "2026-09-12-animated-homepage-illustration-v22"
 HOMEPAGE_ILLUSTRATION_DATA_URI = (
     "data:image/png;base64,"
     "iVBORw0KGgoAAAANSUhEUgAAAMsAAACeCAYAAACcuP53AAAAAXNSR0IArs4c6QAAAARnQU1BAACxjwv8YQUAAAAJcEhZcwAAEnQAABJ0Ad5mH3gAAP+lSURB"
@@ -977,6 +977,7 @@ AUDITED_COMPANY_ANNUAL_SPILLS = {
 # Compatibility markers for earlier Colab installer cells. These do not change
 # the dashboard release; they only allow an older validator to accept this file.
 LEGACY_INSTALLER_RELEASE_MARKERS = (
+    "2026-09-12-animated-homepage-illustration-v22",
     "2026-09-09-complete-2021-2025-dashboard-v20",
     "2026-09-08-homepage-priority-sections-v19",
     "2026-09-07-priority-2025-persistence-v18",
@@ -1232,14 +1233,90 @@ st.markdown(
       .edm-homepage-illustration {
         display: block;
         width: 100%;
-        max-width: 520px;
+        max-width: 560px;
         height: auto;
-        max-height: 330px;
         object-fit: contain;
         border: 1px solid rgba(53,112,104,.18);
         border-radius: 22px;
         background: #EAF8FC;
         box-shadow: 0 14px 32px rgba(34,82,75,.16);
+      }
+
+      .edm-homepage-diagram-label {
+        fill: rgba(23,61,58,.94);
+        stroke: rgba(255,255,255,.82);
+        stroke-width: 1.4;
+      }
+
+      .edm-homepage-diagram-title {
+        fill: #FFFFFF;
+        font-size: 19px;
+        font-weight: 850;
+      }
+
+      .edm-homepage-diagram-note {
+        fill: #EAF8FC;
+        font-size: 13px;
+        font-weight: 650;
+      }
+
+      .edm-homepage-leader {
+        fill: none;
+        stroke: #173D3A;
+        stroke-width: 2.6;
+        stroke-linecap: round;
+        stroke-linejoin: round;
+        opacity: .72;
+      }
+
+      .edm-homepage-water {
+        stroke-dasharray: 22 15;
+        animation: edmHomepageWater 2.1s linear infinite;
+      }
+
+      .edm-homepage-river-wave {
+        animation: edmHomepageRiver 4.2s ease-in-out infinite;
+        transform-origin: center;
+      }
+
+      .edm-homepage-rain {
+        animation: edmHomepageRain 1.35s linear infinite;
+      }
+
+      .edm-homepage-rain:nth-child(2n) { animation-delay: -.42s; }
+      .edm-homepage-rain:nth-child(3n) { animation-delay: -.82s; }
+
+      .edm-homepage-overflow {
+        animation: edmHomepagePulse 1.8s ease-in-out infinite;
+      }
+
+      .edm-homepage-capacity {
+        animation: edmHomepageCapacity 3.6s ease-in-out infinite;
+      }
+
+      @keyframes edmHomepageWater {
+        to { stroke-dashoffset: -74; }
+      }
+
+      @keyframes edmHomepageRiver {
+        0%, 100% { transform: translateX(-7px); }
+        50% { transform: translateX(9px); }
+      }
+
+      @keyframes edmHomepageRain {
+        0% { transform: translateY(-24px); opacity: 0; }
+        18% { opacity: 1; }
+        100% { transform: translateY(82px); opacity: 0; }
+      }
+
+      @keyframes edmHomepagePulse {
+        0%, 100% { opacity: .56; }
+        50% { opacity: 1; }
+      }
+
+      @keyframes edmHomepageCapacity {
+        0%, 100% { transform: translateY(8px); }
+        50% { transform: translateY(-10px); }
       }
 
       .edm-sewer-diagram {
@@ -2739,11 +2816,143 @@ def render_hero():
             </div>
           </div>
           <div class="edm-water-art">
-            <img
+            <svg
               class="edm-homepage-illustration"
-              src="{HOMEPAGE_ILLUSTRATION_DATA_URI}"
-              alt="Illustration showing heavy rainfall, urban growth, groundwater infiltration, limited sewer capacity, ageing infrastructure and blockages contributing to overflow pressure."
+              viewBox="0 0 820 520"
+              role="img"
+              aria-labelledby="homepage-diagram-title homepage-diagram-desc"
             >
+              <title id="homepage-diagram-title">Clear animated diagram of storm overflow pressure</title>
+              <desc id="homepage-diagram-desc">Heavy rainfall runs from homes and road drains into a combined sewer. When the pipe reaches capacity, moving overflow water leaves through an outlet and enters the receiving water.</desc>
+              <defs>
+                <linearGradient id="homepage-sky" x1="0" x2="0" y1="0" y2="1">
+                  <stop offset="0" stop-color="#F9FDFC"/>
+                  <stop offset="1" stop-color="#DFF1F3"/>
+                </linearGradient>
+                <linearGradient id="homepage-ground" x1="0" x2="1" y1="0" y2="1">
+                  <stop offset="0" stop-color="#DCEFE8"/>
+                  <stop offset="1" stop-color="#BEDBD4"/>
+                </linearGradient>
+                <linearGradient id="homepage-river" x1="0" x2="1" y1="0" y2="0">
+                  <stop offset="0" stop-color="#8CD1DE"/>
+                  <stop offset=".62" stop-color="#65B6CA"/>
+                  <stop offset="1" stop-color="#3B91AB"/>
+                </linearGradient>
+                <clipPath id="homepage-main-pipe-clip">
+                  <rect x="128" y="342" width="348" height="48" rx="24"/>
+                </clipPath>
+                <clipPath id="homepage-river-clip">
+                  <path d="M552 292 C628 266 696 277 820 250 L820 520 L522 520 C493 445 496 344 552 292 Z"/>
+                </clipPath>
+              </defs>
+
+              <rect width="820" height="520" rx="22" fill="url(#homepage-sky)"/>
+              <path d="M0 270 C132 246 246 252 371 275 C485 296 571 293 665 271 C728 256 773 252 820 260 L820 520 L0 520 Z" fill="url(#homepage-ground)"/>
+
+              <g opacity=".95">
+                <ellipse cx="590" cy="83" rx="72" ry="28" fill="#B8C9D2"/>
+                <ellipse cx="546" cy="91" rx="48" ry="25" fill="#A9BBC6"/>
+                <ellipse cx="635" cy="93" rx="50" ry="26" fill="#A9BBC6"/>
+                <ellipse cx="592" cy="105" rx="98" ry="25" fill="#98ACB7"/>
+              </g>
+
+              <g stroke="#68AFC2" stroke-width="5" stroke-linecap="round">
+                <line class="edm-homepage-rain" x1="525" y1="125" x2="506" y2="163"/>
+                <line class="edm-homepage-rain" x1="575" y1="122" x2="556" y2="160"/>
+                <line class="edm-homepage-rain" x1="626" y1="126" x2="607" y2="164"/>
+                <line class="edm-homepage-rain" x1="676" y1="133" x2="657" y2="171"/>
+                <line class="edm-homepage-rain" x1="545" y1="148" x2="526" y2="186"/>
+                <line class="edm-homepage-rain" x1="610" y1="150" x2="591" y2="188"/>
+              </g>
+
+              <g>
+                <path d="M80 226 L172 154 L266 226 Z" fill="#6F8F8A"/>
+                <rect x="100" y="225" width="144" height="84" rx="7" fill="#FFF8E8" stroke="#7EA09A" stroke-width="3"/>
+                <rect x="126" y="260" width="34" height="49" rx="3" fill="#9FCAD2"/>
+                <rect x="181" y="255" width="38" height="30" rx="3" fill="#C9E5E9"/>
+                <path d="M100 225 L172 167 L244 225" fill="none" stroke="#405D59" stroke-width="8" stroke-linecap="round"/>
+                <path d="M240 298 C306 300 343 309 384 330" fill="none" stroke="#8ABBB3" stroke-width="8" stroke-linecap="round" stroke-dasharray="17 13"/>
+              </g>
+
+              <g>
+                <rect x="318" y="236" width="142" height="52" rx="7" fill="#CBD8D5" stroke="#829C98" stroke-width="3"/>
+                <rect x="323" y="221" width="132" height="20" rx="4" fill="#718784"/>
+                <circle cx="342" cy="263" r="8" fill="#809A95"/>
+                <circle cx="377" cy="263" r="8" fill="#809A95"/>
+                <circle cx="412" cy="263" r="8" fill="#809A95"/>
+                <path d="M383 287 L383 343" stroke="#738986" stroke-width="13" stroke-linecap="round"/>
+              </g>
+
+              <rect x="42" y="305" width="500" height="122" rx="16" fill="#C9DED8"/>
+              <path d="M60 353 L526 353" stroke="#92AAA5" stroke-width="2" stroke-dasharray="8 10"/>
+
+              <g>
+                <rect x="128" y="342" width="348" height="48" rx="24" fill="#566461" stroke="#334340" stroke-width="4"/>
+                <g clip-path="url(#homepage-main-pipe-clip)">
+                  <rect class="edm-homepage-capacity" x="126" y="364" width="352" height="38" fill="#68AFC2" opacity=".9"/>
+                  <path class="edm-homepage-water" d="M112 366 C148 350 181 382 217 366 C253 350 286 382 322 366 C358 350 391 382 427 366 C463 350 496 382 532 366" fill="none" stroke="#E8FBFD" stroke-width="6" opacity=".98"/>
+                </g>
+              </g>
+
+              <g>
+                <path d="M468 366 C514 361 544 345 570 316" fill="none" stroke="#546260" stroke-width="32" stroke-linecap="round"/>
+                <path class="edm-homepage-water edm-homepage-overflow" d="M462 366 C514 361 544 345 574 311" fill="none" stroke="#6BC4DB" stroke-width="14" stroke-linecap="round"/>
+                <circle cx="471" cy="366" r="27" fill="none" stroke="#334340" stroke-width="5"/>
+              </g>
+
+              <g clip-path="url(#homepage-river-clip)">
+                <rect x="506" y="244" width="344" height="286" fill="url(#homepage-river)"/>
+                <path class="edm-homepage-river-wave" d="M500 333 C558 310 603 354 661 331 C719 308 763 354 821 332 C856 319 880 325 906 338" fill="none" stroke="#ECFFFF" stroke-width="8" opacity=".78"/>
+                <path class="edm-homepage-river-wave" d="M495 396 C553 373 599 418 657 394 C715 371 760 417 818 395 C855 382 880 388 906 402" fill="none" stroke="#B8EDF4" stroke-width="7" opacity=".74"/>
+                <path class="edm-homepage-river-wave" d="M510 456 C568 433 614 478 672 454 C730 431 775 477 833 455 C865 444 887 449 910 462" fill="none" stroke="#E7FBFC" stroke-width="6" opacity=".66"/>
+              </g>
+              <path d="M552 292 C628 266 696 277 820 250" fill="none" stroke="#2F8AAA" stroke-width="4" opacity=".56"/>
+
+              <g>
+                <rect class="edm-homepage-diagram-label" x="476" y="34" width="174" height="58" rx="10"/>
+                <text class="edm-homepage-diagram-title" x="493" y="60">Heavy rainfall</text>
+                <text class="edm-homepage-diagram-note" x="493" y="79">more water enters drains</text>
+                <path class="edm-homepage-leader" d="M563 92 L588 124"/>
+              </g>
+
+              <g>
+                <rect class="edm-homepage-diagram-label" x="48" y="116" width="178" height="58" rx="10"/>
+                <text class="edm-homepage-diagram-title" x="65" y="142">Homes and roads</text>
+                <text class="edm-homepage-diagram-note" x="65" y="161">runoff plus wastewater</text>
+                <path class="edm-homepage-leader" d="M140 174 L167 225"/>
+              </g>
+
+              <g>
+                <rect class="edm-homepage-diagram-label" x="275" y="144" width="188" height="58" rx="10"/>
+                <text class="edm-homepage-diagram-title" x="292" y="170">Combined sewer</text>
+                <text class="edm-homepage-diagram-note" x="292" y="189">one pipe carries both</text>
+                <path class="edm-homepage-leader" d="M371 202 L383 342"/>
+              </g>
+
+              <g>
+                <rect class="edm-homepage-diagram-label" x="122" y="430" width="164" height="58" rx="10"/>
+                <text class="edm-homepage-diagram-title" x="140" y="456">Capacity limit</text>
+                <text class="edm-homepage-diagram-note" x="140" y="475">water level rises</text>
+                <path class="edm-homepage-leader" d="M238 430 L330 384"/>
+              </g>
+
+              <g>
+                <rect class="edm-homepage-diagram-label" x="500" y="202" width="176" height="58" rx="10"/>
+                <text class="edm-homepage-diagram-title" x="518" y="228">Overflow outlet</text>
+                <text class="edm-homepage-diagram-note" x="518" y="247">excess flow released</text>
+                <path class="edm-homepage-leader" d="M575 260 L571 314"/>
+              </g>
+
+              <g>
+                <rect class="edm-homepage-diagram-label" x="624" y="330" width="170" height="58" rx="10"/>
+                <text class="edm-homepage-diagram-title" x="641" y="356">Receiving water</text>
+                <text class="edm-homepage-diagram-note" x="641" y="375">river, stream or coast</text>
+                <path class="edm-homepage-leader" d="M670 388 L638 420"/>
+              </g>
+
+              <rect x="35" y="34" width="294" height="44" rx="22" fill="rgba(255,255,255,.76)" stroke="#CAE0DC"/>
+              <text x="56" y="62" fill="#365F5B" font-size="17" font-weight="850">Flow path: rain → sewer → overflow → river</text>
+            </svg>
           </div>
         </section>
         """,
