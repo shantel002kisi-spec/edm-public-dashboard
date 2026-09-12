@@ -1234,7 +1234,8 @@ st.markdown(
         display: block;
         width: 100%;
         max-width: 560px;
-        height: auto;
+        height: 330px;
+        min-height: 300px;
         object-fit: contain;
         border: 1px solid rgba(53,112,104,.18);
         border-radius: 22px;
@@ -2818,7 +2819,10 @@ def render_hero():
           <div class="edm-water-art">
             <svg
               class="edm-homepage-illustration"
+              width="560"
+              height="330"
               viewBox="0 0 820 520"
+              preserveAspectRatio="xMidYMid meet"
               role="img"
               aria-labelledby="homepage-diagram-title homepage-diagram-desc"
             >
