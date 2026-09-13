@@ -42741,6 +42741,10 @@ def add_colab_map_panels(
       .edm-map-panel label {{display:block;margin:5px 0 2px;font-weight:700;color:#365F5B;}}
       .edm-map-panel input,.edm-map-panel select {{width:100%;box-sizing:border-box;padding:7px 8px;
         border:1px solid #B7CEC8;border-radius:8px;background:#FFFFFF;color:#173D3A;font-size:12px;}}
+      .edm-search-row {{display:grid;grid-template-columns:minmax(0,1fr) 78px;gap:6px;align-items:center;}}
+      #edm-place-search-button {{height:34px;border:1px solid #8FBDB2;border-radius:8px;background:#DDEFF4;
+        color:#173D3A;font-size:12px;font-weight:800;cursor:pointer;}}
+      #edm-place-search-button:hover,#edm-place-search-button:focus {{background:#CFEAE3;}}
       .edm-map-filter-row {{display:grid;grid-template-columns:1fr 1fr;gap:6px;}}
       .edm-year-filter {{display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:4px;margin-top:3px;}}
       .edm-year-filter label {{display:flex;align-items:center;justify-content:center;gap:3px;margin:0;
@@ -42807,7 +42811,10 @@ def add_colab_map_panels(
         <div style="color:#A84B4B;">&#9650; High<br>{int(risk_counts['High']):,}</div>
       </div>
       <label for="edm-place-search">Find a town or city</label>
-      <input id="edm-place-search" type="search" placeholder="Type a name or browse below">
+      <div class="edm-search-row">
+        <input id="edm-place-search" type="search" placeholder="Type a town or city">
+        <button id="edm-place-search-button" type="button">Search</button>
+      </div>
       <div class="edm-map-filter-row">
         <div><label for="edm-risk-filter">Risk</label>
         <select id="edm-risk-filter"><option value="">All risks</option><option>High</option><option>Medium</option><option>Low</option></select></div>
@@ -43020,6 +43027,9 @@ def add_colab_map_panels(
     var companySelect=document.getElementById('edm-company-filter');
     Array.from(new Set(edmSites.map(function(s){{return s.company;}}))).sort().forEach(function(company){{var o=document.createElement('option');o.value=company;o.textContent=company;companySelect.appendChild(o);}});
     document.getElementById('edm-place-search').addEventListener('input',function(){{edmApplyCompanyMapFilter();}});
+    document.getElementById('edm-place-search').addEventListener('keydown',function(event){{if(event.key==='Enter'){{event.preventDefault();edmApplyCompanyMapFilter();}}}});
+    var searchButton=document.getElementById('edm-place-search-button');
+    if(searchButton)searchButton.addEventListener('click',function(){{edmApplyCompanyMapFilter();}});
     var yearFilter=document.getElementById('edm-year-filter');
     if(yearFilter)yearFilter.querySelectorAll('input[type="checkbox"]').forEach(function(input){{
       input.addEventListener('change',function(){{edmApplyCompanyMapFilter();}});
@@ -43046,17 +43056,29 @@ def add_colab_map_panels(
         folium.Element(
             f"<script>\n"
             "(function(){\n"
-            "  var edmStarted=false;\n"
             "  function edmStartMapPanels(){\n"
-            "    if(edmStarted)return;\n"
+            "    if(window.edmPanelsStarted)return;\n"
             f"    if(typeof L==='undefined'||typeof {map_name}==='undefined'||!document.getElementById('edm-place-search')||!document.getElementById('edm-risk-filter')||!document.getElementById('edm-company-filter')){{window.setTimeout(edmStartMapPanels,120);return;}}\n"
-            "    edmStarted=true;\n"
+            "    window.edmPanelsStarted=true;\n"
             + script
             + "\n  }\n"
             "  edmStartMapPanels();\n"
             "  window.addEventListener('load',edmStartMapPanels);\n"
             "})();\n"
             "</script>"
+        )
+    )
+    water_map.get_root().script.add_child(
+        folium.Element(
+            "(function(){\n"
+            "  function edmStartMapPanelsFromFolium(){\n"
+            "    if(window.edmPanelsStarted)return;\n"
+            "    if(!document.getElementById('edm-place-search')||!document.getElementById('edm-risk-filter')||!document.getElementById('edm-company-filter')){window.setTimeout(edmStartMapPanelsFromFolium,120);return;}\n"
+            "    window.edmPanelsStarted=true;\n"
+            + script
+            + "\n  }\n"
+            "  edmStartMapPanelsFromFolium();\n"
+            "})();"
         )
     )
 
