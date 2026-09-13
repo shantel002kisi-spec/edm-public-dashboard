@@ -42583,6 +42583,38 @@ def add_colab_map_panels(
             return fallback
         return str(value).strip()
 
+    def observed_years_for_row(row: pd.Series) -> list[str]:
+        """Return observed years with recorded evidence for this mapped site."""
+        years = set()
+        history = str(row.get("risk_history", ""))
+        years.update(
+            int(year)
+            for year in re.findall(
+                r"\b(20\d{2})\s*:\s*(?:Low|Medium|High)\b",
+                history,
+                flags=re.IGNORECASE,
+            )
+        )
+        for year in OBSERVED_YEARS:
+            annual_columns = [
+                f"place_counted_spills_{year}",
+                f"counted_spills_{year}",
+                f"duration_hours_{year}",
+                f"spill_duration_hours_{year}",
+                f"risk_{year}",
+                f"risk_category_{year}",
+                f"period_risk_category_{year}",
+            ]
+            for column in annual_columns:
+                if column in row.index:
+                    value = row.get(column)
+                    if pd.notna(value) and str(value).strip() not in {"", "Not available", "nan"}:
+                        years.add(int(year))
+                        break
+        if not years:
+            years.update(OBSERVED_YEARS)
+        return [str(year) for year in sorted(years) if int(year) in OBSERVED_YEARS]
+
     place_column = first_existing(plotting, ["official_place_name", "town_or_city"])
     company_column = first_existing(plotting, ["water_company_name", "company"])
     site_column = first_existing(
@@ -42632,9 +42664,11 @@ def add_colab_map_panels(
     for _, row in company_ranking.head(12).iterrows():
         company_name = str(row[company_column])
         ranking_detail = (
-            f'<div><span class="risk-high">&#9650; {int(row.get("High", 0)):,}</span>'
+            f'<div class="edm-risk-counts">'
+            f'<span class="risk-high">&#9650; {int(row.get("High", 0)):,}</span>'
             f'<span class="risk-medium">&#9670; {int(row.get("Medium", 0)):,}</span>'
-            f'<span class="risk-low">&#9679; {int(row.get("Low", 0)):,}</span></div>'
+            f'<span class="risk-low">&#9679; {int(row.get("Low", 0)):,}</span>'
+            f'</div>'
         )
         ranking_action = f"View {OBSERVED_PERIOD} spill trend"
         ranking_rows.append(
@@ -42664,6 +42698,19 @@ def add_colab_map_panels(
         if prediction
         else "Select a company to show only that water company's clusters on the map."
     )
+    year_filter = ""
+    if not prediction:
+        year_options = "".join(
+            f'<label><input type="checkbox" value="{year}"> {year}</label>'
+            for year in OBSERVED_YEARS
+        )
+        year_filter = f"""
+      <label>Observed years</label>
+      <div id="edm-year-filter" class="edm-year-filter" aria-label="Choose observed years">
+        {year_options}
+      </div>
+      <div class="edm-year-note">Leave all years unticked to show 2021-2025 together.</div>
+        """
     panels = f"""
     <style>
       .edm-map-panel {{position:fixed;top:12px;z-index:9999;width:300px;max-height:86vh;
@@ -42695,6 +42742,12 @@ def add_colab_map_panels(
       .edm-map-panel input,.edm-map-panel select {{width:100%;box-sizing:border-box;padding:7px 8px;
         border:1px solid #B7CEC8;border-radius:8px;background:#FFFFFF;color:#173D3A;font-size:12px;}}
       .edm-map-filter-row {{display:grid;grid-template-columns:1fr 1fr;gap:6px;}}
+      .edm-year-filter {{display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:4px;margin-top:3px;}}
+      .edm-year-filter label {{display:flex;align-items:center;justify-content:center;gap:3px;margin:0;
+        padding:5px 2px;border:1px solid #C8DDD7;border-radius:8px;background:#FFFFFF;color:#365F5B;
+        font-size:11px;font-weight:800;cursor:pointer;}}
+      .edm-year-filter input {{width:auto;margin:0;accent-color:#4A9C7D;}}
+      .edm-year-note {{margin:3px 0 4px;color:#5D7772;font-size:10px;line-height:1.3;}}
       #edm-place-count {{padding:6px 1px 3px;font-weight:700;}}
       #edm-place-results {{flex:1;min-height:230px;overflow:auto;margin-top:2px;padding-right:2px;
         border-top:1px solid #D4E5DF;}}
@@ -42715,9 +42768,11 @@ def add_colab_map_panels(
         box-shadow:0 4px 12px rgba(35,89,81,.17);}}
       .edm-map-rank-number {{display:inline-flex;align-items:center;justify-content:center;width:23px;
         height:23px;margin-right:5px;border-radius:50%;background:#DDEFF4;color:#245B61;font-weight:800;}}
-      .edm-map-rank div {{margin:3px 0 0 29px;font-size:11px;word-spacing:5px;}}
+      .edm-risk-counts {{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:4px;margin:6px 0 0 29px;font-size:11px;word-spacing:normal;}}
+      .edm-risk-counts span {{display:flex;align-items:center;justify-content:center;gap:3px;min-width:0;
+        padding:4px 2px;border-radius:7px;background:#F8FCFA;font-weight:800;white-space:nowrap;}}
       .edm-map-rank .edm-spill-total {{word-spacing:normal;color:#A84B4B;font-size:12px;}}
-      .edm-map-rank small {{display:block;margin:4px 0 0 29px;color:#47716A;font-weight:700;}}
+      .edm-map-rank small {{display:block;margin:6px 0 0 29px;color:#47716A;font-weight:700;}}
       #edm-company-trend {{display:none;margin:7px 0 9px;padding:9px;border:1px solid #BFD8D0;
         border-radius:11px;background:linear-gradient(160deg,#F7FCFA,#EAF6F0);}}
       #edm-company-trend h4 {{margin:0 0 3px;font-size:13px;color:#173D3A;}}
@@ -42759,6 +42814,7 @@ def add_colab_map_panels(
         <div><label for="edm-company-filter">Water company</label>
         <select id="edm-company-filter"><option value="">All companies</option></select></div>
       </div>
+      {year_filter}
       <div id="edm-place-count" class="edm-place-detail">Loading the complete place list...</div>
       <div id="edm-place-results"></div>
     </aside>
@@ -42791,6 +42847,7 @@ def add_colab_map_panels(
                     f"{plain(row.get(site_column), 'Spill outlet') if site_column else 'Spill outlet'} · "
                     f"{plain(row.get(place_column), 'Place unavailable')}"
                 ),
+                "years": [] if prediction else observed_years_for_row(row),
                 "spills": (
                     "Model-generated 2026 risk"
                     if prediction
@@ -42861,12 +42918,31 @@ def add_colab_map_panels(
         '<div class="edm-place-detail" style="margin-top:5px">The 2021–2025 trend is recorded evidence; any 2026 category remains a forecast.</div>';
       root.scrollIntoView({{block:'nearest',behavior:'smooth'}});
     }}
-    function edmBuildCompanyLayerSites(){{
+    function edmSelectedYears(){{
+      var container=document.getElementById('edm-year-filter');
+      if(!container)return [];
+      return Array.from(container.querySelectorAll('input[type="checkbox"]:checked')).map(function(input){{return input.value;}});
+    }}
+    function edmFilterQuery(){{
+      var search=document.getElementById('edm-place-search');
+      return search ? search.value.toLowerCase().trim() : '';
+    }}
+    function edmSiteMatchesFilters(site){{
+      var query=edmFilterQuery();
       var company=document.getElementById('edm-company-filter').value;
       var risk=document.getElementById('edm-risk-filter').value;
-      return edmSites.filter(function(site){{
-        return (!company||site.company===company)&&(!risk||site.risk===risk);
-      }});
+      var years=edmSelectedYears();
+      if(company&&site.company!==company)return false;
+      if(risk&&site.risk!==risk)return false;
+      if(query&&site.place.toLowerCase().indexOf(query)===-1)return false;
+      if(years.length){{
+        var siteYears=site.years||[];
+        if(!years.some(function(year){{return siteYears.indexOf(year)!==-1;}}))return false;
+      }}
+      return true;
+    }}
+    function edmBuildCompanyLayerSites(){{
+      return edmSites.filter(edmSiteMatchesFilters);
     }}
     function edmMarkerForSite(site){{
       var colours={{Low:'#4A9C7D',Medium:'#E2A45C',High:'#D66565'}};
@@ -42890,7 +42966,8 @@ def add_colab_map_panels(
       edmSetActiveCompanyButton(selected);
       if(edmCompanyLayer){{edmMap.removeLayer(edmCompanyLayer);edmCompanyLayer=null;}}
       if(edmFocusMarker){{edmMap.removeLayer(edmFocusMarker);edmFocusMarker=null;}}
-      if(selected){{
+      var hasFilter=!!selected||!!document.getElementById('edm-risk-filter').value||!!edmFilterQuery()||edmSelectedYears().length>0;
+      if(hasFilter){{
         edmOriginalLayers.forEach(function(layer){{if(edmMap.hasLayer(layer))edmMap.removeLayer(layer);}});
         edmCompanyLayer=L.markerClusterGroup({{maxClusterRadius:35,disableClusteringAtZoom:11}});
         var sites=edmBuildCompanyLayerSites();
@@ -42906,13 +42983,9 @@ def add_colab_map_panels(
       edmRenderPlaces();
     }}
     function edmBuildPlaces(){{
-      var query=document.getElementById('edm-place-search').value.toLowerCase().trim();
-      var risk=document.getElementById('edm-risk-filter').value;
-      var company=document.getElementById('edm-company-filter').value;
       var groups=new Map();
       edmSites.forEach(function(site){{
-        if((risk&&site.risk!==risk)||(company&&site.company!==company))return;
-        if(query&&site.place.toLowerCase().indexOf(query)===-1)return;
+        if(!edmSiteMatchesFilters(site))return;
         if(!groups.has(site.place))groups.set(site.place,{{name:site.place,sites:[],companies:new Set(),high:0,medium:0,low:0,spills:site.spills}});
         var place=groups.get(site.place);place.sites.push(site);place.companies.add(site.company);
         if(site.risk==='High')place.high++;else if(site.risk==='Medium')place.medium++;else if(site.risk==='Low')place.low++;
@@ -42946,7 +43019,11 @@ def add_colab_map_panels(
     }}
     var companySelect=document.getElementById('edm-company-filter');
     Array.from(new Set(edmSites.map(function(s){{return s.company;}}))).sort().forEach(function(company){{var o=document.createElement('option');o.value=company;o.textContent=company;companySelect.appendChild(o);}});
-    document.getElementById('edm-place-search').addEventListener('input',edmRenderPlaces);
+    document.getElementById('edm-place-search').addEventListener('input',function(){{edmApplyCompanyMapFilter();}});
+    var yearFilter=document.getElementById('edm-year-filter');
+    if(yearFilter)yearFilter.querySelectorAll('input[type="checkbox"]').forEach(function(input){{
+      input.addEventListener('change',function(){{edmApplyCompanyMapFilter();}});
+    }});
     edmMap.eachLayer(function(layer){{if(!(layer instanceof L.TileLayer))edmOriginalLayers.push(layer);}});
     document.getElementById('edm-risk-filter').addEventListener('change',function(){{edmApplyCompanyMapFilter();}});
     document.getElementById('edm-company-filter').addEventListener('change',function(){{edmApplyCompanyMapFilter();}});
@@ -47370,3 +47447,4 @@ st.html(
     </div>
     """,
 )
+
