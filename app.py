@@ -17,7 +17,7 @@ from folium.plugins import FastMarkerCluster, Fullscreen, HeatMap, MeasureContro
 from streamlit_folium import st_folium
 
 
-DASHBOARD_RELEASE = "2026-09-13-upload-edm-returns-v26"
+DASHBOARD_RELEASE = "2026-09-14-upload-annual-return-sheets-v28"
 HOMEPAGE_ILLUSTRATION_DATA_URI = (
     "data:image/png;base64,"
     "iVBORw0KGgoAAAANSUhEUgAABogAAAOtCAIAAAA95HBeAABcQWNhQlgAAFxBanVtYgAAAB5qdW1kYzJwYQARABCAAACqADibcQNj"
@@ -41568,6 +41568,8 @@ UPLOAD_COLUMN_ALIASES = {
     "total_duration_hours": [
         "total_duration_hours",
         "Total Duration (hh:mm:ss) all spills prior to processing through 12-24h count method",
+        "Total Duration (hrs) all spills prior to processing through 12-24h count method",
+        "total duration hrs all spills prior to processing through 12-24h count method",
         "total duration",
         "duration hours",
         "spill duration hours",
@@ -41620,7 +41622,85 @@ def normalised_column_name(value) -> str:
     return re.sub(r"[^a-z0-9]+", "_", str(value).casefold()).strip("_")
 
 
-def resolve_upload_columns(frame: pd.DataFrame) -> dict[str, str]:
+
+def unique_upload_headers(values) -> list[str]:
+    """Build usable, unique column names from a detected annual-return header row."""
+
+    headers: list[str] = []
+    seen: dict[str, int] = {}
+    for position, value in enumerate(values):
+        if value is None or pd.isna(value) or str(value).strip() == "":
+            base = f"Unnamed column {position + 1}"
+        else:
+            base = re.sub(r"\s+", " ", str(value)).strip()
+        count = seen.get(base, 0) + 1
+        seen[base] = count
+        headers.append(base if count == 1 else f"{base} {count}")
+    return headers
+
+
+def upload_header_score(headers: list[str]) -> int:
+    """Score how well a row looks like the annual-return column header."""
+
+    available = {normalised_column_name(column) for column in headers}
+    score = 0
+    for key, aliases in UPLOAD_COLUMN_ALIASES.items():
+        if any(normalised_column_name(alias) in available for alias in aliases):
+            score += 4 if key in {
+                "water_company_name",
+                "reporting_year",
+                "counted_spills",
+                "total_duration_hours",
+            } else 1
+    return score
+
+
+def detect_upload_header_frame(raw: pd.DataFrame) -> tuple[pd.DataFrame, int]:
+    """Find the real header row in raw annual-return sheets with title rows."""
+
+    if raw.empty:
+        return raw, 0
+
+    best_row = 0
+    best_score = upload_header_score([str(column) for column in raw.columns])
+
+    rows_to_check = min(25, len(raw))
+    for row_number in range(rows_to_check):
+        headers = unique_upload_headers(raw.iloc[row_number].tolist())
+        score = upload_header_score(headers)
+        if score > best_score:
+            best_row = row_number
+            best_score = score
+
+    if best_score < 12:
+        return raw, 0
+
+    if best_row == 0 and best_score == upload_header_score([str(column) for column in raw.columns]):
+        prepared = raw.copy()
+        prepared.columns = unique_upload_headers(prepared.columns)
+        return prepared, 0
+
+    headers = unique_upload_headers(raw.iloc[best_row].tolist())
+    prepared = raw.iloc[best_row + 1 :].copy()
+    prepared.columns = headers
+    prepared = prepared.dropna(axis=1, how="all").dropna(axis=0, how="all")
+    return prepared.reset_index(drop=True), best_row + 1
+
+
+def infer_upload_year(*values) -> int | None:
+    """Find a reporting year in the uploaded file name or worksheet name."""
+
+    for value in values:
+        match = re.search(r"\b(20\d{2})\b", str(value))
+        if match:
+            return int(match.group(1))
+    return None
+
+
+def resolve_upload_columns(
+    frame: pd.DataFrame,
+    fallback_year: int | None = None,
+) -> dict[str, str]:
     """Match uploaded annual-return headings to the dashboard risk formula."""
 
     available = {normalised_column_name(column): column for column in frame.columns}
@@ -41634,10 +41714,11 @@ def resolve_upload_columns(frame: pd.DataFrame) -> dict[str, str]:
 
     required = {
         "water_company_name",
-        "reporting_year",
         "counted_spills",
         "total_duration_hours",
     }
+    if fallback_year is None:
+        required.add("reporting_year")
     missing = sorted(required.difference(resolved))
     if missing:
         readable = ", ".join(pretty(column) for column in missing)
@@ -41714,13 +41795,16 @@ def calculate_uploaded_risk_categories(frame: pd.DataFrame) -> pd.Series:
     return categories
 
 
-def prepare_uploaded_edm_returns(raw: pd.DataFrame) -> tuple[pd.DataFrame, dict[str, str]]:
+def prepare_uploaded_edm_returns(
+    raw: pd.DataFrame,
+    fallback_year: int | None = None,
+) -> tuple[pd.DataFrame, dict[str, str]]:
     """Clean uploaded EDM annual returns and calculate risk categories."""
 
     if raw.empty:
         raise ValueError("The uploaded annual-return file is empty.")
 
-    columns = resolve_upload_columns(raw)
+    columns = resolve_upload_columns(raw, fallback_year=fallback_year)
     result = pd.DataFrame(index=raw.index)
     result["source_row"] = np.arange(2, len(raw) + 2)
     result["water_company_name"] = (
@@ -41730,9 +41814,12 @@ def prepare_uploaded_edm_returns(raw: pd.DataFrame) -> tuple[pd.DataFrame, dict[
         .fillna("Unknown company")
         .replace("", "Unknown company")
     )
-    result["reporting_year"] = (
-        numeric_upload_series(raw[columns["reporting_year"]]).round().astype("Int64")
-    )
+    if "reporting_year" in columns:
+        result["reporting_year"] = (
+            numeric_upload_series(raw[columns["reporting_year"]]).round().astype("Int64")
+        )
+    else:
+        result["reporting_year"] = pd.Series(fallback_year, index=raw.index, dtype="Int64")
     result["counted_spills"] = numeric_upload_series(raw[columns["counted_spills"]])
     result["total_duration_hours"] = raw[columns["total_duration_hours"]].map(
         parse_duration_hours
@@ -47561,18 +47648,23 @@ elif page == "Upload EDM returns":
         try:
             suffix = Path(uploaded_return.name).suffix.casefold()
             if suffix == ".csv":
-                uploaded_raw = pd.read_csv(uploaded_return, low_memory=False)
+                raw_upload_frame = pd.read_csv(uploaded_return, header=None, low_memory=False)
                 selected_sheet = "CSV upload"
             else:
-                sheets = pd.read_excel(uploaded_return, sheet_name=None)
+                sheets = pd.read_excel(uploaded_return, sheet_name=None, header=None)
                 selected_sheet = st.selectbox(
                     "Worksheet to calculate",
                     list(sheets.keys()),
                     key="uploaded_edm_return_sheet",
                 )
-                uploaded_raw = sheets[selected_sheet]
+                raw_upload_frame = sheets[selected_sheet]
 
-            calculated_returns, matched_columns = prepare_uploaded_edm_returns(uploaded_raw)
+            uploaded_raw, detected_header_row = detect_upload_header_frame(raw_upload_frame)
+            fallback_year = infer_upload_year(selected_sheet, uploaded_return.name)
+            calculated_returns, matched_columns = prepare_uploaded_edm_returns(
+                uploaded_raw,
+                fallback_year=fallback_year,
+            )
         except Exception as error:
             st.error(f"The uploaded file could not be processed: {error}")
         else:
@@ -47586,7 +47678,12 @@ elif page == "Upload EDM returns":
             )
             issue_count = int(calculated_returns["quality_check"].ne("Ready").sum())
 
-            st.caption(f"Processed worksheet: {selected_sheet}")
+            caption_parts = [f"Processed worksheet: {selected_sheet}."]
+            if detected_header_row:
+                caption_parts.append(f"Header row detected at row {detected_header_row}.")
+            if fallback_year is not None and "reporting_year" not in matched_columns:
+                caption_parts.append(f"Reporting year inferred as {fallback_year}.")
+            st.caption(" ".join(caption_parts))
             metric_cards(
                 [
                     {
