@@ -43040,14 +43040,22 @@ def add_colab_map_panels(
     }});
     window.setTimeout(edmRenderPlaces,0);
     """
-    # streamlit-folium does not reliably emit custom code placed in
-    # ``root.script``. Add a real script element and wait until Leaflet loads.
+    # streamlit-folium can load the custom panel script before the Leaflet map
+    # variable exists, so retry until the map and controls are available.
     water_map.get_root().html.add_child(
         folium.Element(
-            "<script>\n"
-            "window.addEventListener('load', function(){\n"
+            f"<script>\n"
+            "(function(){\n"
+            "  var edmStarted=false;\n"
+            "  function edmStartMapPanels(){\n"
+            "    if(edmStarted)return;\n"
+            f"    if(typeof L==='undefined'||typeof {map_name}==='undefined'||!document.getElementById('edm-place-search')||!document.getElementById('edm-risk-filter')||!document.getElementById('edm-company-filter')){{window.setTimeout(edmStartMapPanels,120);return;}}\n"
+            "    edmStarted=true;\n"
             + script
-            + "\n});\n"
+            + "\n  }\n"
+            "  edmStartMapPanels();\n"
+            "  window.addEventListener('load',edmStartMapPanels);\n"
+            "})();\n"
             "</script>"
         )
     )
@@ -47447,4 +47455,5 @@ st.html(
     </div>
     """,
 )
+
 
