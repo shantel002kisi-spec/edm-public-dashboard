@@ -3,6 +3,7 @@ from __future__ import annotations
 import html
 import json
 import re
+from datetime import datetime, time, timedelta
 from pathlib import Path
 
 import folium
@@ -16,7 +17,7 @@ from folium.plugins import FastMarkerCluster, Fullscreen, HeatMap, MeasureContro
 from streamlit_folium import st_folium
 
 
-DASHBOARD_RELEASE = "2026-09-13-realistic-sewer-water-illustration-v25"
+DASHBOARD_RELEASE = "2026-09-13-upload-edm-returns-v26"
 HOMEPAGE_ILLUSTRATION_DATA_URI = (
     "data:image/png;base64,"
     "iVBORw0KGgoAAAANSUhEUgAABogAAAOtCAIAAAA95HBeAABcQWNhQlgAAFxBanVtYgAAAB5qdW1kYzJwYQARABCAAACqADibcQNj"
@@ -41537,6 +41538,245 @@ def first_existing(frame: pd.DataFrame, candidates: list[str]) -> str | None:
     return next((column for column in candidates if column in frame.columns), None)
 
 
+
+UPLOAD_HIGH_SPILL_THRESHOLD = 80
+UPLOAD_HIGH_DURATION_THRESHOLD_HOURS = 400
+UPLOAD_LOW_SPILL_THRESHOLD = 20
+UPLOAD_LOW_DURATION_THRESHOLD_HOURS = 100
+
+UPLOAD_COLUMN_ALIASES = {
+    "water_company_name": [
+        "water_company_name",
+        "Water Company Name",
+        "water company",
+        "company",
+        "operator",
+    ],
+    "reporting_year": [
+        "reporting_year",
+        "Reporting Year",
+        "year",
+        "report year",
+    ],
+    "counted_spills": [
+        "counted_spills",
+        "Counted spills using 12-24h count method",
+        "counted spills",
+        "spill count",
+        "spills",
+    ],
+    "total_duration_hours": [
+        "total_duration_hours",
+        "Total Duration (hh:mm:ss) all spills prior to processing through 12-24h count method",
+        "total duration",
+        "duration hours",
+        "spill duration hours",
+        "duration",
+    ],
+    "site_name": [
+        "site_name",
+        "Site Name (EA Consents Database)",
+        "site name",
+        "ea site name",
+        "asset name",
+    ],
+    "permit_reference": [
+        "permit_reference",
+        "EA Permit Reference (EA Consents Database)",
+        "permit reference",
+        "permit",
+    ],
+    "activity_reference": [
+        "activity_reference",
+        "Activity Reference on Permit",
+        "activity reference",
+    ],
+    "outlet_ngr": [
+        "outlet_ngr",
+        "Outlet Discharge NGR (EA Consents Database)",
+        "national grid reference",
+        "ngr",
+        "grid reference",
+    ],
+    "receiving_water": [
+        "receiving_water",
+        "Receiving Water / Environment (common name) (EA Consents Database)",
+        "receiving water",
+        "water environment",
+    ],
+    "existing_risk_category": [
+        "label",
+        "Label",
+        "risk_category",
+        "risk category",
+        "existing risk category",
+    ],
+}
+
+
+def normalised_column_name(value) -> str:
+    """Normalise a heading so uploaded files can use common naming variants."""
+
+    return re.sub(r"[^a-z0-9]+", "_", str(value).casefold()).strip("_")
+
+
+def resolve_upload_columns(frame: pd.DataFrame) -> dict[str, str]:
+    """Match uploaded annual-return headings to the dashboard risk formula."""
+
+    available = {normalised_column_name(column): column for column in frame.columns}
+    resolved: dict[str, str] = {}
+    for key, aliases in UPLOAD_COLUMN_ALIASES.items():
+        for alias in aliases:
+            source = available.get(normalised_column_name(alias))
+            if source is not None:
+                resolved[key] = source
+                break
+
+    required = {
+        "water_company_name",
+        "reporting_year",
+        "counted_spills",
+        "total_duration_hours",
+    }
+    missing = sorted(required.difference(resolved))
+    if missing:
+        readable = ", ".join(pretty(column) for column in missing)
+        expected = {pretty(key): UPLOAD_COLUMN_ALIASES[key][0] for key in missing}
+        raise KeyError(
+            f"Missing required annual-return columns: {readable}. "
+            f"Expected headings similar to: {json.dumps(expected)}"
+        )
+    return resolved
+
+
+def parse_duration_hours(value) -> float:
+    """Convert annual-return duration values to hours."""
+
+    if value is None or pd.isna(value):
+        return np.nan
+    if isinstance(value, pd.Timedelta):
+        return value.total_seconds() / 3600
+    if isinstance(value, timedelta):
+        return value.total_seconds() / 3600
+    if isinstance(value, (datetime, time)):
+        return value.hour + value.minute / 60 + value.second / 3600
+    if isinstance(value, (int, float, np.integer, np.floating)):
+        return float(value)
+
+    text_value = str(value).strip().replace(",", "")
+    if not text_value:
+        return np.nan
+    try:
+        return float(text_value)
+    except ValueError:
+        pass
+
+    match = re.fullmatch(r"(\d+):(\d{1,2})(?::(\d{1,2}(?:\.\d+)?))?", text_value)
+    if match:
+        hours = float(match.group(1))
+        minutes = float(match.group(2))
+        seconds = float(match.group(3) or 0)
+        if minutes < 60 and seconds < 60:
+            return hours + minutes / 60 + seconds / 3600
+
+    parsed = pd.to_timedelta(text_value, errors="coerce")
+    return np.nan if pd.isna(parsed) else parsed.total_seconds() / 3600
+
+
+def numeric_upload_series(series: pd.Series) -> pd.Series:
+    """Read numbers from annual-return columns that may contain commas."""
+
+    if pd.api.types.is_numeric_dtype(series):
+        return pd.to_numeric(series, errors="coerce")
+    cleaned = series.astype("string").str.replace(",", "", regex=False).str.strip()
+    return pd.to_numeric(cleaned, errors="coerce")
+
+
+def calculate_uploaded_risk_categories(frame: pd.DataFrame) -> pd.Series:
+    """Apply the audited EDM risk-category formula to uploaded annual returns."""
+
+    duration = pd.to_numeric(frame["total_duration_hours"], errors="coerce")
+    spills = pd.to_numeric(frame["counted_spills"], errors="coerce")
+    valid = duration.notna() & spills.notna()
+
+    categories = pd.Series("Uncategorised", index=frame.index, dtype="string")
+    categories.loc[valid] = "Medium"
+    categories.loc[
+        valid
+        & spills.gt(UPLOAD_HIGH_SPILL_THRESHOLD)
+        & duration.gt(UPLOAD_HIGH_DURATION_THRESHOLD_HOURS)
+    ] = "High"
+    categories.loc[
+        valid
+        & spills.lt(UPLOAD_LOW_SPILL_THRESHOLD)
+        & duration.lt(UPLOAD_LOW_DURATION_THRESHOLD_HOURS)
+    ] = "Low"
+    return categories
+
+
+def prepare_uploaded_edm_returns(raw: pd.DataFrame) -> tuple[pd.DataFrame, dict[str, str]]:
+    """Clean uploaded EDM annual returns and calculate risk categories."""
+
+    if raw.empty:
+        raise ValueError("The uploaded annual-return file is empty.")
+
+    columns = resolve_upload_columns(raw)
+    result = pd.DataFrame(index=raw.index)
+    result["source_row"] = np.arange(2, len(raw) + 2)
+    result["water_company_name"] = (
+        raw[columns["water_company_name"]]
+        .astype("string")
+        .str.strip()
+        .fillna("Unknown company")
+        .replace("", "Unknown company")
+    )
+    result["reporting_year"] = (
+        numeric_upload_series(raw[columns["reporting_year"]]).round().astype("Int64")
+    )
+    result["counted_spills"] = numeric_upload_series(raw[columns["counted_spills"]])
+    result["total_duration_hours"] = raw[columns["total_duration_hours"]].map(
+        parse_duration_hours
+    )
+
+    optional_columns = {
+        "site_name": "site_name",
+        "permit_reference": "permit_reference",
+        "activity_reference": "activity_reference",
+        "outlet_ngr": "outlet_ngr",
+        "receiving_water": "receiving_water",
+    }
+    for output_column, key in optional_columns.items():
+        source = columns.get(key)
+        result[output_column] = (
+            raw[source].astype("string").str.strip().fillna("") if source else ""
+        )
+
+    result["calculated_risk_category"] = calculate_uploaded_risk_categories(result)
+
+    source_label = columns.get("existing_risk_category")
+    if source_label:
+        uploaded_label = raw[source_label].astype("string").str.strip().str.title()
+        result["uploaded_existing_risk_category"] = uploaded_label.where(
+            uploaded_label.isin(RISK_ORDER),
+            "Uncategorised",
+        )
+        result["existing_label_matches_formula"] = result[
+            "uploaded_existing_risk_category"
+        ].eq(result["calculated_risk_category"])
+
+    def issue_text(row: pd.Series) -> str:
+        issues = []
+        if pd.isna(row["reporting_year"]):
+            issues.append("Missing reporting year")
+        if pd.isna(row["counted_spills"]):
+            issues.append("Missing counted spills")
+        if pd.isna(row["total_duration_hours"]):
+            issues.append("Missing duration")
+        return "; ".join(issues) if issues else "Ready"
+
+    result["quality_check"] = result.apply(issue_text, axis=1)
+    return result.reset_index(drop=True), columns
+
 def coalesced_text(
     frame: pd.DataFrame,
     candidates: list[str],
@@ -42014,7 +42254,7 @@ def render_page_cards():
         ("Priority list", "Priority locations"),
         ("Compare", "Places and companies"),
         ("Changes", "Improvements and changes"),
-        ("2026 forecast", "2026 rainfall predictions"),
+        ("2026 forecast", "2026 predictions"),
         ("Rainfall", "Rainfall and spills"),
         ("Find a site", "Check one location"),
         ("Evidence", "About the evidence"),
@@ -42583,6 +42823,38 @@ def add_colab_map_panels(
             return fallback
         return str(value).strip()
 
+    def observed_years_for_row(row: pd.Series) -> list[str]:
+        """Return observed years with recorded evidence for this mapped site."""
+        years = set()
+        history = str(row.get("risk_history", ""))
+        years.update(
+            int(year)
+            for year in re.findall(
+                r"\b(20\d{2})\s*:\s*(?:Low|Medium|High)\b",
+                history,
+                flags=re.IGNORECASE,
+            )
+        )
+        for year in OBSERVED_YEARS:
+            annual_columns = [
+                f"place_counted_spills_{year}",
+                f"counted_spills_{year}",
+                f"duration_hours_{year}",
+                f"spill_duration_hours_{year}",
+                f"risk_{year}",
+                f"risk_category_{year}",
+                f"period_risk_category_{year}",
+            ]
+            for column in annual_columns:
+                if column in row.index:
+                    value = row.get(column)
+                    if pd.notna(value) and str(value).strip() not in {"", "Not available", "nan"}:
+                        years.add(int(year))
+                        break
+        if not years:
+            years.update(OBSERVED_YEARS)
+        return [str(year) for year in sorted(years) if int(year) in OBSERVED_YEARS]
+
     place_column = first_existing(plotting, ["official_place_name", "town_or_city"])
     company_column = first_existing(plotting, ["water_company_name", "company"])
     site_column = first_existing(
@@ -42632,9 +42904,11 @@ def add_colab_map_panels(
     for _, row in company_ranking.head(12).iterrows():
         company_name = str(row[company_column])
         ranking_detail = (
-            f'<div><span class="risk-high">&#9650; {int(row.get("High", 0)):,}</span>'
+            f'<div class="edm-risk-counts">'
+            f'<span class="risk-high">&#9650; {int(row.get("High", 0)):,}</span>'
             f'<span class="risk-medium">&#9670; {int(row.get("Medium", 0)):,}</span>'
-            f'<span class="risk-low">&#9679; {int(row.get("Low", 0)):,}</span></div>'
+            f'<span class="risk-low">&#9679; {int(row.get("Low", 0)):,}</span>'
+            f'</div>'
         )
         ranking_action = f"View {OBSERVED_PERIOD} spill trend"
         ranking_rows.append(
@@ -42664,6 +42938,19 @@ def add_colab_map_panels(
         if prediction
         else "Select a company to show only that water company's clusters on the map."
     )
+    year_filter = ""
+    if not prediction:
+        year_options = "".join(
+            f'<label><input type="checkbox" value="{year}"> {year}</label>'
+            for year in OBSERVED_YEARS
+        )
+        year_filter = f"""
+      <label>Observed years</label>
+      <div id="edm-year-filter" class="edm-year-filter" aria-label="Choose observed years">
+        {year_options}
+      </div>
+      <div class="edm-year-note">Leave all years unticked to show 2021-2025 together.</div>
+        """
     panels = f"""
     <style>
       .edm-map-panel {{position:fixed;top:12px;z-index:9999;width:300px;max-height:86vh;
@@ -42694,7 +42981,17 @@ def add_colab_map_panels(
       .edm-map-panel label {{display:block;margin:5px 0 2px;font-weight:700;color:#365F5B;}}
       .edm-map-panel input,.edm-map-panel select {{width:100%;box-sizing:border-box;padding:7px 8px;
         border:1px solid #B7CEC8;border-radius:8px;background:#FFFFFF;color:#173D3A;font-size:12px;}}
+      .edm-search-row {{display:grid;grid-template-columns:minmax(0,1fr) 78px;gap:6px;align-items:center;}}
+      #edm-place-search-button {{height:34px;border:1px solid #8FBDB2;border-radius:8px;background:#DDEFF4;
+        color:#173D3A;font-size:12px;font-weight:800;cursor:pointer;}}
+      #edm-place-search-button:hover,#edm-place-search-button:focus {{background:#CFEAE3;}}
       .edm-map-filter-row {{display:grid;grid-template-columns:1fr 1fr;gap:6px;}}
+      .edm-year-filter {{display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:4px;margin-top:3px;}}
+      .edm-year-filter label {{display:flex;align-items:center;justify-content:center;gap:3px;margin:0;
+        padding:5px 2px;border:1px solid #C8DDD7;border-radius:8px;background:#FFFFFF;color:#365F5B;
+        font-size:11px;font-weight:800;cursor:pointer;}}
+      .edm-year-filter input {{width:auto;margin:0;accent-color:#4A9C7D;}}
+      .edm-year-note {{margin:3px 0 4px;color:#5D7772;font-size:10px;line-height:1.3;}}
       #edm-place-count {{padding:6px 1px 3px;font-weight:700;}}
       #edm-place-results {{flex:1;min-height:230px;overflow:auto;margin-top:2px;padding-right:2px;
         border-top:1px solid #D4E5DF;}}
@@ -42715,9 +43012,11 @@ def add_colab_map_panels(
         box-shadow:0 4px 12px rgba(35,89,81,.17);}}
       .edm-map-rank-number {{display:inline-flex;align-items:center;justify-content:center;width:23px;
         height:23px;margin-right:5px;border-radius:50%;background:#DDEFF4;color:#245B61;font-weight:800;}}
-      .edm-map-rank div {{margin:3px 0 0 29px;font-size:11px;word-spacing:5px;}}
+      .edm-risk-counts {{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:4px;margin:6px 0 0 29px;font-size:11px;word-spacing:normal;}}
+      .edm-risk-counts span {{display:flex;align-items:center;justify-content:center;gap:3px;min-width:0;
+        padding:4px 2px;border-radius:7px;background:#F8FCFA;font-weight:800;white-space:nowrap;}}
       .edm-map-rank .edm-spill-total {{word-spacing:normal;color:#A84B4B;font-size:12px;}}
-      .edm-map-rank small {{display:block;margin:4px 0 0 29px;color:#47716A;font-weight:700;}}
+      .edm-map-rank small {{display:block;margin:6px 0 0 29px;color:#47716A;font-weight:700;}}
       #edm-company-trend {{display:none;margin:7px 0 9px;padding:9px;border:1px solid #BFD8D0;
         border-radius:11px;background:linear-gradient(160deg,#F7FCFA,#EAF6F0);}}
       #edm-company-trend h4 {{margin:0 0 3px;font-size:13px;color:#173D3A;}}
@@ -42752,13 +43051,17 @@ def add_colab_map_panels(
         <div style="color:#A84B4B;">&#9650; High<br>{int(risk_counts['High']):,}</div>
       </div>
       <label for="edm-place-search">Find a town or city</label>
-      <input id="edm-place-search" type="search" placeholder="Type a name or browse below">
+      <div class="edm-search-row">
+        <input id="edm-place-search" type="search" placeholder="Type a town or city">
+        <button id="edm-place-search-button" type="button">Search</button>
+      </div>
       <div class="edm-map-filter-row">
         <div><label for="edm-risk-filter">Risk</label>
         <select id="edm-risk-filter"><option value="">All risks</option><option>High</option><option>Medium</option><option>Low</option></select></div>
         <div><label for="edm-company-filter">Water company</label>
         <select id="edm-company-filter"><option value="">All companies</option></select></div>
       </div>
+      {year_filter}
       <div id="edm-place-count" class="edm-place-detail">Loading the complete place list...</div>
       <div id="edm-place-results"></div>
     </aside>
@@ -42791,6 +43094,7 @@ def add_colab_map_panels(
                     f"{plain(row.get(site_column), 'Spill outlet') if site_column else 'Spill outlet'} · "
                     f"{plain(row.get(place_column), 'Place unavailable')}"
                 ),
+                "years": [] if prediction else observed_years_for_row(row),
                 "spills": (
                     "Model-generated 2026 risk"
                     if prediction
@@ -42861,12 +43165,31 @@ def add_colab_map_panels(
         '<div class="edm-place-detail" style="margin-top:5px">The 2021–2025 trend is recorded evidence; any 2026 category remains a forecast.</div>';
       root.scrollIntoView({{block:'nearest',behavior:'smooth'}});
     }}
-    function edmBuildCompanyLayerSites(){{
+    function edmSelectedYears(){{
+      var container=document.getElementById('edm-year-filter');
+      if(!container)return [];
+      return Array.from(container.querySelectorAll('input[type="checkbox"]:checked')).map(function(input){{return input.value;}});
+    }}
+    function edmFilterQuery(){{
+      var search=document.getElementById('edm-place-search');
+      return search ? search.value.toLowerCase().trim() : '';
+    }}
+    function edmSiteMatchesFilters(site){{
+      var query=edmFilterQuery();
       var company=document.getElementById('edm-company-filter').value;
       var risk=document.getElementById('edm-risk-filter').value;
-      return edmSites.filter(function(site){{
-        return (!company||site.company===company)&&(!risk||site.risk===risk);
-      }});
+      var years=edmSelectedYears();
+      if(company&&site.company!==company)return false;
+      if(risk&&site.risk!==risk)return false;
+      if(query&&site.place.toLowerCase().indexOf(query)===-1)return false;
+      if(years.length){{
+        var siteYears=site.years||[];
+        if(!years.some(function(year){{return siteYears.indexOf(year)!==-1;}}))return false;
+      }}
+      return true;
+    }}
+    function edmBuildCompanyLayerSites(){{
+      return edmSites.filter(edmSiteMatchesFilters);
     }}
     function edmMarkerForSite(site){{
       var colours={{Low:'#4A9C7D',Medium:'#E2A45C',High:'#D66565'}};
@@ -42890,7 +43213,8 @@ def add_colab_map_panels(
       edmSetActiveCompanyButton(selected);
       if(edmCompanyLayer){{edmMap.removeLayer(edmCompanyLayer);edmCompanyLayer=null;}}
       if(edmFocusMarker){{edmMap.removeLayer(edmFocusMarker);edmFocusMarker=null;}}
-      if(selected){{
+      var hasFilter=!!selected||!!document.getElementById('edm-risk-filter').value||!!edmFilterQuery()||edmSelectedYears().length>0;
+      if(hasFilter){{
         edmOriginalLayers.forEach(function(layer){{if(edmMap.hasLayer(layer))edmMap.removeLayer(layer);}});
         edmCompanyLayer=L.markerClusterGroup({{maxClusterRadius:35,disableClusteringAtZoom:11}});
         var sites=edmBuildCompanyLayerSites();
@@ -42906,13 +43230,9 @@ def add_colab_map_panels(
       edmRenderPlaces();
     }}
     function edmBuildPlaces(){{
-      var query=document.getElementById('edm-place-search').value.toLowerCase().trim();
-      var risk=document.getElementById('edm-risk-filter').value;
-      var company=document.getElementById('edm-company-filter').value;
       var groups=new Map();
       edmSites.forEach(function(site){{
-        if((risk&&site.risk!==risk)||(company&&site.company!==company))return;
-        if(query&&site.place.toLowerCase().indexOf(query)===-1)return;
+        if(!edmSiteMatchesFilters(site))return;
         if(!groups.has(site.place))groups.set(site.place,{{name:site.place,sites:[],companies:new Set(),high:0,medium:0,low:0,spills:site.spills}});
         var place=groups.get(site.place);place.sites.push(site);place.companies.add(site.company);
         if(site.risk==='High')place.high++;else if(site.risk==='Medium')place.medium++;else if(site.risk==='Low')place.low++;
@@ -42946,7 +43266,14 @@ def add_colab_map_panels(
     }}
     var companySelect=document.getElementById('edm-company-filter');
     Array.from(new Set(edmSites.map(function(s){{return s.company;}}))).sort().forEach(function(company){{var o=document.createElement('option');o.value=company;o.textContent=company;companySelect.appendChild(o);}});
-    document.getElementById('edm-place-search').addEventListener('input',edmRenderPlaces);
+    document.getElementById('edm-place-search').addEventListener('input',function(){{edmApplyCompanyMapFilter();}});
+    document.getElementById('edm-place-search').addEventListener('keydown',function(event){{if(event.key==='Enter'){{event.preventDefault();edmApplyCompanyMapFilter();}}}});
+    var searchButton=document.getElementById('edm-place-search-button');
+    if(searchButton)searchButton.addEventListener('click',function(){{edmApplyCompanyMapFilter();}});
+    var yearFilter=document.getElementById('edm-year-filter');
+    if(yearFilter)yearFilter.querySelectorAll('input[type="checkbox"]').forEach(function(input){{
+      input.addEventListener('change',function(){{edmApplyCompanyMapFilter();}});
+    }});
     edmMap.eachLayer(function(layer){{if(!(layer instanceof L.TileLayer))edmOriginalLayers.push(layer);}});
     document.getElementById('edm-risk-filter').addEventListener('change',function(){{edmApplyCompanyMapFilter();}});
     document.getElementById('edm-company-filter').addEventListener('change',function(){{edmApplyCompanyMapFilter();}});
@@ -42963,15 +43290,35 @@ def add_colab_map_panels(
     }});
     window.setTimeout(edmRenderPlaces,0);
     """
-    # streamlit-folium does not reliably emit custom code placed in
-    # ``root.script``. Add a real script element and wait until Leaflet loads.
+    # streamlit-folium can load the custom panel script before the Leaflet map
+    # variable exists, so retry until the map and controls are available.
     water_map.get_root().html.add_child(
         folium.Element(
-            "<script>\n"
-            "window.addEventListener('load', function(){\n"
+            f"<script>\n"
+            "(function(){\n"
+            "  function edmStartMapPanels(){\n"
+            "    if(window.edmPanelsStarted)return;\n"
+            f"    if(typeof L==='undefined'||typeof {map_name}==='undefined'||!document.getElementById('edm-place-search')||!document.getElementById('edm-risk-filter')||!document.getElementById('edm-company-filter')){{window.setTimeout(edmStartMapPanels,120);return;}}\n"
+            "    window.edmPanelsStarted=true;\n"
             + script
-            + "\n});\n"
+            + "\n  }\n"
+            "  edmStartMapPanels();\n"
+            "  window.addEventListener('load',edmStartMapPanels);\n"
+            "})();\n"
             "</script>"
+        )
+    )
+    water_map.get_root().script.add_child(
+        folium.Element(
+            "(function(){\n"
+            "  function edmStartMapPanelsFromFolium(){\n"
+            "    if(window.edmPanelsStarted)return;\n"
+            "    if(!document.getElementById('edm-place-search')||!document.getElementById('edm-risk-filter')||!document.getElementById('edm-company-filter')){window.setTimeout(edmStartMapPanelsFromFolium,120);return;}\n"
+            "    window.edmPanelsStarted=true;\n"
+            + script
+            + "\n  }\n"
+            "  edmStartMapPanelsFromFolium();\n"
+            "})();"
         )
     )
 
@@ -43292,8 +43639,9 @@ PAGES = [
     "Priority locations",
     "Places and companies",
     "Improvements and changes",
-    "2026 rainfall predictions",
+    "2026 predictions",
     "Rainfall and spills",
+    "Upload EDM returns",
     "Check one location",
     "About the evidence",
 ]
@@ -45701,413 +46049,300 @@ elif page == "Improvements and changes":
 # PAGE 6 — 2026 PREDICTIONS AND AFFECTED LOCATIONS
 # =============================================================================
 
-elif page == "2026 rainfall predictions":
-    # 2026-08-22-existing-dashboard-rainfall-patch-v1
-    from pathlib import Path as _DashboardPath
-    import pandas as _dashboard_pd
-    import plotly.express as _dashboard_px
-
-    _risk_order = ["Low", "Medium", "High"]
-    _risk_colours = {
-        "Low": "#8FC8A8",
-        "Medium": "#E8C77B",
-        "High": "#D98C8C",
-    }
-
-    _data_folder = _DashboardPath(__file__).resolve().parent / "data"
-    _prediction_path = (
-        _data_folder / "rainfall_risk_predictions_2026_ytd.csv.gz"
+elif page == "2026 predictions":
+    st.html(
+        """
+        <style>
+          .block-container {
+            width:100% !important;
+            max-width:none !important;
+            padding-left:.55rem !important;
+            padding-right:.55rem !important;
+          }
+        </style>
+        """
     )
-    _cv_path = (
-        _data_folder / "rainfall_model_cross_validation_results.csv.gz"
+    section_header(
+        "Predicted 2026 spill risks and affected locations",
+        "Explore the forecast by risk, town or city, water company and exact mapped outlet.",
     )
-
-    st.title("2026 rainfall-enhanced risk predictions")
-    st.caption(
-        "Year-to-date screening predictions using the recorded 2026 rainfall "
-        "available at the model cut-off. These are not confirmed 2026 discharges."
+    banner(
+        "<b>2026 forecast:</b> these are model-generated risk estimates for planning and review. "
+        "They are not confirmed 2026 spill events.",
+        icon="🔮",
+        background=PALE_AMBER,
+        edge="#D59A3C",
     )
 
-    if not _prediction_path.exists():
-        st.error(
-            "The 2026 prediction file is missing. "
-            "Run Dashboard Cell 2 in Colab."
-        )
+    forecast = load_table("forecast_map_points")
+    forecast_risk = "predicted_2026_risk"
+
+    if forecast.empty or forecast_risk not in forecast.columns:
+        st.error("The 2026 prediction information is unavailable. Please try again later.")
     else:
-        _predictions = _dashboard_pd.read_csv(
-            _prediction_path,
-            low_memory=False,
+        forecast_place = first_existing(forecast, ["official_place_name", "town_or_city"])
+        forecast_company = first_existing(forecast, ["water_company_name", "company"])
+        forecast_site = first_existing(
+            forecast,
+            ["site_name", "source_site_name_ea_consents_database"],
         )
 
-        _predictions["predicted_2026_risk_category"] = (
-            _predictions["predicted_2026_risk_category"]
-            .astype("string")
-            .str.strip()
-            .str.title()
-        )
-
-        _predictions["prediction_confidence"] = (
-            _dashboard_pd.to_numeric(
-                _predictions["prediction_confidence"],
-                errors="coerce",
-            )
-        )
-
-        _companies = sorted(
-            _predictions["water_company"]
-            .dropna()
-            .astype(str)
-            .unique()
-        )
-
-        _filter_columns = st.columns([1.3, 1, 1])
-
-        with _filter_columns[0]:
-            _selected_companies = st.multiselect(
-                "Water company",
-                _companies,
-                default=_companies,
-                key="rainfall_prediction_companies",
-            )
-
-        with _filter_columns[1]:
-            _selected_risks = st.multiselect(
+        filter_columns = st.columns([1.05, 1.05, 1.05, 1.35])
+        with filter_columns[0]:
+            forecast_risks = st.multiselect(
                 "Predicted risk",
-                _risk_order,
-                default=_risk_order,
-                key="rainfall_prediction_risks",
+                RISK_ORDER,
+                default=RISK_ORDER,
+                key="forecast_page_risks",
             )
-
-        with _filter_columns[2]:
-            _minimum_confidence = st.slider(
-                "Minimum confidence",
-                0.0,
-                1.0,
-                0.0,
-                0.05,
-                key="rainfall_prediction_confidence",
+        with filter_columns[1]:
+            forecast_company_choice = st.selectbox(
+                "Water company",
+                ["All companies"] + available_values(forecast, forecast_company)
+                if forecast_company
+                else ["All companies"],
+                key="forecast_page_company",
             )
-
-        _filtered = _predictions.loc[
-            _predictions["water_company"]
-            .astype(str)
-            .isin(_selected_companies)
-            & _predictions[
-                "predicted_2026_risk_category"
-            ].isin(_selected_risks)
-            & _predictions[
-                "prediction_confidence"
-            ].ge(_minimum_confidence)
-        ].copy()
-
-        _risk_counts = (
-            _filtered["predicted_2026_risk_category"]
-            .value_counts()
-            .reindex(_risk_order, fill_value=0)
-        )
-
-        _high_count = int(_risk_counts.get("High", 0))
-        _mean_confidence = _filtered["prediction_confidence"].mean()
-
-        _agreement = (
-            _dashboard_pd.to_numeric(
-                _filtered["models_agreeing"],
-                errors="coerce",
+        with filter_columns[2]:
+            forecast_place_choice = st.selectbox(
+                "Town or city",
+                ["All towns/cities"] + available_values(forecast, forecast_place)
+                if forecast_place
+                else ["All towns/cities"],
+                key="forecast_page_place",
             )
-            .eq(4)
-            .mean()
-            if (
-                "models_agreeing" in _filtered.columns
-                and len(_filtered)
-            )
-            else float("nan")
-        )
+        with filter_columns[3]:
+            forecast_search = st.text_input(
+                "Find a location, company or receiving water",
+                key="forecast_page_search",
+            ).strip()
 
-        _kpis = st.columns(4)
+        forecast_filtered = forecast.loc[
+            forecast[forecast_risk].isin(forecast_risks)
+        ].copy() if forecast_risks else forecast.iloc[0:0].copy()
 
-        _kpis[0].metric(
-            "Predictions shown",
-            f"{len(_filtered):,}",
-        )
-
-        _kpis[1].metric(
-            "High-risk outlets",
-            f"{_high_count:,}",
-        )
-
-        _kpis[2].metric(
-            "Mean confidence",
-            (
-                f"{_mean_confidence:.1%}"
-                if _dashboard_pd.notna(_mean_confidence)
-                else "—"
-            ),
-        )
-
-        _kpis[3].metric(
-            "All four models agree",
-            (
-                f"{_agreement:.1%}"
-                if _dashboard_pd.notna(_agreement)
-                else "—"
-            ),
-        )
-
-        _chart_columns = st.columns(2)
-
-        with _chart_columns[0]:
-            _risk_frame = (
-                _risk_counts
-                .rename_axis("Risk")
-                .reset_index(name="Outlets")
-            )
-
-            _risk_figure = _dashboard_px.pie(
-                _risk_frame,
-                names="Risk",
-                values="Outlets",
-                hole=0.58,
-                color="Risk",
-                color_discrete_map=_risk_colours,
-                category_orders={"Risk": _risk_order},
-                title="Predicted risk categories for 2026",
-            )
-
-            _risk_figure.update_traces(
-                textinfo="label+percent+value"
-            )
-
-            st.plotly_chart(
-                _risk_figure,
-                use_container_width=True,
-            )
-
-        with _chart_columns[1]:
-            _company_risk = (
-                _filtered
-                .groupby(
-                    [
-                        "water_company",
-                        "predicted_2026_risk_category",
-                    ],
-                    observed=True,
-                )
-                .size()
-                .rename("Outlets")
-                .reset_index()
-            )
-
-            _company_figure = _dashboard_px.bar(
-                _company_risk,
-                x="Outlets",
-                y="water_company",
-                color="predicted_2026_risk_category",
-                orientation="h",
-                color_discrete_map=_risk_colours,
-                category_orders={
-                    "predicted_2026_risk_category": _risk_order
-                },
-                title="Predictions by water company",
-                labels={
-                    "water_company": "Water company",
-                    "predicted_2026_risk_category": "Risk",
-                },
-            )
-
-            st.plotly_chart(
-                _company_figure,
-                use_container_width=True,
-            )
-
-        if {"latitude", "longitude"}.issubset(_filtered.columns):
-            _mapped = _filtered.copy()
-
-            _mapped["latitude"] = _dashboard_pd.to_numeric(
-                _mapped["latitude"],
-                errors="coerce",
-            )
-
-            _mapped["longitude"] = _dashboard_pd.to_numeric(
-                _mapped["longitude"],
-                errors="coerce",
-            )
-
-            _mapped = _mapped.dropna(
-                subset=["latitude", "longitude"]
-            )
-
-            if not _mapped.empty:
-                st.subheader("2026 prediction map")
-
-                _hover_data = {
-                    column: setting
-                    for column, setting in {
-                        "water_company": True,
-                        "outlet_ngr": True,
-                        "prediction_confidence": ":.1%",
-                        "ytd_rainfall_mm": ":.1f",
-                        "latitude": False,
-                        "longitude": False,
-                    }.items()
-                    if column in _mapped.columns
-                }
-
-                _hover_name = (
-                    "site_name"
-                    if "site_name" in _mapped.columns
-                    else None
-                )
-
-                _map_figure = _dashboard_px.scatter_mapbox(
-                    _mapped,
-                    lat="latitude",
-                    lon="longitude",
-                    color="predicted_2026_risk_category",
-                    color_discrete_map=_risk_colours,
-                    category_orders={
-                        "predicted_2026_risk_category": _risk_order
-                    },
-                    hover_name=_hover_name,
-                    hover_data=_hover_data,
-                    zoom=5,
-                    height=650,
-                    opacity=0.72,
-                )
-
-                _map_figure.update_layout(
-                    mapbox_style="open-street-map",
-                    margin=dict(l=0, r=0, t=0, b=0),
-                )
-
-                st.plotly_chart(
-                    _map_figure,
-                    use_container_width=True,
-                )
-
-        if "ytd_rainfall_mm" in _filtered.columns:
-            _filtered["ytd_rainfall_mm"] = (
-                _dashboard_pd.to_numeric(
-                    _filtered["ytd_rainfall_mm"],
-                    errors="coerce",
-                )
-            )
-
-            _rain_figure = _dashboard_px.box(
-                _filtered,
-                x="predicted_2026_risk_category",
-                y="ytd_rainfall_mm",
-                color="predicted_2026_risk_category",
-                color_discrete_map=_risk_colours,
-                category_orders={
-                    "predicted_2026_risk_category": _risk_order
-                },
-                points="outliers",
-                title=(
-                    "Observed 2026 YTD rainfall by predicted risk"
-                ),
-                labels={
-                    "predicted_2026_risk_category": "Predicted risk",
-                    "ytd_rainfall_mm": "YTD rainfall (mm)",
-                },
-            )
-
-            st.plotly_chart(
-                _rain_figure,
-                use_container_width=True,
-            )
-
-        if _cv_path.exists():
-            _cv = _dashboard_pd.read_csv(_cv_path)
-
-            _metric_columns = [
+        if forecast_company and forecast_company_choice != "All companies":
+            forecast_filtered = forecast_filtered.loc[
+                forecast_filtered[forecast_company].astype(str).eq(forecast_company_choice)
+            ]
+        if forecast_place and forecast_place_choice != "All towns/cities":
+            forecast_filtered = forecast_filtered.loc[
+                forecast_filtered[forecast_place].astype(str).eq(forecast_place_choice)
+            ]
+        if forecast_search:
+            search_columns = [
                 column
                 for column in [
-                    "CV accuracy mean",
-                    "CV balanced accuracy mean",
-                    "CV macro F1 mean",
+                    forecast_place,
+                    forecast_company,
+                    forecast_site,
+                    "receiving_water",
+                    "source_receiving_water",
+                    "permit_reference",
                 ]
-                if column in _cv.columns
+                if column and column in forecast_filtered.columns
             ]
-
-            if _metric_columns:
-                st.subheader(
-                    "Rainfall-enhanced model comparison"
+            forecast_match = pd.Series(False, index=forecast_filtered.index)
+            for column in search_columns:
+                forecast_match |= forecast_filtered[column].astype("string").str.contains(
+                    forecast_search,
+                    case=False,
+                    regex=False,
+                    na=False,
                 )
+            forecast_filtered = forecast_filtered.loc[forecast_match]
 
-                _cv_long = _cv.melt(
-                    id_vars="Model",
-                    value_vars=_metric_columns,
-                    var_name="Metric",
-                    value_name="Score",
-                )
+        if forecast_filtered.empty:
+            st.warning("No predicted locations match these choices. Clear a filter and try again.")
+        else:
+            forecast_counts = (
+                forecast_filtered[forecast_risk]
+                .value_counts()
+                .reindex(RISK_ORDER, fill_value=0)
+            )
+            metric_cards(
+                [
+                    {
+                        "label": "Predicted locations",
+                        "value": value_text(len(forecast_filtered)),
+                        "note": "Mapped outlets in this view",
+                        "accent": "#B7DDE5",
+                    },
+                    {
+                        "label": "Predicted High",
+                        "value": value_text(forecast_counts["High"]),
+                        "note": "Priority review category",
+                        "accent": "#E9A7A7",
+                    },
+                    {
+                        "label": "Predicted Medium",
+                        "value": value_text(forecast_counts["Medium"]),
+                        "note": "Closer-attention category",
+                        "accent": "#F1D39D",
+                    },
+                    {
+                        "label": "Affected towns/cities",
+                        "value": value_text(
+                            forecast_filtered[forecast_place].nunique()
+                            if forecast_place
+                            else np.nan
+                        ),
+                        "note": "Places represented in the forecast",
+                        "accent": "#A8D8D0",
+                    },
+                ]
+            )
 
-                _cv_figure = _dashboard_px.bar(
-                    _cv_long,
-                    x="Model",
-                    y="Score",
-                    color="Metric",
-                    barmode="group",
-                    color_discrete_sequence=[
-                        "#789F8A",
-                        "#92ABC6",
-                        "#C5A3C8",
-                    ],
-                    text_auto=".3f",
-                )
+            map_tab, place_tab, company_tab, location_tab = st.tabs(
+                [
+                    "Interactive forecast map",
+                    "Affected towns and cities",
+                    "Water companies",
+                    "Exact predicted locations",
+                ]
+            )
 
-                _cv_figure.update_yaxes(range=[0, 1])
-
-                st.plotly_chart(
-                    _cv_figure,
+            with map_tab:
+                with st.spinner("Drawing the 2026 prediction map..."):
+                    forecast_map = build_folium_map(
+                        forecast_filtered,
+                        forecast_risk,
+                        True,
+                        "Clustered spill locations",
+                    )
+                st_folium(
+                    forecast_map,
+                    height=980,
                     use_container_width=True,
+                    returned_objects=[],
+                    key="dedicated_2026_prediction_map",
+                )
+                st.caption(
+                    "Select a cluster to zoom in, then select a marker for the predicted "
+                    "risk, probabilities, town/city and water company."
                 )
 
-        _preferred_columns = [
-            "water_company",
-            "site_name",
-            "outlet_ngr",
-            "storm_asset_type",
-            "source_edm_year",
-            "ytd_rainfall_mm",
-            "ytd_wet_days_ge_1mm",
-            "ytd_heavy_days_ge_10mm",
-            "predicted_2026_risk_category",
-            "prediction_confidence",
-            "models_agreeing",
-            "random_forest_predicted_risk",
-            "gbm_predicted_risk",
-            "xgboost_predicted_risk",
-            "catboost_predicted_risk",
-        ]
+            with place_tab:
+                if forecast_place:
+                    forecast_place_ranking = make_risk_ranking(
+                        forecast_filtered,
+                        forecast_risk,
+                        forecast_place,
+                    )
+                    place_chart = forecast_place_ranking.head(25).copy()
+                    place_long = place_chart.melt(
+                        id_vars=[forecast_place],
+                        value_vars=RISK_ORDER,
+                        var_name="Predicted risk",
+                        value_name="Mapped locations",
+                    )
+                    place_figure = px.bar(
+                        place_long,
+                        x="Mapped locations",
+                        y=forecast_place,
+                        color="Predicted risk",
+                        orientation="h",
+                        barmode="stack",
+                        color_discrete_map=RISK_COLOURS,
+                        category_orders={"Predicted risk": RISK_ORDER},
+                        title="Affected towns and cities ranked by predicted risk",
+                    )
+                    place_figure.update_yaxes(
+                        title="",
+                        categoryorder="array",
+                        categoryarray=place_chart[forecast_place].iloc[::-1].tolist(),
+                    )
+                    st.plotly_chart(
+                        plot_style(place_figure, max(520, 29 * len(place_chart))),
+                        use_container_width=True,
+                        config={"displayModeBar": False},
+                    )
+                    st.dataframe(
+                        forecast_place_ranking,
+                        use_container_width=True,
+                        hide_index=True,
+                    )
+                else:
+                    st.info("Town/city information is unavailable for these predictions.")
 
-        _table_columns = [
-            column
-            for column in _preferred_columns
-            if column in _filtered.columns
-        ]
+            with company_tab:
+                if forecast_company:
+                    forecast_company_ranking = make_risk_ranking(
+                        forecast_filtered,
+                        forecast_risk,
+                        forecast_company,
+                    )
+                    company_chart = forecast_company_ranking.copy()
+                    company_long = company_chart.melt(
+                        id_vars=[forecast_company],
+                        value_vars=RISK_ORDER,
+                        var_name="Predicted risk",
+                        value_name="Mapped locations",
+                    )
+                    company_figure = px.bar(
+                        company_long,
+                        x="Mapped locations",
+                        y=forecast_company,
+                        color="Predicted risk",
+                        orientation="h",
+                        barmode="stack",
+                        color_discrete_map=RISK_COLOURS,
+                        category_orders={"Predicted risk": RISK_ORDER},
+                        title="Water companies ranked by predicted 2026 risk",
+                    )
+                    company_figure.update_yaxes(
+                        title="",
+                        categoryorder="array",
+                        categoryarray=company_chart[forecast_company].iloc[::-1].tolist(),
+                    )
+                    st.plotly_chart(
+                        plot_style(company_figure, max(450, 44 * len(company_chart))),
+                        use_container_width=True,
+                        config={"displayModeBar": False},
+                    )
+                    st.dataframe(
+                        forecast_company_ranking,
+                        use_container_width=True,
+                        hide_index=True,
+                    )
+                else:
+                    st.info("Water-company information is unavailable for these predictions.")
 
-        st.subheader("Outlet-level predictions")
-
-        st.dataframe(
-            _filtered[_table_columns],
-            use_container_width=True,
-            hide_index=True,
-        )
-
-        st.download_button(
-            "Download the filtered predictions",
-            _filtered.to_csv(index=False).encode("utf-8"),
-            file_name=(
-                "filtered_2026_rainfall_risk_predictions.csv"
-            ),
-            mime="text/csv",
-        )
-
-        st.info(
-            "Use these results for screening and prioritisation. "
-            "A predicted risk category is not proof of a discharge "
-            "or an infrastructure fault."
-        )
+            with location_tab:
+                prediction_columns = [
+                    column
+                    for column in [
+                        forecast_site,
+                        forecast_place,
+                        forecast_company,
+                        "receiving_water",
+                        "source_receiving_water",
+                        forecast_risk,
+                        "probability_low",
+                        "probability_medium",
+                        "probability_high",
+                        "prediction_confidence",
+                        "confidence_flag",
+                        "permit_reference",
+                        "latitude",
+                        "longitude",
+                    ]
+                    if column and column in forecast_filtered.columns
+                ]
+                prediction_records = forecast_filtered[prediction_columns].copy()
+                risk_sort = {"High": 0, "Medium": 1, "Low": 2}
+                prediction_records["_risk_order"] = prediction_records[forecast_risk].map(risk_sort)
+                prediction_records = prediction_records.sort_values(
+                    ["_risk_order", forecast_place]
+                    if forecast_place in prediction_records.columns
+                    else ["_risk_order"]
+                ).drop(columns="_risk_order")
+                st.dataframe(
+                    prediction_records,
+                    use_container_width=True,
+                    hide_index=True,
+                )
+                download_table(prediction_records, "predicted_2026_affected_locations.csv")
 
 
 # =============================================================================
@@ -47283,6 +47518,193 @@ elif page == "Rainfall and spills":
                     st.dataframe(coverage, use_container_width=True, hide_index=True)
 
 
+
+# =============================================================================
+# PAGE 6 — UPLOAD FUTURE EDM ANNUAL RETURNS
+# =============================================================================
+
+elif page == "Upload EDM returns":
+    section_header(
+        "Upload EDM annual returns",
+        "Calculate Low, Medium and High spill-risk categories from a newly uploaded annual-return file.",
+    )
+    banner(
+        "<b>Recorded upload:</b> uploaded annual returns are treated as new recorded evidence. "
+        "The dashboard applies the same threshold formula used to check the supplied EDM records; it does not treat uploaded records as a forecast.",
+        icon="💧",
+        background=PALE_MINT,
+        edge="#4A9C7D",
+    )
+
+    st.markdown(
+        f"""
+        **Formula used for uploaded records**
+
+        Low = fewer than {UPLOAD_LOW_SPILL_THRESHOLD} counted spills and fewer than {UPLOAD_LOW_DURATION_THRESHOLD_HOURS} duration hours.  
+        High = more than {UPLOAD_HIGH_SPILL_THRESHOLD} counted spills and more than {UPLOAD_HIGH_DURATION_THRESHOLD_HOURS} duration hours.  
+        Medium = any record with both measurements present that does not meet the Low or High rule.
+        """
+    )
+
+    uploaded_return = st.file_uploader(
+        "Upload an EDM annual-return file",
+        type=["xlsx", "xls", "csv"],
+        help="The file must include water company, reporting year, counted spills and total duration.",
+    )
+
+    if uploaded_return is None:
+        st.info(
+            "Upload a future EDM annual-return spreadsheet or CSV to calculate risk categories. "
+            "Required fields: water company, reporting year, counted spills, and total duration."
+        )
+    else:
+        try:
+            suffix = Path(uploaded_return.name).suffix.casefold()
+            if suffix == ".csv":
+                uploaded_raw = pd.read_csv(uploaded_return, low_memory=False)
+                selected_sheet = "CSV upload"
+            else:
+                sheets = pd.read_excel(uploaded_return, sheet_name=None)
+                selected_sheet = st.selectbox(
+                    "Worksheet to calculate",
+                    list(sheets.keys()),
+                    key="uploaded_edm_return_sheet",
+                )
+                uploaded_raw = sheets[selected_sheet]
+
+            calculated_returns, matched_columns = prepare_uploaded_edm_returns(uploaded_raw)
+        except Exception as error:
+            st.error(f"The uploaded file could not be processed: {error}")
+        else:
+            ready_records = calculated_returns.loc[
+                calculated_returns["quality_check"].eq("Ready")
+            ]
+            risk_counts = (
+                ready_records["calculated_risk_category"]
+                .value_counts()
+                .reindex(RISK_ORDER, fill_value=0)
+            )
+            issue_count = int(calculated_returns["quality_check"].ne("Ready").sum())
+
+            st.caption(f"Processed worksheet: {selected_sheet}")
+            metric_cards(
+                [
+                    {
+                        "label": "Rows uploaded",
+                        "value": f"{len(calculated_returns):,}",
+                        "note": "Annual-return records read",
+                        "accent": "#B7DDE5",
+                    },
+                    {
+                        "label": "Ready rows",
+                        "value": f"{len(ready_records):,}",
+                        "note": "Rows with spill count and duration",
+                        "accent": "#A8D8D0",
+                    },
+                    {
+                        "label": "High risk",
+                        "value": f"{int(risk_counts['High']):,}",
+                        "note": "Calculated from uploaded records",
+                        "accent": "#E9A7A7",
+                    },
+                    {
+                        "label": "Rows needing review",
+                        "value": f"{issue_count:,}",
+                        "note": "Missing required measurements",
+                        "accent": "#F1D39D",
+                    },
+                ]
+            )
+
+            risk_summary = pd.DataFrame(
+                {
+                    "Risk category": RISK_ORDER,
+                    "Uploaded records": [int(risk_counts[label]) for label in RISK_ORDER],
+                }
+            )
+            risk_figure = px.bar(
+                risk_summary,
+                x="Risk category",
+                y="Uploaded records",
+                color="Risk category",
+                color_discrete_map=RISK_COLOURS,
+                text="Uploaded records",
+                title="Calculated risk categories from uploaded annual returns",
+            )
+            risk_figure.update_traces(texttemplate="%{text:,}", textposition="outside")
+            risk_figure.update_layout(showlegend=False)
+            st.plotly_chart(
+                plot_style(risk_figure, 410),
+                use_container_width=True,
+                config={"displayModeBar": False},
+            )
+
+            st.subheader("Matched columns")
+            matched_display = pd.DataFrame(
+                [
+                    {"Dashboard field": pretty(field), "Uploaded column used": column}
+                    for field, column in matched_columns.items()
+                ]
+            )
+            st.dataframe(matched_display, use_container_width=True, hide_index=True)
+
+            company_summary = (
+                ready_records.groupby(
+                    ["water_company_name", "calculated_risk_category"],
+                    dropna=False,
+                )
+                .size()
+                .unstack(fill_value=0)
+                .reindex(columns=RISK_ORDER, fill_value=0)
+                .reset_index()
+            )
+            company_summary["Total categorised records"] = company_summary[RISK_ORDER].sum(axis=1)
+            company_summary = company_summary.sort_values(
+                ["High", "Medium", "Total categorised records", "water_company_name"],
+                ascending=[False, False, False, True],
+            )
+            st.subheader("Water-company results from the upload")
+            st.dataframe(company_summary, use_container_width=True, hide_index=True)
+
+            if "existing_label_matches_formula" in calculated_returns.columns:
+                mismatches = calculated_returns.loc[
+                    calculated_returns["quality_check"].eq("Ready")
+                    & ~calculated_returns["existing_label_matches_formula"]
+                ]
+                if mismatches.empty:
+                    st.success("All uploaded existing risk labels match the dashboard formula.")
+                else:
+                    st.warning(
+                        f"{len(mismatches):,} uploaded existing labels differ from the dashboard formula. "
+                        "The calculated category column is the dashboard output."
+                    )
+                    st.dataframe(
+                        mismatches.head(100),
+                        use_container_width=True,
+                        hide_index=True,
+                    )
+
+            if issue_count:
+                with st.expander("Rows needing review", expanded=False):
+                    st.dataframe(
+                        calculated_returns.loc[
+                            calculated_returns["quality_check"].ne("Ready")
+                        ].head(500),
+                        use_container_width=True,
+                        hide_index=True,
+                    )
+
+            st.subheader("Calculated upload results")
+            st.dataframe(calculated_returns.head(1000), use_container_width=True, hide_index=True)
+            st.download_button(
+                "Download calculated uploaded-return results",
+                data=calculated_returns.to_csv(index=False).encode("utf-8"),
+                file_name="uploaded_edm_annual_returns_calculated_risk_categories.csv",
+                mime="text/csv",
+                use_container_width=False,
+            )
+
+
 # =============================================================================
 # PAGE 6 — INDIVIDUAL PREDICTION
 # =============================================================================
@@ -47483,3 +47905,5 @@ st.html(
     </div>
     """,
 )
+
+
