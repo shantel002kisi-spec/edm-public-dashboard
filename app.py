@@ -1,7 +1,9 @@
 from __future__ import annotations
 
 import html
+import io
 import json
+import zipfile
 import re
 from datetime import datetime, time, timedelta
 from pathlib import Path
@@ -17,7 +19,7 @@ from folium.plugins import FastMarkerCluster, Fullscreen, HeatMap, MeasureContro
 from streamlit_folium import st_folium
 
 
-DASHBOARD_RELEASE = "2026-09-14-upload-annual-return-sheets-v28"
+DASHBOARD_RELEASE = "2026-09-14-zip-company-sheets-v30"
 HOMEPAGE_ILLUSTRATION_DATA_URI = (
     "data:image/png;base64,"
     "iVBORw0KGgoAAAANSUhEUgAABogAAAOtCAIAAAA95HBeAABcQWNhQlgAAFxBanVtYgAAAB5qdW1kYzJwYQARABCAAACqADibcQNj"
@@ -41561,6 +41563,8 @@ UPLOAD_COLUMN_ALIASES = {
     "counted_spills": [
         "counted_spills",
         "Counted spills using 12-24h count method",
+        "Counted spills using 12-24hr counting method",
+        "counted spills using 12-24 hour counting method",
         "counted spills",
         "spill count",
         "spills",
@@ -41569,7 +41573,9 @@ UPLOAD_COLUMN_ALIASES = {
         "total_duration_hours",
         "Total Duration (hh:mm:ss) all spills prior to processing through 12-24h count method",
         "Total Duration (hrs) all spills prior to processing through 12-24h count method",
+        "Total Duration (hours) of all spills prior to processing through 12-24 hour counting method",
         "total duration hrs all spills prior to processing through 12-24h count method",
+        "total duration hours of all spills prior to processing through 12-24 hour counting method",
         "total duration",
         "duration hours",
         "spill duration hours",
@@ -41639,8 +41645,75 @@ def unique_upload_headers(values) -> list[str]:
     return headers
 
 
+ENVIRONMENTAL_COLUMN_ALIASES = {
+    "water_company_name": UPLOAD_COLUMN_ALIASES["water_company_name"],
+    "reporting_year": UPLOAD_COLUMN_ALIASES["reporting_year"],
+    "site_name": UPLOAD_COLUMN_ALIASES["site_name"],
+    "location_name": [
+        "location",
+        "location name",
+        "station",
+        "station name",
+        "monitoring station",
+        "town",
+        "town_or_city",
+        "place",
+    ],
+    "sample_date": [
+        "date",
+        "sample date",
+        "sampling date",
+        "measurement date",
+        "monitoring date",
+    ],
+    "parameter": [
+        "parameter",
+        "determinand",
+        "pollutant",
+        "analyte",
+        "measure",
+        "metric",
+    ],
+    "result": [
+        "result",
+        "value",
+        "measurement",
+        "concentration",
+        "reading",
+        "numeric result",
+        "reported result",
+    ],
+    "unit": [
+        "unit",
+        "units",
+        "uom",
+        "unit of measure",
+    ],
+    "status": [
+        "status",
+        "classification",
+        "class",
+        "quality class",
+        "risk category",
+        "risk_category",
+    ],
+    "rainfall_mm": [
+        "rainfall_mm",
+        "rainfall mm",
+        "rainfall",
+        "rain",
+        "precipitation",
+        "precipitation_mm",
+        "daily rainfall",
+        "daily rainfall mm",
+        "total rainfall",
+        "annual rainfall mm",
+    ],
+}
+
+
 def upload_header_score(headers: list[str]) -> int:
-    """Score how well a row looks like the annual-return column header."""
+    """Score how well a row looks like an upload column header."""
 
     available = {normalised_column_name(column) for column in headers}
     score = 0
@@ -41652,6 +41725,9 @@ def upload_header_score(headers: list[str]) -> int:
                 "counted_spills",
                 "total_duration_hours",
             } else 1
+    for key, aliases in ENVIRONMENTAL_COLUMN_ALIASES.items():
+        if any(normalised_column_name(alias) in available for alias in aliases):
+            score += 3 if key in {"rainfall_mm", "result", "status", "parameter"} else 1
     return score
 
 
@@ -41672,7 +41748,7 @@ def detect_upload_header_frame(raw: pd.DataFrame) -> tuple[pd.DataFrame, int]:
             best_row = row_number
             best_score = score
 
-    if best_score < 12:
+    if best_score < 6:
         return raw, 0
 
     if best_row == 0 and best_score == upload_header_score([str(column) for column in raw.columns]):
@@ -41863,6 +41939,305 @@ def prepare_uploaded_edm_returns(
 
     result["quality_check"] = result.apply(issue_text, axis=1)
     return result.reset_index(drop=True), columns
+
+
+
+def resolve_environmental_upload_columns(frame: pd.DataFrame) -> dict[str, str]:
+    """Match rainfall or water-quality upload headings."""
+
+    available = {normalised_column_name(column): column for column in frame.columns}
+    resolved: dict[str, str] = {}
+    for key, aliases in ENVIRONMENTAL_COLUMN_ALIASES.items():
+        for alias in aliases:
+            source = available.get(normalised_column_name(alias))
+            if source is not None:
+                resolved[key] = source
+                break
+    return resolved
+
+
+def likely_combined_or_summary_sheet(sheet_name: str) -> bool:
+    """Identify workbook summary sheets that would duplicate company sheets."""
+
+    normalised = normalised_column_name(sheet_name)
+    return any(
+        marker in normalised
+        for marker in [
+            "all_combined",
+            "combined",
+            "summary",
+            "readme",
+            "notes",
+            "lookup",
+        ]
+    )
+
+
+def read_tabular_uploads_from_bytes(
+    file_name: str,
+    file_bytes: bytes,
+) -> list[dict[str, object]]:
+    """Return raw tables from one uploaded workbook, CSV or zip member."""
+
+    suffix = Path(file_name).suffix.casefold()
+    tables: list[dict[str, object]] = []
+
+    if suffix == ".csv":
+        tables.append(
+            {
+                "source_file": file_name,
+                "worksheet": "CSV upload",
+                "raw": pd.read_csv(io.BytesIO(file_bytes), header=None, low_memory=False),
+            }
+        )
+    elif suffix in {".xlsx", ".xls"}:
+        sheets = pd.read_excel(io.BytesIO(file_bytes), sheet_name=None, header=None)
+        sheet_items = list(sheets.items())
+        detail_items = [
+            item
+            for item in sheet_items
+            if not likely_combined_or_summary_sheet(str(item[0]))
+        ]
+        if detail_items:
+            sheet_items = detail_items
+        for sheet_name, raw in sheet_items:
+            tables.append(
+                {
+                    "source_file": file_name,
+                    "worksheet": str(sheet_name),
+                    "raw": raw,
+                }
+            )
+    return tables
+
+
+def read_uploaded_tabular_sources(uploaded_files) -> tuple[list[dict[str, object]], list[str]]:
+    """Expand uploaded files and zip archives into processable raw tables."""
+
+    tables: list[dict[str, object]] = []
+    errors: list[str] = []
+    for uploaded_file in uploaded_files:
+        file_name = uploaded_file.name
+        file_bytes = uploaded_file.getvalue()
+        suffix = Path(file_name).suffix.casefold()
+        if suffix == ".zip":
+            try:
+                with zipfile.ZipFile(io.BytesIO(file_bytes)) as archive:
+                    for member in archive.infolist():
+                        member_name = member.filename
+                        if member.is_dir() or Path(member_name).name.startswith("~$"):
+                            continue
+                        member_suffix = Path(member_name).suffix.casefold()
+                        if member_suffix not in {".xlsx", ".xls", ".csv"}:
+                            continue
+                        try:
+                            member_bytes = archive.read(member)
+                            member_tables = read_tabular_uploads_from_bytes(
+                                f"{file_name} / {member_name}",
+                                member_bytes,
+                            )
+                            tables.extend(member_tables)
+                        except Exception as error:
+                            errors.append(f"{member_name}: {error}")
+            except Exception as error:
+                errors.append(f"{file_name}: could not open zip file ({error})")
+        elif suffix in {".xlsx", ".xls", ".csv"}:
+            try:
+                tables.extend(read_tabular_uploads_from_bytes(file_name, file_bytes))
+            except Exception as error:
+                errors.append(f"{file_name}: {error}")
+        else:
+            errors.append(f"{file_name}: unsupported file type")
+    return tables, errors
+
+
+def calculate_rainfall_screening_category(values: pd.Series) -> pd.Series:
+    """Classify rainfall using the same heavy-day bands used in the dashboard."""
+
+    rainfall = pd.to_numeric(values, errors="coerce")
+    categories = pd.Series("Uncategorised", index=values.index, dtype="string")
+    categories.loc[rainfall.notna()] = "Low"
+    categories.loc[rainfall.ge(10)] = "Medium"
+    categories.loc[rainfall.ge(20)] = "High"
+    return categories
+
+
+def map_status_to_screening_category(values: pd.Series) -> pd.Series:
+    """Map common water-quality status words to Low, Medium and High categories."""
+
+    text_values = values.astype("string").str.strip().str.casefold()
+    categories = pd.Series("Uncategorised", index=values.index, dtype="string")
+    high_terms = "bad|poor|fail|failed|red|high risk|non compliant|non-compliant"
+    medium_terms = "moderate|sufficient|amber|medium|medium risk|review"
+    low_terms = "good|high|excellent|pass|passed|green|low|low risk|compliant"
+    categories.loc[text_values.str.contains(high_terms, regex=True, na=False)] = "High"
+    categories.loc[text_values.str.contains(medium_terms, regex=True, na=False)] = "Medium"
+    categories.loc[text_values.str.contains(low_terms, regex=True, na=False)] = "Low"
+    return categories
+
+
+def calculate_relative_screening_category(values: pd.Series) -> pd.Series:
+    """Create a relative category when a non-EDM numeric upload has no official class."""
+
+    numeric = pd.to_numeric(values, errors="coerce")
+    categories = pd.Series("Uncategorised", index=values.index, dtype="string")
+    valid = numeric.dropna()
+    if valid.empty:
+        return categories
+
+    low_cutoff = valid.quantile(1 / 3)
+    high_cutoff = valid.quantile(2 / 3)
+    categories.loc[numeric.notna()] = "Medium"
+    categories.loc[numeric.le(low_cutoff)] = "Low"
+    categories.loc[numeric.ge(high_cutoff)] = "High"
+    return categories
+
+
+def prepare_environmental_upload(
+    raw: pd.DataFrame,
+    fallback_year: int | None = None,
+) -> tuple[pd.DataFrame, dict[str, str], str]:
+    """Prepare rainfall or water-quality uploads that are not EDM annual returns."""
+
+    columns = resolve_environmental_upload_columns(raw)
+    if "rainfall_mm" not in columns and not (
+        "status" in columns or ("parameter" in columns and "result" in columns)
+    ):
+        raise KeyError(
+            "The file is not recognised as EDM, rainfall or water-quality data. "
+            "For non-EDM files, include rainfall, or parameter/result, or a status/classification column."
+        )
+
+    result = pd.DataFrame(index=raw.index)
+    result["source_row"] = np.arange(2, len(raw) + 2)
+    result["water_company_name"] = (
+        raw[columns["water_company_name"]].astype("string").str.strip().fillna("")
+        if "water_company_name" in columns
+        else ""
+    )
+    location_column = columns.get("location_name") or columns.get("site_name")
+    result["location_name"] = (
+        raw[location_column].astype("string").str.strip().fillna("")
+        if location_column
+        else ""
+    )
+    if "reporting_year" in columns:
+        result["reporting_year"] = (
+            numeric_upload_series(raw[columns["reporting_year"]]).round().astype("Int64")
+        )
+    else:
+        result["reporting_year"] = pd.Series(fallback_year, index=raw.index, dtype="Int64")
+
+    if "sample_date" in columns:
+        result["sample_date"] = pd.to_datetime(
+            raw[columns["sample_date"]],
+            errors="coerce",
+        )
+
+    if "rainfall_mm" in columns:
+        result["dataset_type"] = "Rainfall upload"
+        result["parameter"] = "Rainfall"
+        result["reported_value"] = numeric_upload_series(raw[columns["rainfall_mm"]])
+        result["unit"] = "mm"
+        result["calculated_risk_category"] = calculate_rainfall_screening_category(
+            result["reported_value"]
+        )
+        result["category_basis"] = "Rainfall screening: Low <10 mm, Medium 10-19.999 mm, High >=20 mm"
+    elif "status" in columns:
+        result["dataset_type"] = "Water-quality upload"
+        result["parameter"] = (
+            raw[columns["parameter"]].astype("string").str.strip().fillna("")
+            if "parameter" in columns
+            else "Water-quality status"
+        )
+        result["reported_value"] = raw[columns["status"]].astype("string").str.strip()
+        result["unit"] = ""
+        result["calculated_risk_category"] = map_status_to_screening_category(
+            raw[columns["status"]]
+        )
+        result["category_basis"] = "Status/classification mapped to screening category"
+    else:
+        result["dataset_type"] = "Water-quality upload"
+        result["parameter"] = raw[columns["parameter"]].astype("string").str.strip().fillna("")
+        result["reported_value"] = numeric_upload_series(raw[columns["result"]])
+        result["unit"] = (
+            raw[columns["unit"]].astype("string").str.strip().fillna("")
+            if "unit" in columns
+            else ""
+        )
+        result["calculated_risk_category"] = calculate_relative_screening_category(
+            result["reported_value"]
+        )
+        result["category_basis"] = "Relative screening within the uploaded numeric results"
+
+    result["quality_check"] = np.where(
+        result["calculated_risk_category"].eq("Uncategorised"),
+        "Missing or unrecognised measurement/category",
+        "Ready",
+    )
+    return result.reset_index(drop=True), columns, str(result["dataset_type"].iloc[0])
+
+
+def process_one_uploaded_table(table: dict[str, object]) -> tuple[pd.DataFrame, dict[str, str]]:
+    """Classify one uploaded worksheet or CSV as EDM, rainfall or water quality."""
+
+    raw = table["raw"]
+    prepared, detected_header_row = detect_upload_header_frame(raw)
+    source_file = str(table["source_file"])
+    worksheet = str(table["worksheet"])
+    fallback_year = infer_upload_year(worksheet, source_file)
+
+    try:
+        result, matched_columns = prepare_uploaded_edm_returns(
+            prepared,
+            fallback_year=fallback_year,
+        )
+        result["dataset_type"] = "EDM annual return"
+        result["category_basis"] = (
+            "EDM formula: Low if spills <20 and duration <100h; "
+            "High if spills >80 and duration >400h; otherwise Medium"
+        )
+    except Exception:
+        result, matched_columns, _dataset_type = prepare_environmental_upload(
+            prepared,
+            fallback_year=fallback_year,
+        )
+
+    result.insert(0, "source_file", source_file)
+    result.insert(1, "worksheet", worksheet)
+    result.insert(2, "detected_header_row", detected_header_row)
+    if fallback_year is not None and "reporting_year" not in matched_columns:
+        result["inferred_reporting_year"] = fallback_year
+    return result, matched_columns
+
+
+def process_uploaded_environmental_files(uploaded_files) -> tuple[pd.DataFrame, pd.DataFrame, list[str]]:
+    """Process all uploaded files, including zip archives with company sheets."""
+
+    tables, errors = read_uploaded_tabular_sources(uploaded_files)
+    results: list[pd.DataFrame] = []
+    matched_rows: list[dict[str, str]] = []
+    for table in tables:
+        try:
+            result, matched_columns = process_one_uploaded_table(table)
+            results.append(result)
+            for field, column in matched_columns.items():
+                matched_rows.append(
+                    {
+                        "Source file": str(table["source_file"]),
+                        "Worksheet": str(table["worksheet"]),
+                        "Dashboard field": pretty(field),
+                        "Uploaded column used": column,
+                    }
+                )
+        except Exception as error:
+            errors.append(
+                f"{table['source_file']} / {table['worksheet']}: {error}"
+            )
+
+    combined = pd.concat(results, ignore_index=True, sort=False) if results else pd.DataFrame()
+    matched = pd.DataFrame(matched_rows)
+    return combined, matched, errors
 
 def coalesced_text(
     frame: pd.DataFrame,
@@ -47612,12 +47987,12 @@ elif page == "Rainfall and spills":
 
 elif page == "Upload EDM returns":
     section_header(
-        "Upload EDM annual returns",
-        "Calculate Low, Medium and High spill-risk categories from a newly uploaded annual-return file.",
+        "Upload environmental records",
+        "Calculate categories from EDM annual returns, zipped water-company sheets, rainfall files and water-quality files.",
     )
     banner(
-        "<b>Recorded upload:</b> uploaded annual returns are treated as new recorded evidence. "
-        "The dashboard applies the same threshold formula used to check the supplied EDM records; it does not treat uploaded records as a forecast.",
+        "<b>Recorded upload:</b> uploaded files are treated as new evidence. "
+        "EDM annual returns use the verified spill-duration formula. Rainfall and water-quality uploads are labelled as screening categories so they are not confused with EDM spill-risk evidence.",
         icon="💧",
         background=PALE_MINT,
         edge="#4A9C7D",
@@ -47625,48 +48000,37 @@ elif page == "Upload EDM returns":
 
     st.markdown(
         f"""
-        **Formula used for uploaded records**
+        **EDM formula used for annual-return records**
 
         Low = fewer than {UPLOAD_LOW_SPILL_THRESHOLD} counted spills and fewer than {UPLOAD_LOW_DURATION_THRESHOLD_HOURS} duration hours.  
         High = more than {UPLOAD_HIGH_SPILL_THRESHOLD} counted spills and more than {UPLOAD_HIGH_DURATION_THRESHOLD_HOURS} duration hours.  
-        Medium = any record with both measurements present that does not meet the Low or High rule.
+        Medium = any EDM record with both measurements present that does not meet the Low or High rule.
+
+        **Other supported uploads**
+
+        Zip files can contain `.xlsx`, `.xls` or `.csv` files. The app reads each workbook sheet separately, including individual water-company sheets. Rainfall uploads use the dashboard rainfall bands. Water-quality uploads use an existing status/classification column when present, or a relative screening category for numeric parameter results.
         """
     )
 
-    uploaded_return = st.file_uploader(
-        "Upload an EDM annual-return file",
-        type=["xlsx", "xls", "csv"],
-        help="The file must include water company, reporting year, counted spills and total duration.",
+    uploaded_returns = st.file_uploader(
+        "Upload files to calculate categories",
+        type=["xlsx", "xls", "csv", "zip"],
+        accept_multiple_files=True,
+        help="Upload one file, several files, or a zip containing annual-return company sheets.",
     )
 
-    if uploaded_return is None:
+    if not uploaded_returns:
         st.info(
-            "Upload a future EDM annual-return spreadsheet or CSV to calculate risk categories. "
-            "Required fields: water company, reporting year, counted spills, and total duration."
+            "Upload EDM annual returns, rainfall data, water-quality data, or a zip containing company sheets. "
+            "EDM files need water company, counted spills and duration. A year can be in the sheet name, file name or a reporting-year column."
         )
     else:
-        try:
-            suffix = Path(uploaded_return.name).suffix.casefold()
-            if suffix == ".csv":
-                raw_upload_frame = pd.read_csv(uploaded_return, header=None, low_memory=False)
-                selected_sheet = "CSV upload"
-            else:
-                sheets = pd.read_excel(uploaded_return, sheet_name=None, header=None)
-                selected_sheet = st.selectbox(
-                    "Worksheet to calculate",
-                    list(sheets.keys()),
-                    key="uploaded_edm_return_sheet",
-                )
-                raw_upload_frame = sheets[selected_sheet]
+        calculated_returns, matched_display, processing_errors = process_uploaded_environmental_files(
+            uploaded_returns
+        )
 
-            uploaded_raw, detected_header_row = detect_upload_header_frame(raw_upload_frame)
-            fallback_year = infer_upload_year(selected_sheet, uploaded_return.name)
-            calculated_returns, matched_columns = prepare_uploaded_edm_returns(
-                uploaded_raw,
-                fallback_year=fallback_year,
-            )
-        except Exception as error:
-            st.error(f"The uploaded file could not be processed: {error}")
+        if calculated_returns.empty:
+            st.error("No usable worksheet or CSV data could be processed from the uploaded file(s).")
         else:
             ready_records = calculated_returns.loc[
                 calculated_returns["quality_check"].eq("Ready")
@@ -47677,41 +48041,46 @@ elif page == "Upload EDM returns":
                 .reindex(RISK_ORDER, fill_value=0)
             )
             issue_count = int(calculated_returns["quality_check"].ne("Ready").sum())
+            source_count = calculated_returns[["source_file", "worksheet"]].drop_duplicates().shape[0]
 
-            caption_parts = [f"Processed worksheet: {selected_sheet}."]
-            if detected_header_row:
-                caption_parts.append(f"Header row detected at row {detected_header_row}.")
-            if fallback_year is not None and "reporting_year" not in matched_columns:
-                caption_parts.append(f"Reporting year inferred as {fallback_year}.")
-            st.caption(" ".join(caption_parts))
             metric_cards(
                 [
                     {
-                        "label": "Rows uploaded",
-                        "value": f"{len(calculated_returns):,}",
-                        "note": "Annual-return records read",
+                        "label": "Sources processed",
+                        "value": f"{source_count:,}",
+                        "note": "Worksheets or CSV files",
                         "accent": "#B7DDE5",
                     },
                     {
                         "label": "Ready rows",
                         "value": f"{len(ready_records):,}",
-                        "note": "Rows with spill count and duration",
+                        "note": "Rows with category output",
                         "accent": "#A8D8D0",
                     },
                     {
-                        "label": "High risk",
+                        "label": "High category",
                         "value": f"{int(risk_counts['High']):,}",
-                        "note": "Calculated from uploaded records",
+                        "note": "Across processed uploads",
                         "accent": "#E9A7A7",
                     },
                     {
                         "label": "Rows needing review",
                         "value": f"{issue_count:,}",
-                        "note": "Missing required measurements",
+                        "note": "Missing or unrecognised values",
                         "accent": "#F1D39D",
                     },
                 ]
             )
+
+            type_summary = (
+                ready_records.groupby(["dataset_type", "calculated_risk_category"])
+                .size()
+                .unstack(fill_value=0)
+                .reindex(columns=RISK_ORDER, fill_value=0)
+                .reset_index()
+            )
+            st.subheader("Category summary by upload type")
+            st.dataframe(type_summary, use_container_width=True, hide_index=True)
 
             risk_summary = pd.DataFrame(
                 {
@@ -47726,7 +48095,7 @@ elif page == "Upload EDM returns":
                 color="Risk category",
                 color_discrete_map=RISK_COLOURS,
                 text="Uploaded records",
-                title="Calculated risk categories from uploaded annual returns",
+                title="Calculated categories from uploaded records",
             )
             risk_figure.update_traces(texttemplate="%{text:,}", textposition="outside")
             risk_figure.update_layout(showlegend=False)
@@ -47736,50 +48105,46 @@ elif page == "Upload EDM returns":
                 config={"displayModeBar": False},
             )
 
-            st.subheader("Matched columns")
-            matched_display = pd.DataFrame(
-                [
-                    {"Dashboard field": pretty(field), "Uploaded column used": column}
-                    for field, column in matched_columns.items()
-                ]
-            )
-            st.dataframe(matched_display, use_container_width=True, hide_index=True)
+            if not matched_display.empty:
+                st.subheader("Matched columns")
+                st.dataframe(matched_display, use_container_width=True, hide_index=True)
 
-            company_summary = (
-                ready_records.groupby(
-                    ["water_company_name", "calculated_risk_category"],
-                    dropna=False,
+            company_column = "water_company_name"
+            if company_column in ready_records.columns and ready_records[company_column].astype("string").str.strip().ne("").any():
+                company_summary = (
+                    ready_records.loc[ready_records[company_column].astype("string").str.strip().ne("")]
+                    .groupby([company_column, "dataset_type", "calculated_risk_category"], dropna=False)
+                    .size()
+                    .unstack(fill_value=0)
+                    .reindex(columns=RISK_ORDER, fill_value=0)
+                    .reset_index()
                 )
-                .size()
-                .unstack(fill_value=0)
-                .reindex(columns=RISK_ORDER, fill_value=0)
-                .reset_index()
-            )
-            company_summary["Total categorised records"] = company_summary[RISK_ORDER].sum(axis=1)
-            company_summary = company_summary.sort_values(
-                ["High", "Medium", "Total categorised records", "water_company_name"],
-                ascending=[False, False, False, True],
-            )
-            st.subheader("Water-company results from the upload")
-            st.dataframe(company_summary, use_container_width=True, hide_index=True)
+                company_summary["Total categorised records"] = company_summary[RISK_ORDER].sum(axis=1)
+                company_summary = company_summary.sort_values(
+                    ["High", "Medium", "Total categorised records", company_column],
+                    ascending=[False, False, False, True],
+                )
+                st.subheader("Water-company results from the upload")
+                st.dataframe(company_summary, use_container_width=True, hide_index=True)
 
             if "existing_label_matches_formula" in calculated_returns.columns:
                 mismatches = calculated_returns.loc[
                     calculated_returns["quality_check"].eq("Ready")
-                    & ~calculated_returns["existing_label_matches_formula"]
+                    & calculated_returns["existing_label_matches_formula"].eq(False)
                 ]
                 if mismatches.empty:
-                    st.success("All uploaded existing risk labels match the dashboard formula.")
+                    st.success("All uploaded existing EDM risk labels match the dashboard formula.")
                 else:
                     st.warning(
-                        f"{len(mismatches):,} uploaded existing labels differ from the dashboard formula. "
+                        f"{len(mismatches):,} uploaded existing EDM labels differ from the dashboard formula. "
                         "The calculated category column is the dashboard output."
                     )
-                    st.dataframe(
-                        mismatches.head(100),
-                        use_container_width=True,
-                        hide_index=True,
-                    )
+                    st.dataframe(mismatches.head(100), use_container_width=True, hide_index=True)
+
+            if processing_errors:
+                with st.expander("Files or sheets that could not be processed", expanded=True):
+                    for error in processing_errors:
+                        st.warning(error)
 
             if issue_count:
                 with st.expander("Rows needing review", expanded=False):
@@ -47794,9 +48159,9 @@ elif page == "Upload EDM returns":
             st.subheader("Calculated upload results")
             st.dataframe(calculated_returns.head(1000), use_container_width=True, hide_index=True)
             st.download_button(
-                "Download calculated uploaded-return results",
+                "Download calculated upload results",
                 data=calculated_returns.to_csv(index=False).encode("utf-8"),
-                file_name="uploaded_edm_annual_returns_calculated_risk_categories.csv",
+                file_name="uploaded_environmental_records_calculated_categories.csv",
                 mime="text/csv",
                 use_container_width=False,
             )
