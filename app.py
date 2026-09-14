@@ -19,7 +19,7 @@ from folium.plugins import FastMarkerCluster, Fullscreen, HeatMap, MeasureContro
 from streamlit_folium import st_folium
 
 
-DASHBOARD_RELEASE = "2026-09-14-zip-company-sheets-v30"
+DASHBOARD_RELEASE = "2026-09-14-upload-high-risk-sites-v31"
 HOMEPAGE_ILLUSTRATION_DATA_URI = (
     "data:image/png;base64,"
     "iVBORw0KGgoAAAANSUhEUgAABogAAAOtCAIAAAA95HBeAABcQWNhQlgAAFxBanVtYgAAAB5qdW1kYzJwYQARABCAAACqADibcQNj"
@@ -48126,6 +48126,85 @@ elif page == "Upload EDM returns":
                 )
                 st.subheader("Water-company results from the upload")
                 st.dataframe(company_summary, use_container_width=True, hide_index=True)
+
+            high_risk_locations = calculated_returns.loc[
+                calculated_returns["calculated_risk_category"].eq("High")
+            ].copy()
+            st.subheader("High-risk locations and receiving waters")
+            if high_risk_locations.empty:
+                st.success("No High-category locations were found in the processed upload.")
+            else:
+                site_text = pd.Series("", index=high_risk_locations.index, dtype="string")
+                if "site_name" in high_risk_locations.columns:
+                    site_text = high_risk_locations["site_name"].astype("string").str.strip()
+                if "location_name" in high_risk_locations.columns:
+                    location_text = high_risk_locations["location_name"].astype("string").str.strip()
+                    site_text = site_text.mask(site_text.isna() | site_text.eq(""), location_text)
+                high_risk_locations["high_risk_site_or_location"] = site_text.fillna("").replace(
+                    "",
+                    "Location not supplied",
+                )
+
+                receiving_text = pd.Series("", index=high_risk_locations.index, dtype="string")
+                if "receiving_water" in high_risk_locations.columns:
+                    receiving_text = high_risk_locations["receiving_water"].astype("string").str.strip()
+                high_risk_locations["receiving_site_or_water"] = receiving_text.fillna("").replace(
+                    "",
+                    "Receiving water/site not supplied",
+                )
+
+                high_risk_columns = [
+                    column
+                    for column in [
+                        "dataset_type",
+                        "source_file",
+                        "worksheet",
+                        "water_company_name",
+                        "reporting_year",
+                        "high_risk_site_or_location",
+                        "receiving_site_or_water",
+                        "outlet_ngr",
+                        "permit_reference",
+                        "counted_spills",
+                        "total_duration_hours",
+                        "parameter",
+                        "reported_value",
+                        "unit",
+                        "category_basis",
+                    ]
+                    if column in high_risk_locations.columns
+                ]
+                high_risk_display = high_risk_locations[high_risk_columns].rename(
+                    columns={
+                        "dataset_type": "Upload type",
+                        "source_file": "Source file",
+                        "worksheet": "Worksheet",
+                        "water_company_name": "Water company",
+                        "reporting_year": "Reporting year",
+                        "high_risk_site_or_location": "High-risk site/location",
+                        "receiving_site_or_water": "Receiving water/site",
+                        "outlet_ngr": "Outlet grid reference",
+                        "permit_reference": "Permit reference",
+                        "counted_spills": "Counted spills",
+                        "total_duration_hours": "Duration hours",
+                        "parameter": "Parameter",
+                        "reported_value": "Reported value",
+                        "unit": "Unit",
+                        "category_basis": "Category basis",
+                    }
+                )
+                st.caption(
+                    "For EDM uploads, High means the site meets the spill-count and duration formula. "
+                    "For rainfall or water-quality uploads, High is a screening category and is labelled by upload type."
+                )
+                st.dataframe(high_risk_display, use_container_width=True, hide_index=True)
+                st.download_button(
+                    "Download High-risk upload locations",
+                    data=high_risk_display.to_csv(index=False).encode("utf-8"),
+                    file_name="uploaded_high_risk_locations_and_receiving_waters.csv",
+                    mime="text/csv",
+                    use_container_width=False,
+                )
 
             if "existing_label_matches_formula" in calculated_returns.columns:
                 mismatches = calculated_returns.loc[
