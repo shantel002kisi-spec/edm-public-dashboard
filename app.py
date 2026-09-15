@@ -17,7 +17,7 @@ from folium.plugins import FastMarkerCluster, Fullscreen, HeatMap, MeasureContro
 from streamlit_folium import st_folium
 
 
-DASHBOARD_RELEASE = "2026-09-13-upload-edm-returns-v26"
+DASHBOARD_RELEASE = "2026-09-15-dataset-spill-card-fix-v27"
 HOMEPAGE_ILLUSTRATION_DATA_URI = (
     "data:image/png;base64,"
     "iVBORw0KGgoAAAANSUhEUgAABLAAAAOECAIAAAA+D1+tAAEAAElEQVR42qz9adBu63YVhs2xvm/vfZrbSPeqb5AACYQEohOdaewqYmxXACPsYA"
@@ -14877,6 +14877,17 @@ def audited_company_spill_trends() -> pd.DataFrame:
     return audited.sort_values(["water_company_name", "reporting_year"]).reset_index(drop=True)
 
 
+def audited_dataset_annual_spill_totals() -> dict[int, float]:
+    """Return whole-dataset annual spill totals from the audited workbook values."""
+    return {
+        year: sum(
+            float(yearly_values.get(year, 0.0))
+            for yearly_values in AUDITED_COMPANY_ANNUAL_SPILLS.values()
+        )
+        for year in OBSERVED_YEARS
+    }
+
+
 def audited_company_spill_summary() -> pd.DataFrame:
     """Rank companies by counted spills across the complete observed period."""
     trends = audited_company_spill_trends()
@@ -17221,7 +17232,10 @@ elif page == "Explore the map":
                 ]
             )
         else:
-            annual_spills = mapped_annual_spill_totals(filtered, place_column)
+            # Keep the annual spill cards tied to the audited combined EDM
+            # dataset rather than re-summing town/city totals after mapping.
+            # Map filters still control which receiving-water outlets are shown.
+            annual_spills = audited_dataset_annual_spill_totals()
             recorded_cards = [
                 {
                     "label": "Receiving-water outlets shown",
@@ -17235,7 +17249,7 @@ elif page == "Explore the map":
                 {
                     "label": f"{year} counted spills",
                     "value": value_text(annual_spills[year]),
-                    "note": "Recorded across the receiving-water locations shown",
+                    "note": "Combined EDM dataset · exact duplicate rows removed",
                     "accent": accent,
                 }
                 for year, accent in zip(OBSERVED_YEARS, year_accents)
