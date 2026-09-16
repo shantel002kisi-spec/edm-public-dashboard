@@ -12407,7 +12407,7 @@ LEGACY_INSTALLER_RELEASE_MARKERS = (
 # =============================================================================
 
 st.set_page_config(
-    page_title="Storm Overflow Insights",
+    page_title="Storm Overflow Risk Insights",
     page_icon="💧",
     layout="wide",
     initial_sidebar_state="expanded",
@@ -15580,7 +15580,7 @@ def render_hero():
         <section class="edm-hero">
           <div>
             <div class="edm-kicker">💧 England and Wales</div>
-            <h1>Storm Overflow Insights</h1>
+            <h1>Storm Overflow Risk Insights</h1>
             <p>
               Explore mapped discharge outlets, receiving waters and recorded {OBSERVED_PERIOD} risk,
               then view the separate, clearly labelled 2026 forecast.
@@ -21413,7 +21413,7 @@ st.html(
     """
     <div style="margin-top:2.5rem;padding-top:1rem;border-top:1px solid rgba(55,120,110,.18);
                 color:#5D7772;font-size:.78rem;text-align:center;">
-      Storm Overflow Insights · verified evidence, transparent forecasts and responsible interpretation
+      Storm Overflow Risk Insights · verified evidence, transparent forecasts and responsible interpretation
     </div>
     """,
 )
