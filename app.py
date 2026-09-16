@@ -18894,11 +18894,12 @@ elif page == "Improvements and changes":
         edge="#62A887",
     )
 
-    company_change_tab, town_change_tab, water_change_tab = st.tabs(
+    company_change_tab, town_change_tab, water_change_tab, contributors_tab = st.tabs(
         [
             "Water-company improvement",
             "Towns and cities",
             "Receiving-water locations",
+            "2025 reduction contributors",
         ]
     )
 
@@ -19441,6 +19442,396 @@ elif page == "Improvements and changes":
                     ),
                     use_container_width=True,
                     hide_index=True,
+                )
+
+
+    with contributors_tab:
+        section_header(
+            "Which locations contributed most to the 2025 spill reduction?",
+            "Compare the same recorded locations in 2024 and 2025, then identify the outlets, receiving waters and named treatment works with the largest falls in counted spills.",
+        )
+        banner(
+            "This is a <b>2024 → 2025 matched-location comparison</b>. A reduction shows where fewer counted spills were recorded. "
+            "It does not prove that rainfall, infrastructure work or any other factor caused the change.",
+            icon="↓",
+            background="#EDF7F3",
+            edge="#62A887",
+        )
+
+        contributor_changes = load_table("receiving_water_changes")
+        required_contributor_columns = {
+            "location_id",
+            "water_company_name",
+            "site_name",
+            "receiving_water",
+            "official_place_name",
+            "counted_spills_2024",
+            "counted_spills_2025",
+        }
+
+        if contributor_changes.empty or not required_contributor_columns.issubset(
+            contributor_changes.columns
+        ):
+            st.info(
+                "The matched 2024–2025 location evidence is unavailable. "
+                "Re-run the receiving-water change export and dashboard installer."
+            )
+        else:
+            contributor_changes = contributor_changes.copy()
+            for column in ["counted_spills_2024", "counted_spills_2025"]:
+                contributor_changes[column] = pd.to_numeric(
+                    contributor_changes[column], errors="coerce"
+                )
+
+            contributor_changes = (
+                contributor_changes.dropna(
+                    subset=["counted_spills_2024", "counted_spills_2025"]
+                )
+                .drop_duplicates(subset=["location_id"], keep="first")
+                .copy()
+            )
+            contributor_changes["spill_reduction_2025"] = (
+                contributor_changes["counted_spills_2024"]
+                - contributor_changes["counted_spills_2025"]
+            )
+            contributor_changes["change_percent_2024_2025"] = np.where(
+                contributor_changes["counted_spills_2024"].gt(0),
+                contributor_changes["spill_reduction_2025"]
+                / contributor_changes["counted_spills_2024"]
+                * 100,
+                np.nan,
+            )
+
+            company_options = ["All water companies"] + available_values(
+                contributor_changes, "water_company_name"
+            )
+            selected_contributor_company = st.selectbox(
+                "Filter by water company",
+                company_options,
+                key="reduction_contributor_company",
+            )
+
+            contributor_view = contributor_changes
+            if selected_contributor_company != "All water companies":
+                contributor_view = contributor_view.loc[
+                    contributor_view["water_company_name"]
+                    .astype(str)
+                    .eq(selected_contributor_company)
+                ].copy()
+
+            improving_view = contributor_view.loc[
+                contributor_view["spill_reduction_2025"].gt(0)
+            ].copy()
+
+            matched_locations = len(contributor_view)
+            improved_locations = len(improving_view)
+            improvement_share = (
+                improved_locations / matched_locations * 100
+                if matched_locations
+                else np.nan
+            )
+            matched_net_reduction = (
+                contributor_view["counted_spills_2024"].sum()
+                - contributor_view["counted_spills_2025"].sum()
+            )
+            largest_reduction = (
+                improving_view["spill_reduction_2025"].max()
+                if not improving_view.empty
+                else np.nan
+            )
+
+            metric_cards(
+                [
+                    {
+                        "label": "Matched 2024–2025 locations",
+                        "value": value_text(matched_locations),
+                        "note": "Same location available in both years",
+                        "accent": "#B7DDE5",
+                    },
+                    {
+                        "label": "Locations with fewer spills",
+                        "value": value_text(improved_locations),
+                        "note": (
+                            f"{improvement_share:.1f}% of matched locations"
+                            if pd.notna(improvement_share)
+                            else "Share unavailable"
+                        ),
+                        "accent": "#A8D8D0",
+                    },
+                    {
+                        "label": "Matched-location net reduction",
+                        "value": value_text(matched_net_reduction),
+                        "note": "2024 counted spills minus 2025 counted spills",
+                        "accent": "#8FC9B2",
+                    },
+                    {
+                        "label": "Largest single-location reduction",
+                        "value": value_text(largest_reduction),
+                        "note": "Counted spills at one matched location",
+                        "accent": "#CDBDDE",
+                    },
+                ]
+            )
+
+            if improving_view.empty:
+                st.info("No matched locations in this filter recorded fewer spills in 2025.")
+            else:
+                top_n = st.slider(
+                    "Number of leading contributors to show",
+                    min_value=5,
+                    max_value=50,
+                    value=20,
+                    step=5,
+                    key="reduction_contributor_top_n",
+                )
+
+                outlet_tab, receiving_tab, treatment_tab = st.tabs(
+                    ["Outlets and sites", "Receiving waters", "Named treatment works"]
+                )
+
+                with outlet_tab:
+                    top_outlets = improving_view.nlargest(
+                        top_n, "spill_reduction_2025"
+                    ).copy()
+                    top_outlets["Display site"] = top_outlets.apply(
+                        lambda row: (
+                            f"{safe_text(row.get('site_name'), 'Site not recorded')} · "
+                            f"{safe_text(row.get('water_company_name'), 'Company not recorded')}"
+                        ),
+                        axis=1,
+                    )
+
+                    outlet_figure = px.bar(
+                        top_outlets.sort_values("spill_reduction_2025"),
+                        x="spill_reduction_2025",
+                        y="Display site",
+                        orientation="h",
+                        text="spill_reduction_2025",
+                        color="spill_reduction_2025",
+                        color_continuous_scale=["#DCEFE8", "#8FC9B2", "#4A9C7D"],
+                        title="Largest outlet/site reductions in counted spills, 2024 → 2025",
+                        labels={
+                            "spill_reduction_2025": "Fewer counted spills",
+                            "Display site": "",
+                        },
+                    )
+                    outlet_figure.update_traces(textposition="outside")
+                    outlet_figure.update_layout(
+                        coloraxis_showscale=False,
+                        margin=dict(l=220, r=50, t=75, b=60),
+                    )
+                    st.plotly_chart(
+                        plot_style(
+                            outlet_figure,
+                            max(500, 34 * len(top_outlets) + 220),
+                        ),
+                        use_container_width=True,
+                        key="reduction_contributors_outlets",
+                        config={"displayModeBar": False},
+                    )
+
+                    outlet_table = top_outlets[
+                        [
+                            "site_name",
+                            "receiving_water",
+                            "official_place_name",
+                            "water_company_name",
+                            "counted_spills_2024",
+                            "counted_spills_2025",
+                            "spill_reduction_2025",
+                            "change_percent_2024_2025",
+                        ]
+                    ].rename(
+                        columns={
+                            "site_name": "Outlet / site",
+                            "receiving_water": "Receiving water",
+                            "official_place_name": "Nearest town or city",
+                            "water_company_name": "Water company",
+                            "counted_spills_2024": "2024 spills",
+                            "counted_spills_2025": "2025 spills",
+                            "spill_reduction_2025": "Fewer spills",
+                            "change_percent_2024_2025": "Reduction (%)",
+                        }
+                    )
+                    outlet_table["Reduction (%)"] = outlet_table[
+                        "Reduction (%)"
+                    ].round(1)
+                    st.dataframe(
+                        outlet_table,
+                        use_container_width=True,
+                        hide_index=True,
+                    )
+
+                with receiving_tab:
+                    receiving_source = contributor_view.loc[
+                        contributor_view["receiving_water"]
+                        .astype("string")
+                        .str.strip()
+                        .ne("")
+                        & contributor_view["receiving_water"].notna()
+                    ].copy()
+
+                    receiving_summary = (
+                        receiving_source.groupby(
+                            ["water_company_name", "receiving_water"],
+                            as_index=False,
+                            dropna=False,
+                        )
+                        .agg(
+                            locations=("location_id", "nunique"),
+                            counted_spills_2024=("counted_spills_2024", "sum"),
+                            counted_spills_2025=("counted_spills_2025", "sum"),
+                        )
+                    )
+                    receiving_summary["spill_reduction_2025"] = (
+                        receiving_summary["counted_spills_2024"]
+                        - receiving_summary["counted_spills_2025"]
+                    )
+                    receiving_summary = receiving_summary.loc[
+                        receiving_summary["spill_reduction_2025"].gt(0)
+                    ].nlargest(top_n, "spill_reduction_2025")
+
+                    if receiving_summary.empty:
+                        st.info(
+                            "No named receiving waters in this filter recorded a net reduction."
+                        )
+                    else:
+                        receiving_summary["Display water"] = (
+                            receiving_summary["receiving_water"].astype(str)
+                            + " · "
+                            + receiving_summary["water_company_name"].astype(str)
+                        )
+                        receiving_figure = px.bar(
+                            receiving_summary.sort_values("spill_reduction_2025"),
+                            x="spill_reduction_2025",
+                            y="Display water",
+                            orientation="h",
+                            text="spill_reduction_2025",
+                            color="spill_reduction_2025",
+                            color_continuous_scale=["#E3F3F7", "#8BC6D6", "#4E9FB6"],
+                            title="Receiving waters linked to the largest net reductions",
+                            labels={
+                                "spill_reduction_2025": "Fewer counted spills",
+                                "Display water": "",
+                            },
+                        )
+                        receiving_figure.update_traces(textposition="outside")
+                        receiving_figure.update_layout(
+                            coloraxis_showscale=False,
+                            margin=dict(l=220, r=50, t=75, b=60),
+                        )
+                        st.plotly_chart(
+                            plot_style(
+                                receiving_figure,
+                                max(500, 34 * len(receiving_summary) + 220),
+                            ),
+                            use_container_width=True,
+                            key="reduction_contributors_receiving_waters",
+                            config={"displayModeBar": False},
+                        )
+
+                        st.dataframe(
+                            receiving_summary[
+                                [
+                                    "receiving_water",
+                                    "water_company_name",
+                                    "locations",
+                                    "counted_spills_2024",
+                                    "counted_spills_2025",
+                                    "spill_reduction_2025",
+                                ]
+                            ].rename(
+                                columns={
+                                    "receiving_water": "Receiving water",
+                                    "water_company_name": "Water company",
+                                    "locations": "Matched locations",
+                                    "counted_spills_2024": "2024 spills",
+                                    "counted_spills_2025": "2025 spills",
+                                    "spill_reduction_2025": "Fewer spills",
+                                }
+                            ),
+                            use_container_width=True,
+                            hide_index=True,
+                        )
+
+                with treatment_tab:
+                    treatment_pattern = (
+                        r"\b(?:STW|WWTW|WRC|WwTW)\b|"
+                        r"sewage treatment|wastewater treatment|water recycling|treatment works"
+                    )
+                    treatment_view = improving_view.loc[
+                        improving_view["site_name"]
+                        .astype("string")
+                        .str.contains(
+                            treatment_pattern,
+                            case=False,
+                            regex=True,
+                            na=False,
+                        )
+                    ].nlargest(top_n, "spill_reduction_2025")
+
+                    st.caption(
+                        "Treatment works are identified from wording in the published site name "
+                        "(for example STW, WWTW, WRC or 'treatment works'). This is a name-based "
+                        "screening view, not a separate asset-classification dataset."
+                    )
+
+                    if treatment_view.empty:
+                        st.info(
+                            "No site names in this filter match the treatment-works naming rule."
+                        )
+                    else:
+                        st.dataframe(
+                            treatment_view[
+                                [
+                                    "site_name",
+                                    "receiving_water",
+                                    "official_place_name",
+                                    "water_company_name",
+                                    "counted_spills_2024",
+                                    "counted_spills_2025",
+                                    "spill_reduction_2025",
+                                ]
+                            ].rename(
+                                columns={
+                                    "site_name": "Treatment works / site",
+                                    "receiving_water": "Receiving water",
+                                    "official_place_name": "Nearest town or city",
+                                    "water_company_name": "Water company",
+                                    "counted_spills_2024": "2024 spills",
+                                    "counted_spills_2025": "2025 spills",
+                                    "spill_reduction_2025": "Fewer spills",
+                                }
+                            ),
+                            use_container_width=True,
+                            hide_index=True,
+                        )
+
+                downloadable = improving_view[
+                    [
+                        "location_id",
+                        "water_company_name",
+                        "site_name",
+                        "receiving_water",
+                        "official_place_name",
+                        "counted_spills_2024",
+                        "counted_spills_2025",
+                        "spill_reduction_2025",
+                        "change_percent_2024_2025",
+                    ]
+                ].sort_values("spill_reduction_2025", ascending=False)
+                st.download_button(
+                    "Download 2025 reduction contributors",
+                    data=downloadable.to_csv(index=False).encode("utf-8"),
+                    file_name="2025_spill_reduction_contributors.csv",
+                    mime="text/csv",
+                    key="download_2025_reduction_contributors",
+                )
+
+                st.caption(
+                    "Interpretation: this view identifies where the recorded numerical reduction occurred. "
+                    "It should be combined with rainfall, improvement-activity and infrastructure evidence "
+                    "before discussing possible causes."
                 )
 
 
