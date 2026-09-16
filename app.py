@@ -12480,10 +12480,10 @@ st.markdown(
           linear-gradient(145deg, #FBFDF9 0%, #F3FAF7 48%, #F5F9FC 100%);
       }
 
-      /* Hide Streamlit chrome so the deployed app reads as a finished dashboard. */
+      /* Keep the sidebar/navigation available while hiding Streamlit's top controls. */
       header[data-testid="stHeader"] {
-        height: 0 !important;
-        min-height: 0 !important;
+        height: 2.85rem !important;
+        min-height: 2.85rem !important;
         background: transparent !important;
         border-bottom: 0 !important;
       }
@@ -12496,7 +12496,7 @@ st.markdown(
       .block-container {
         width: 100%;
         max-width: 1900px;
-        padding-top: 1.15rem;
+        padding-top: 1.35rem;
         padding-left: 1rem;
         padding-right: 1rem;
         padding-bottom: 3rem;
