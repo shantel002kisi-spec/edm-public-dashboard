@@ -12512,6 +12512,27 @@ st.markdown(
         border-right: 1px solid rgba(54, 121, 112, 0.18);
       }
 
+      /* Keep the dashboard navigation permanently available on desktop.
+         Streamlit can persist a collapsed sidebar in browser storage; because
+         the developer toolbar is intentionally hidden, force the navigation
+         panel back into view instead of relying on the hidden reopen control. */
+      @media (min-width: 769px) {
+        section[data-testid="stSidebar"] {
+          display: block !important;
+          visibility: visible !important;
+          width: 20rem !important;
+          min-width: 20rem !important;
+          max-width: 20rem !important;
+          transform: none !important;
+          flex-shrink: 0 !important;
+        }
+
+        [data-testid="stSidebarCollapseButton"],
+        [data-testid="stSidebarCollapsedControl"] {
+          display: none !important;
+        }
+      }
+
       section[data-testid="stSidebar"] > div {
         padding-top: 1.25rem;
       }
