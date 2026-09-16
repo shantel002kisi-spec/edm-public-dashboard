@@ -19839,6 +19839,347 @@ elif page == "Improvements and changes":
                     "before discussing possible causes."
                 )
 
+            st.divider()
+            section_header(
+                "2025 High-risk locations that increased or stayed the same",
+                "Identify matched outlets that were recorded High in 2025 and did not show a fall in counted spills from 2024.",
+            )
+            banner(
+                "These locations remained <b>High risk in 2025</b> while counted spills either increased or stayed the same compared with 2024. "
+                "This identifies where recorded activity did not improve; it does not establish why.",
+                icon="▲",
+                background="#FBE8E8",
+                edge="#D66565",
+            )
+
+            high_context = prepare_priority_context(
+                contributor_view,
+                load_table("observed_locations"),
+            )
+            high_non_improvers = high_context.loc[
+                high_context["_priority_high_risk_year_values"].map(
+                    lambda years: 2025 in years
+                )
+                & high_context["spill_reduction_2025"].le(0)
+            ].copy()
+
+            high_non_improvers["2025 change"] = np.where(
+                high_non_improvers["counted_spills_2025"]
+                .gt(high_non_improvers["counted_spills_2024"]),
+                "Increased",
+                "Stayed the same",
+            )
+            high_non_improvers["additional_spills_2025"] = (
+                high_non_improvers["counted_spills_2025"]
+                - high_non_improvers["counted_spills_2024"]
+            )
+
+            increased_high = high_non_improvers.loc[
+                high_non_improvers["2025 change"].eq("Increased")
+            ].copy()
+            unchanged_high = high_non_improvers.loc[
+                high_non_improvers["2025 change"].eq("Stayed the same")
+            ].copy()
+            added_spills = increased_high["additional_spills_2025"].sum()
+
+            metric_cards(
+                [
+                    {
+                        "label": "High-risk locations with no fall",
+                        "value": value_text(len(high_non_improvers)),
+                        "note": "Matched 2024–2025 locations",
+                        "accent": "#E9A7A7",
+                    },
+                    {
+                        "label": "High-risk locations increased",
+                        "value": value_text(len(increased_high)),
+                        "note": "More counted spills in 2025",
+                        "accent": "#D97A76",
+                    },
+                    {
+                        "label": "High-risk locations unchanged",
+                        "value": value_text(len(unchanged_high)),
+                        "note": "Same counted spills in 2024 and 2025",
+                        "accent": "#E8CD6A",
+                    },
+                    {
+                        "label": "Additional spills at increasing High sites",
+                        "value": value_text(added_spills),
+                        "note": "2025 minus 2024 at increasing locations",
+                        "accent": "#CDBDDE",
+                    },
+                ]
+            )
+
+            if high_non_improvers.empty:
+                st.info(
+                    "No matched locations in this filter were both High risk in 2025 and unchanged or higher in counted spills."
+                )
+            else:
+                high_direction = st.segmented_control(
+                    "Show 2025 High-risk locations where counted spills:",
+                    ["All", "Increased", "Stayed the same"],
+                    default="All",
+                    key="high_non_improver_direction",
+                )
+                high_view = high_non_improvers
+                if high_direction and high_direction != "All":
+                    high_view = high_non_improvers.loc[
+                        high_non_improvers["2025 change"].eq(high_direction)
+                    ].copy()
+
+                high_top_n = st.slider(
+                    "Number of High-risk non-improvers to show",
+                    min_value=5,
+                    max_value=50,
+                    value=20,
+                    step=5,
+                    key="high_non_improver_top_n",
+                )
+
+                high_outlet_tab, high_receiving_tab, high_treatment_tab = st.tabs(
+                    [
+                        "High-risk outlets",
+                        "Receiving waters",
+                        "Treatment / operational sites",
+                    ]
+                )
+
+                with high_outlet_tab:
+                    ranked_high = high_view.sort_values(
+                        [
+                            "additional_spills_2025",
+                            "counted_spills_2025",
+                        ],
+                        ascending=[False, False],
+                    ).head(high_top_n).copy()
+                    ranked_high["Display site"] = ranked_high.apply(
+                        lambda row: (
+                            f"{safe_text(row.get('site_name'), 'Site not recorded')} · "
+                            f"{safe_text(row.get('water_company_name'), 'Company not recorded')}"
+                        ),
+                        axis=1,
+                    )
+
+                    if ranked_high.empty:
+                        st.info("No High-risk locations match this change filter.")
+                    else:
+                        high_figure = px.bar(
+                            ranked_high.sort_values(
+                                ["additional_spills_2025", "counted_spills_2025"]
+                            ),
+                            x="additional_spills_2025",
+                            y="Display site",
+                            orientation="h",
+                            text="additional_spills_2025",
+                            color="2025 change",
+                            color_discrete_map={
+                                "Increased": "#D97A76",
+                                "Stayed the same": "#E8CD6A",
+                            },
+                            title="2025 High-risk locations with increased or unchanged counted spills",
+                            labels={
+                                "additional_spills_2025": "Change in counted spills (2025 − 2024)",
+                                "Display site": "",
+                            },
+                        )
+                        high_figure.update_traces(textposition="outside")
+                        high_figure.update_layout(
+                            margin=dict(l=220, r=50, t=75, b=60),
+                        )
+                        st.plotly_chart(
+                            plot_style(
+                                high_figure,
+                                max(500, 34 * len(ranked_high) + 220),
+                            ),
+                            use_container_width=True,
+                            key="high_non_improver_outlets",
+                            config={"displayModeBar": False},
+                        )
+
+                        high_outlet_table = ranked_high[
+                            [
+                                "site_name",
+                                "_priority_treatment_site",
+                                "receiving_water",
+                                "official_place_name",
+                                "water_company_name",
+                                "counted_spills_2024",
+                                "counted_spills_2025",
+                                "additional_spills_2025",
+                                "2025 change",
+                            ]
+                        ].rename(
+                            columns={
+                                "site_name": "Outlet / site",
+                                "_priority_treatment_site": "Treatment / operational site",
+                                "receiving_water": "Receiving water",
+                                "official_place_name": "Nearest town or city",
+                                "water_company_name": "Water company",
+                                "counted_spills_2024": "2024 spills",
+                                "counted_spills_2025": "2025 spills",
+                                "additional_spills_2025": "Change in spills",
+                            }
+                        )
+                        st.dataframe(
+                            high_outlet_table,
+                            use_container_width=True,
+                            hide_index=True,
+                        )
+
+                with high_receiving_tab:
+                    high_receiving = high_view.loc[
+                        high_view["receiving_water"].notna()
+                        & high_view["receiving_water"]
+                        .astype("string")
+                        .str.strip()
+                        .ne("")
+                    ].copy()
+
+                    high_receiving_summary = (
+                        high_receiving.groupby(
+                            ["water_company_name", "receiving_water"],
+                            as_index=False,
+                            dropna=False,
+                        )
+                        .agg(
+                            high_risk_locations=("location_id", "nunique"),
+                            counted_spills_2024=("counted_spills_2024", "sum"),
+                            counted_spills_2025=("counted_spills_2025", "sum"),
+                        )
+                    )
+                    high_receiving_summary["change_in_spills"] = (
+                        high_receiving_summary["counted_spills_2025"]
+                        - high_receiving_summary["counted_spills_2024"]
+                    )
+                    high_receiving_summary = high_receiving_summary.sort_values(
+                        ["change_in_spills", "counted_spills_2025"],
+                        ascending=[False, False],
+                    ).head(high_top_n)
+
+                    if high_receiving_summary.empty:
+                        st.info("No named receiving waters match this High-risk filter.")
+                    else:
+                        st.dataframe(
+                            high_receiving_summary[
+                                [
+                                    "receiving_water",
+                                    "water_company_name",
+                                    "high_risk_locations",
+                                    "counted_spills_2024",
+                                    "counted_spills_2025",
+                                    "change_in_spills",
+                                ]
+                            ].rename(
+                                columns={
+                                    "receiving_water": "Receiving water",
+                                    "water_company_name": "Water company",
+                                    "high_risk_locations": "High-risk locations",
+                                    "counted_spills_2024": "2024 spills",
+                                    "counted_spills_2025": "2025 spills",
+                                    "change_in_spills": "Change in spills",
+                                }
+                            ),
+                            use_container_width=True,
+                            hide_index=True,
+                        )
+
+                with high_treatment_tab:
+                    treatment_high = high_view.loc[
+                        high_view["_priority_treatment_site"]
+                        .astype("string")
+                        .str.strip()
+                        .ne("")
+                        & ~high_view["_priority_treatment_site"]
+                        .astype("string")
+                        .str.lower()
+                        .isin(["not available", "not recorded", "nan", "none", "<na>"])
+                    ].copy()
+
+                    treatment_high_summary = (
+                        treatment_high.groupby(
+                            [
+                                "water_company_name",
+                                "_priority_treatment_site",
+                            ],
+                            as_index=False,
+                            dropna=False,
+                        )
+                        .agg(
+                            high_risk_locations=("location_id", "nunique"),
+                            counted_spills_2024=("counted_spills_2024", "sum"),
+                            counted_spills_2025=("counted_spills_2025", "sum"),
+                        )
+                    )
+                    treatment_high_summary["change_in_spills"] = (
+                        treatment_high_summary["counted_spills_2025"]
+                        - treatment_high_summary["counted_spills_2024"]
+                    )
+                    treatment_high_summary = treatment_high_summary.sort_values(
+                        ["change_in_spills", "counted_spills_2025"],
+                        ascending=[False, False],
+                    ).head(high_top_n)
+
+                    if treatment_high_summary.empty:
+                        st.info(
+                            "No named treatment or operational sites match this High-risk filter."
+                        )
+                    else:
+                        st.dataframe(
+                            treatment_high_summary[
+                                [
+                                    "_priority_treatment_site",
+                                    "water_company_name",
+                                    "high_risk_locations",
+                                    "counted_spills_2024",
+                                    "counted_spills_2025",
+                                    "change_in_spills",
+                                ]
+                            ].rename(
+                                columns={
+                                    "_priority_treatment_site": "Treatment / operational site",
+                                    "water_company_name": "Water company",
+                                    "high_risk_locations": "High-risk locations",
+                                    "counted_spills_2024": "2024 spills",
+                                    "counted_spills_2025": "2025 spills",
+                                    "change_in_spills": "Change in spills",
+                                }
+                            ),
+                            use_container_width=True,
+                            hide_index=True,
+                        )
+
+                high_download = high_view[
+                    [
+                        "location_id",
+                        "water_company_name",
+                        "site_name",
+                        "_priority_treatment_site",
+                        "receiving_water",
+                        "official_place_name",
+                        "counted_spills_2024",
+                        "counted_spills_2025",
+                        "additional_spills_2025",
+                        "2025 change",
+                        "_priority_high_risk_years",
+                    ]
+                ].sort_values(
+                    ["additional_spills_2025", "counted_spills_2025"],
+                    ascending=[False, False],
+                )
+                st.download_button(
+                    "Download 2025 High-risk increasing / unchanged locations",
+                    data=high_download.to_csv(index=False).encode("utf-8"),
+                    file_name="2025_high_risk_increasing_or_unchanged_locations.csv",
+                    mime="text/csv",
+                    key="download_2025_high_non_improvers",
+                )
+                st.caption(
+                    "High means the dashboard's recorded 2025 operational-risk category. "
+                    "An increase or no change in counted spills identifies limited improvement, "
+                    "not confirmed environmental harm or the cause of the activity."
+                )
+
 
 # =============================================================================
 # PAGE 6 — 2026 PREDICTIONS AND AFFECTED LOCATIONS
