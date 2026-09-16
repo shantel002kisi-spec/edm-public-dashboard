@@ -19184,6 +19184,11 @@ elif page == "Improvements and changes":
                     "Increased": "#D97A76",
                     "Stayed the same": "#EBA35B",
                 }[town_direction]
+                town_fill_colour = {
+                    "Decreased": "rgba(98,168,135,0.13)",
+                    "Increased": "rgba(217,122,118,0.13)",
+                    "Stayed the same": "rgba(235,163,91,0.13)",
+                }[town_direction]
                 if pd.notna(town_row["change_percent"]):
                     change_size = int(np.ceil(abs(town_row["change_percent"])))
                     town_change_text = (
@@ -19241,7 +19246,7 @@ elif page == "Improvements and changes":
                             color=["#C9DCE5", "#BED9DB", "#B8D8D1", "#E8CD6A", town_colour],
                         ),
                         fill="tozeroy",
-                        fillcolor=f"{town_colour}22",
+                        fillcolor=town_fill_colour,
                         hovertemplate="%{x}: %{y:,.0f} counted spills<extra></extra>",
                     )
                 )
