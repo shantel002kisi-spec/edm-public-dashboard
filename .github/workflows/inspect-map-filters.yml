@@ -1,0 +1,28 @@
+name: Inspect map filter panel
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  inspect:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Show map filter panel snippets
+        shell: python
+        run: |
+          from pathlib import Path
+          lines = Path('app.py').read_text(encoding='utf-8').splitlines()
+          needles = ('Find a town', 'Observed years', 'Loading the complete place list', 'edm-place-search', 'edm-risk-filter', 'edm-company-filter')
+          hits = [i for i, line in enumerate(lines, 1) if any(n.lower() in line.lower() for n in needles)]
+          print('HITS', hits)
+          for hit in hits:
+              start=max(1,hit-35); end=min(len(lines),hit+55)
+              print(f'--- {start}:{end} ---')
+              for i in range(start,end+1):
+                  print(f'{i}: {lines[i-1]}')
