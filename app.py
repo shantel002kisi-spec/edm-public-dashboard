@@ -16377,7 +16377,8 @@ def add_colab_map_panels(
         display:flex;align-items:center;justify-content:space-between;gap:8px;}}
       .edm-panel-close {{display:inline-flex;align-items:center;justify-content:center;width:28px;height:28px;
         flex:0 0 28px;padding:0;border:1px solid rgba(40,100,93,.20);border-radius:50%;cursor:pointer;
-        background:rgba(255,255,255,.78);color:#245B61;font-size:18px;font-weight:800;line-height:1;}}
+        background:rgba(255,255,255,.78);color:#245B61;font-size:18px;font-weight:800;line-height:1;
+        position:relative;z-index:10002;pointer-events:auto!important;touch-action:manipulation;}}
       .edm-panel-close:hover,.edm-panel-close:focus {{background:#FFFFFF;box-shadow:0 3px 9px rgba(28,77,70,.14);}}
       #edm-panel-toggle {{display:none;position:fixed;top:12px;left:12px;z-index:10001;padding:9px 13px;
         border:1px solid #8FBDB2;border-radius:999px;background:rgba(251,253,249,.97);color:#173D3A;
@@ -16450,12 +16451,16 @@ def add_colab_map_panels(
         #edm-map-left{{height:calc(86vh - 24px);}}
         #edm-map-right{{top:12px;bottom:auto;}}}}
     </style>
-    <button id="edm-panel-toggle" type="button" aria-label="Show the map filters and rankings">
+    <button id="edm-panel-toggle" type="button"
+            onclick="event.stopPropagation();document.body.classList.remove('edm-panels-hidden');"
+            aria-label="Show the map filters and rankings">
       &#9776; Show filters and rankings
     </button>
     <aside id="edm-map-left" class="edm-map-panel" aria-label="Town and city directory">
       <div class="edm-map-title"><span>{map_title}</span>
-      <button class="edm-panel-close" type="button" data-edm-hide-panels aria-label="Hide the map panels">&times;</button></div>
+      <button class="edm-panel-close" type="button" data-edm-hide-panels
+              onclick="event.stopPropagation();document.body.classList.add('edm-panels-hidden');"
+              aria-label="Hide the map panels">&times;</button></div>
       <div class="edm-map-period">{period_text}</div>
       <div class="edm-map-legend">
         <div style="color:#357A63;">&#9679; Low<br>{int(risk_counts['Low']):,}</div>
@@ -16479,7 +16484,9 @@ def add_colab_map_panels(
     </aside>
     <aside id="edm-map-right" class="edm-map-panel" aria-label="Water company ranking">
       <div class="edm-map-title"><span>Water-company ranking</span>
-      <button class="edm-panel-close" type="button" data-edm-hide-panels aria-label="Hide the map panels">&times;</button></div>
+      <button class="edm-panel-close" type="button" data-edm-hide-panels
+              onclick="event.stopPropagation();document.body.classList.add('edm-panels-hidden');"
+              aria-label="Hide the map panels">&times;</button></div>
       <div class="edm-map-period">{ranking_period}</div>
       <div class="edm-place-detail" style="margin-bottom:6px;">{ranking_guidance}</div>
       <div id="edm-company-trend" aria-live="polite"></div>
