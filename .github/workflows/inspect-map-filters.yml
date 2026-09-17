@@ -1,4 +1,4 @@
-name: Inspect map filter panel
+name: Remove inactive map filter controls
 
 on:
   push:
@@ -6,23 +6,61 @@ on:
   workflow_dispatch:
 
 permissions:
-  contents: read
+  contents: write
 
 jobs:
-  inspect:
+  fix-map-panel:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-      - name: Show map filter panel snippets
+      - name: Hide inactive controls and compact the panel
         shell: python
         run: |
           from pathlib import Path
-          lines = Path('app.py').read_text(encoding='utf-8').splitlines()
-          needles = ('Find a town', 'Observed years', 'Loading the complete place list', 'edm-place-search', 'edm-risk-filter', 'edm-company-filter')
-          hits = [i for i, line in enumerate(lines, 1) if any(n.lower() in line.lower() for n in needles)]
-          print('HITS', hits)
-          for hit in hits:
-              start=max(1,hit-35); end=min(len(lines),hit+55)
-              print(f'--- {start}:{end} ---')
-              for i in range(start,end+1):
-                  print(f'{i}: {lines[i-1]}')
+
+          path = Path("app.py")
+          text = path.read_text(encoding="utf-8")
+
+          old_left = "      #edm-map-left {{left:12px;height:calc(86vh - 24px);overflow:hidden;display:flex;flex-direction:column;}}"
+          new_left = """      #edm-map-left {{left:12px;height:auto;max-height:86vh;overflow:hidden;display:flex;flex-direction:column;}}
+          #edm-map-left > label,
+          #edm-map-left .edm-search-row,
+          #edm-map-left .edm-map-filter-row,
+          #edm-map-left .edm-year-filter,
+          #edm-map-left .edm-year-note,
+          #edm-map-left #edm-place-count,
+          #edm-map-left #edm-place-results {{display:none!important;}}"""
+
+          old_mobile = "        #edm-map-left{{height:calc(86vh - 24px);}}"
+          new_mobile = "        #edm-map-left{{height:auto;}}"
+
+          changed = False
+          if old_left in text:
+              text = text.replace(old_left, new_left, 1)
+              changed = True
+          elif new_left not in text:
+              raise SystemExit("Expected left-panel CSS was not found; app.py was left unchanged.")
+
+          if old_mobile in text:
+              text = text.replace(old_mobile, new_mobile, 1)
+              changed = True
+          elif new_mobile not in text:
+              raise SystemExit("Expected mobile left-panel CSS was not found; app.py was left unchanged.")
+
+          if changed:
+              path.write_text(text, encoding="utf-8")
+              print("Inactive town/city search, risk, company, year controls and place-list area are now hidden; the panel is compact.")
+          else:
+              print("Map panel is already updated; no change needed.")
+      - name: Commit change
+        shell: bash
+        run: |
+          if git diff --quiet -- app.py; then
+            echo "No app.py changes to commit."
+            exit 0
+          fi
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add app.py
+          git commit -m "Remove inactive map filter controls"
+          git push
