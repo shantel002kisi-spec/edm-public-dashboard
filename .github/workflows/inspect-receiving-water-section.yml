@@ -1,0 +1,32 @@
+name: Inspect receiving water section
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  inspect:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Show treatment and receiving water snippets
+        shell: python
+        run: |
+          from pathlib import Path
+          lines = Path('app.py').read_text(encoding='utf-8').splitlines()
+          needles = ('treatment', 'operational', 'receiving water', 'water companies', 'outlets recorded High')
+          hits = [i for i, line in enumerate(lines, 1) if any(n.lower() in line.lower() for n in needles)]
+          print('HITS', hits[:200])
+          shown=[]
+          for hit in hits:
+              if any(abs(hit-x)<90 for x in shown):
+                  continue
+              shown.append(hit)
+              start=max(1,hit-45); end=min(len(lines),hit+90)
+              print(f'--- {start}:{end} ---')
+              for i in range(start,end+1):
+                  print(f'{i}: {lines[i-1]}')
