@@ -12441,6 +12441,7 @@ components.html(
         }
 
         return [...doc.querySelectorAll("button")].find((el) => {
+          if (el.id === BUTTON_ID) return false;
           const label = [
             el.getAttribute("aria-label") || "",
             el.getAttribute("title") || "",
