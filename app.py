@@ -16489,7 +16489,14 @@ def add_colab_map_panels(
         border:1px solid #AFCFC6;border-radius:14px;box-shadow:0 7px 25px rgba(28,77,70,.19);
         font:12px/1.38 'Atkinson Hyperlegible',Verdana,Arial,sans-serif;
         transition:transform .28s ease,opacity .22s ease;}}
-      #edm-map-left {{left:12px;height:calc(86vh - 24px);overflow:hidden;display:flex;flex-direction:column;}}
+      #edm-map-left {{left:12px;height:auto;max-height:86vh;overflow:hidden;display:flex;flex-direction:column;}}
+#edm-map-left > label,
+#edm-map-left .edm-search-row,
+#edm-map-left .edm-map-filter-row,
+#edm-map-left .edm-year-filter,
+#edm-map-left .edm-year-note,
+#edm-map-left #edm-place-count,
+#edm-map-left #edm-place-results {{display:none!important;}}
       #edm-map-right {{right:12px;top:12px;bottom:auto;}}
       .edm-map-title {{margin:-12px -12px 8px;padding:10px 12px;border-radius:13px 13px 0 0;
         color:#173D3A;background:linear-gradient(120deg,#CFEAE3,#DDEFF4);font-size:16px;font-weight:800;
@@ -16567,7 +16574,7 @@ def add_colab_map_panels(
       .risk-high {{color:#A84B4B;font-weight:800;}} .risk-medium {{color:#93611D;font-weight:800;}}
       .risk-low {{color:#357A63;font-weight:800;}}
       @media(max-width:1000px) {{.edm-map-panel{{width:235px;max-height:86vh;}}
-        #edm-map-left{{height:calc(86vh - 24px);}}
+        #edm-map-left{{height:auto;}}
         #edm-map-right{{top:12px;bottom:auto;}}}}
     </style>
     <button id="edm-panel-toggle" type="button"
