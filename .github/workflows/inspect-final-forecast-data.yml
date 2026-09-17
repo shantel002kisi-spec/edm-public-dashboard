@@ -1,0 +1,32 @@
+name: Inspect final forecast data
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  inspect:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Inspect final and old forecast files
+        shell: python
+        run: |
+          import pandas as pd
+          from pathlib import Path
+          for name in ["rainfall_risk_predictions_2026_ytd", "forecast_map_points"]:
+              p = Path("data") / f"{name}.csv.gz"
+              print("\n===", name, "===")
+              df = pd.read_csv(p, low_memory=False)
+              print("ROWS", len(df))
+              print("COLS", list(df.columns))
+              for c in ["predicted_2026_risk_category","predicted_2026_risk","latitude","longitude","lat","lon","official_place_name","water_company","water_company_name","receiving_water_name","receiving_water"]:
+                  if c in df.columns:
+                      print(c, "NONNULL", int(df[c].notna().sum()))
+              for c in ["predicted_2026_risk_category","predicted_2026_risk"]:
+                  if c in df.columns:
+                      print("COUNTS", c, df[c].value_counts(dropna=False).to_dict())
