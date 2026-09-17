@@ -17226,19 +17226,19 @@ if page == "Start here":
 
     section_header(
         "Spill-risk percentages",
-        "Compare the recorded evidence with the separately labelled 2026 forecast.",
+        "Compare recorded 2021–2025 evidence with the final rainfall-enhanced 2026 forecast.",
     )
     st.html(
         """
         <div class="edm-home-chart-note">
-          Each percentage is the share of <b>mapped discharge outlets</b> in a risk category.
-          Recorded 2021–2025 evidence and predicted 2026 risk are deliberately kept separate.
+          Recorded percentages show the share of <b>mapped discharge outlets</b> in each 2021–2025 risk category.
+          The 2026 chart uses the <b>final rainfall-enhanced forecast population of 15,596 eligible outlets</b>.
         </div>
         """
     )
 
     observed_overview = load_table("observed_locations")
-    forecast_overview = load_table("forecast_map_points")
+    forecast_overview = load_table("rainfall_risk_predictions_2026_ytd")
     overview_charts = []
     if (
         not observed_overview.empty
@@ -17255,13 +17255,13 @@ if page == "Start here":
         )
     if (
         not forecast_overview.empty
-        and "predicted_2026_risk" in forecast_overview.columns
+        and "predicted_2026_risk_category" in forecast_overview.columns
     ):
         overview_charts.append(
             (
                 forecast_overview,
-                "predicted_2026_risk",
-                "Predicted risk categories for mapped discharge outlets, 2026",
+                "predicted_2026_risk_category",
+                "Predicted 2026 risk categories (rainfall-enhanced forecast)",
                 "outlets forecast",
                 "home_predicted_risk_share",
             )
