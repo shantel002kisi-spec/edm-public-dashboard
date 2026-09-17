@@ -16901,27 +16901,11 @@ def build_folium_map(
     )
 
     folium.TileLayer(
-        tiles="https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png",
-        attr="&copy; OpenStreetMap contributors &copy; CARTO",
-        name="Pastel rivers and places",
+        tiles="OpenStreetMap",
+        name="Clean street map",
         show=True,
         control=True,
-        subdomains="abcd",
-        max_zoom=20,
     ).add_to(water_map)
-    folium.TileLayer(
-        tiles="CartoDB positron",
-        name="Soft contrast map",
-        show=False,
-        control=True,
-    ).add_to(water_map)
-    folium.TileLayer(
-        tiles="OpenStreetMap",
-        name="Detailed street map",
-        show=False,
-        control=True,
-    ).add_to(water_map)
-
     water_map.get_root().header.add_child(
         folium.Element(
             """
