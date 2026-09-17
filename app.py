@@ -13,6 +13,7 @@ import pandas as pd
 import plotly.express as px
 import plotly.graph_objects as go
 import streamlit as st
+import streamlit.components.v1 as components
 from folium.plugins import FastMarkerCluster, Fullscreen, HeatMap, MeasureControl, MiniMap
 from streamlit_folium import st_folium
 
@@ -12411,6 +12412,95 @@ st.set_page_config(
     page_icon="💧",
     layout="wide",
     initial_sidebar_state="auto",
+)
+
+# Reliable mobile navigation button.
+# Recent Streamlit releases can leave the native sidebar reopen control hidden
+# on narrow screens, so this small mobile-only button triggers the same native
+# sidebar control without bringing back the developer/share toolbar.
+components.html(
+    """
+    <script>
+    (() => {
+      const doc = window.parent.document;
+      const BUTTON_ID = "edm-mobile-sidebar-toggle";
+
+      function findNativeSidebarToggle() {
+        const selectors = [
+          '[data-testid="stSidebarCollapseButton"] button',
+          '[data-testid="stSidebarCollapseButton"]',
+          'section[data-testid="stSidebar"] button[kind="headerNoPadding"]',
+          '.stSidebar button[kind="headerNoPadding"]',
+          '[data-testid="stSidebarCollapsedControl"] button',
+          '[data-testid="stSidebarCollapsedControl"]'
+        ];
+
+        for (const selector of selectors) {
+          const el = doc.querySelector(selector);
+          if (el) return el;
+        }
+
+        return [...doc.querySelectorAll("button")].find((el) => {
+          const label = [
+            el.getAttribute("aria-label") || "",
+            el.getAttribute("title") || "",
+            el.textContent || ""
+          ].join(" ").toLowerCase();
+          return label.includes("sidebar") || label.includes("navigation");
+        }) || null;
+      }
+
+      let button = doc.getElementById(BUTTON_ID);
+      if (!button) {
+        button = doc.createElement("button");
+        button.id = BUTTON_ID;
+        button.type = "button";
+        button.setAttribute("aria-label", "Open or close navigation menu");
+        button.setAttribute("title", "Navigation menu");
+        button.textContent = "☰";
+
+        Object.assign(button.style, {
+          position: "fixed",
+          top: "9px",
+          left: "9px",
+          width: "42px",
+          height: "42px",
+          display: "none",
+          alignItems: "center",
+          justifyContent: "center",
+          padding: "0",
+          borderRadius: "11px",
+          border: "1px solid rgba(54, 121, 112, 0.28)",
+          background: "rgba(255, 255, 255, 0.96)",
+          color: "#17324D",
+          boxShadow: "0 3px 14px rgba(23, 50, 77, 0.18)",
+          fontSize: "25px",
+          lineHeight: "1",
+          fontFamily: "Arial, sans-serif",
+          cursor: "pointer",
+          zIndex: "2147483647",
+          WebkitTapHighlightColor: "transparent"
+        });
+
+        button.addEventListener("click", () => {
+          const nativeToggle = findNativeSidebarToggle();
+          if (nativeToggle) nativeToggle.click();
+        });
+
+        doc.body.appendChild(button);
+      }
+
+      const updateVisibility = () => {
+        button.style.display = window.parent.innerWidth <= 768 ? "flex" : "none";
+      };
+
+      updateVisibility();
+      window.parent.addEventListener("resize", updateVisibility);
+    })();
+    </script>
+    """,
+    height=0,
+    width=0,
 )
 
 ROOT = Path(__file__).resolve().parent
