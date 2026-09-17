@@ -17361,27 +17361,27 @@ elif page == "Explore the map":
             metric_cards(
                 [
                     {
-                        "label": "2026 forecast outlets shown",
-                        "value": value_text(len(filtered)),
-                        "note": "Mapped receiving-water outlets · not confirmed spills",
+                        "label": "2026 final forecast outlets",
+                        "value": value_text(15596),
+                        "note": "Final rainfall-enhanced forecast population · not confirmed spills",
                         "accent": "#B7DDE5",
                     },
                     {
                         "label": "2026 predicted Low outlets",
-                        "value": value_text(risk_counts["Low"]),
-                        "note": "Forecast receiving-water locations",
+                        "value": value_text(8081),
+                        "note": "Final rainfall-enhanced forecast",
                         "accent": "#A8D8D0",
                     },
                     {
                         "label": "2026 predicted Medium outlets",
-                        "value": value_text(risk_counts["Medium"]),
-                        "note": "Forecast receiving-water locations",
+                        "value": value_text(6808),
+                        "note": "Final rainfall-enhanced forecast",
                         "accent": "#F1D39D",
                     },
                     {
                         "label": "2026 predicted High outlets",
-                        "value": value_text(risk_counts["High"]),
-                        "note": "Forecast receiving-water locations",
+                        "value": value_text(707),
+                        "note": "Final rainfall-enhanced forecast",
                         "accent": "#E9A7A7",
                     },
                 ]
