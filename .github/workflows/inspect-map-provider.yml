@@ -20,45 +20,38 @@ jobs:
 
           path = Path("app.py")
           text = path.read_text(encoding="utf-8")
+          carto_marker = 'tiles="https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png"'
+          fixed_marker = 'name="Clean street map"'
 
-          old = '''    folium.TileLayer(
-              tiles="https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png",
-              attr="&copy; OpenStreetMap contributors &copy; CARTO",
-              name="Pastel rivers and places",
-              show=True,
-              control=True,
-              subdomains="abcd",
-              max_zoom=20,
-          ).add_to(water_map)
-          folium.TileLayer(
-              tiles="CartoDB positron",
-              name="Soft contrast map",
-              show=False,
-              control=True,
-          ).add_to(water_map)
-          folium.TileLayer(
-              tiles="OpenStreetMap",
-              name="Detailed street map",
-              show=False,
-              control=True,
-          ).add_to(water_map)
-          '''
+          if carto_marker in text:
+              start = text.rfind("    folium.TileLayer(", 0, text.index(carto_marker))
+              if start < 0:
+                  raise SystemExit("Could not locate the start of the CARTO tile layer.")
 
-          new = '''    folium.TileLayer(
-              tiles="OpenStreetMap",
-              name="Clean street map",
-              show=True,
-              control=True,
-          ).add_to(water_map)
-          '''
+              end_marker = "    ).add_to(water_map)"
+              end = start
+              for _ in range(3):
+                  end = text.index(end_marker, end) + len(end_marker)
+                  while end < len(text) and text[end] in "\r\n":
+                      end += 1
 
-          if old in text:
-              path.write_text(text.replace(old, new, 1), encoding="utf-8")
+              new_lines = [
+                  "    folium.TileLayer(",
+                  '        tiles="OpenStreetMap",',
+                  '        name="Clean street map",',
+                  "        show=True,",
+                  "        control=True,",
+                  "    ).add_to(water_map)",
+                  "",
+              ]
+              replacement = "\n".join(new_lines)
+              text = text[:start] + replacement + text[end:]
+              path.write_text(text, encoding="utf-8")
               print("Removed CARTO basemaps and made OpenStreetMap the default.")
-          elif new in text:
+          elif fixed_marker in text:
               print("Map basemap is already fixed; no change needed.")
           else:
-              raise SystemExit("Expected basemap block was not found; app.py was left unchanged.")
+              raise SystemExit("CARTO basemap was not found; app.py was left unchanged.")
 
       - name: Commit change
         run: |
