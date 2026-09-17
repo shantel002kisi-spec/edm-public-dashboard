@@ -20,7 +20,5 @@ jobs:
 
           path = Path("app.py")
           lines = path.read_text(encoding="utf-8").splitlines()
-          needles = ("carto", "tile", "folium", "basemap", "apikey", "api key", "st_folium", "leaflet")
-          for i, line in enumerate(lines, 1):
-              if any(n in line.lower() for n in needles):
-                  print(f"{i}: {line}")
+          for i in range(16888, 16929):
+              print(f"{i}: {lines[i-1]}")
