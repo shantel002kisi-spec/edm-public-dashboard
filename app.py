@@ -17160,7 +17160,7 @@ st.sidebar.html(
     <div class="edm-brand">
       <div style="display:flex;align-items:center;">
         <span class="edm-brand-mark">💧</span>
-        <div><div style="font-size:1.12rem;font-weight:800;line-height:1.2;">Sewage Overflow<br>Insights</div>
+        <div><div style="font-size:1.12rem;font-weight:800;line-height:1.2;">Storm Overflow<br>Insights</div>
         <div style="font-size:.76rem;color:#5D7772;margin-top:.18rem;">England and Wales · evidence · forecast</div></div>
       </div>
     </div>
