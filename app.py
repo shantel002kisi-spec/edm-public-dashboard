@@ -12410,7 +12410,7 @@ st.set_page_config(
     page_title="Storm Overflow Risk Insights",
     page_icon="💧",
     layout="wide",
-    initial_sidebar_state="locked",
+    initial_sidebar_state="auto",
 )
 
 ROOT = Path(__file__).resolve().parent
@@ -12491,6 +12491,34 @@ st.markdown(
       [data-testid="stToolbar"],
       [data-testid="stStatusWidget"] {
         display: none !important;
+      }
+
+      /* Keep Streamlit's sidebar open/reopen controls available, especially
+         on phones, while the developer/share toolbar remains hidden. */
+      [data-testid="stSidebarCollapsedControl"],
+      [data-testid="stSidebarCollapseButton"] {
+        display: flex !important;
+        visibility: visible !important;
+        opacity: 1 !important;
+        pointer-events: auto !important;
+        z-index: 100000 !important;
+      }
+
+      [data-testid="stSidebarCollapsedControl"] button,
+      [data-testid="stSidebarCollapseButton"] button {
+        display: inline-flex !important;
+        visibility: visible !important;
+        opacity: 1 !important;
+        pointer-events: auto !important;
+      }
+
+      @media (max-width: 768px) {
+        [data-testid="stSidebarCollapsedControl"] {
+          position: fixed !important;
+          top: .5rem !important;
+          left: .5rem !important;
+          z-index: 100000 !important;
+        }
       }
 
       .block-container {
