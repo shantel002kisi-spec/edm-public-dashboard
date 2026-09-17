@@ -14923,10 +14923,26 @@ def safe_text(value, fallback="Not available") -> str:
 
 
 def value_text(value, decimals=0, suffix="") -> str:
-    numeric = pd.to_numeric(pd.Series([value]), errors="coerce").iloc[0]
-    if pd.isna(numeric):
+    """Format a scalar number without creating a temporary pandas Series.
+
+    This helper is used thousands of times while map popups are assembled, so
+    keeping the scalar conversion lightweight materially reduces map build time.
+    """
+    if value is None:
         return "Not available"
-    return f"{float(numeric):,.{decimals}f}{suffix}"
+    try:
+        if isinstance(value, str):
+            cleaned = value.strip().replace(",", "")
+            if not cleaned:
+                return "Not available"
+            numeric = float(cleaned)
+        else:
+            numeric = float(value)
+    except (TypeError, ValueError):
+        return "Not available"
+    if not np.isfinite(numeric):
+        return "Not available"
+    return f"{numeric:,.{decimals}f}{suffix}"
 
 
 def available_values(frame: pd.DataFrame, column: str) -> list[str]:
@@ -16207,6 +16223,8 @@ def add_colab_map_panels(
     plotting: pd.DataFrame,
     risk_column: str,
     prediction: bool,
+    popup_cache: dict[int, str] | None = None,
+    tooltip_cache: dict[int, str] | None = None,
 ) -> None:
     """Add the same directory-and-ranking experience used by the Colab map."""
     if plotting.empty:
@@ -16473,6 +16491,21 @@ def add_colab_map_panels(
     directory = []
     for _, row in plotting.iterrows():
         risk = plain(row.get(risk_column), "Uncategorised")
+        map_row_id = int(row.get("_edm_map_row_id", -1))
+        cached_popup = (
+            popup_cache.get(map_row_id)
+            if popup_cache is not None and map_row_id in popup_cache
+            else popup_for_row(row, risk_column, prediction)
+        )
+        cached_tooltip = (
+            tooltip_cache.get(map_row_id)
+            if tooltip_cache is not None and map_row_id in tooltip_cache
+            else safe_text(
+                f"{RISK_SYMBOLS.get(risk, '•')} {risk} risk · "
+                f"{plain(row.get(site_column), 'Spill outlet') if site_column else 'Spill outlet'} · "
+                f"{plain(row.get(place_column), 'Place unavailable')}"
+            )
+        )
         directory.append(
             {
                 "lat": round(float(row["latitude"]), 6),
@@ -16482,12 +16515,8 @@ def add_colab_map_panels(
                 "company": plain(row.get(company_column), "Unknown company"),
                 "place": plain(row.get(place_column), "Place unavailable"),
                 "site": plain(row.get(site_column), "Spill outlet") if site_column else "Spill outlet",
-                "popup": popup_for_row(row, risk_column, prediction),
-                "tooltip": safe_text(
-                    f"{RISK_SYMBOLS.get(risk, '•')} {risk} risk · "
-                    f"{plain(row.get(site_column), 'Spill outlet') if site_column else 'Spill outlet'} · "
-                    f"{plain(row.get(place_column), 'Place unavailable')}"
-                ),
+                "popup": cached_popup,
+                "tooltip": cached_tooltip,
                 "years": [] if prediction else observed_years_for_row(row),
                 "spills": (
                     "Model-generated 2026 risk"
@@ -16717,6 +16746,7 @@ def add_colab_map_panels(
     )
 
 
+@st.cache_data(show_spinner=False, max_entries=12)
 def build_folium_map(
     frame: pd.DataFrame,
     risk_column: str,
@@ -16728,6 +16758,9 @@ def build_folium_map(
     plotting["longitude"] = pd.to_numeric(plotting["longitude"], errors="coerce")
     plotting = plotting.dropna(subset=["latitude", "longitude"])
     plotting = plotting.loc[plotting[risk_column].isin(RISK_ORDER)].copy()
+    plotting["_edm_map_row_id"] = np.arange(len(plotting), dtype=np.int64)
+    popup_cache: dict[int, str] = {}
+    tooltip_cache: dict[int, str] = {}
 
     centre = [52.85, -1.45]
     if not plotting.empty:
@@ -16838,13 +16871,18 @@ def build_folium_map(
                 place = row.get("official_place_name", row.get("town_or_city", "Unknown place"))
                 site = row.get("site_name", "Spill outlet")
                 tooltip = f"{RISK_SYMBOLS[risk]} {risk} risk · {site} · {place}"
+                map_row_id = int(row["_edm_map_row_id"])
+                popup_html = popup_for_row(row, risk_column, prediction)
+                tooltip_html = safe_text(tooltip)
+                popup_cache[map_row_id] = popup_html
+                tooltip_cache[map_row_id] = tooltip_html
                 cluster_data.append(
                     [
                         float(row["latitude"]),
                         float(row["longitude"]),
                         risk,
-                        popup_for_row(row, risk_column, prediction),
-                        safe_text(tooltip),
+                        popup_html,
+                        tooltip_html,
                     ]
                 )
             layer = folium.FeatureGroup(
@@ -16869,6 +16907,8 @@ def build_folium_map(
             plotting,
             risk_column,
             prediction,
+            popup_cache=popup_cache,
+            tooltip_cache=tooltip_cache,
         )
     else:
         risk_counts = plotting[risk_column].value_counts().reindex(RISK_ORDER, fill_value=0)
