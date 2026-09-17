@@ -18,7 +18,7 @@ from folium.plugins import FastMarkerCluster, Fullscreen, HeatMap, MeasureContro
 from streamlit_folium import st_folium
 
 
-DASHBOARD_RELEASE = "2026-09-15-dataset-spill-card-fix-v27"
+DASHBOARD_RELEASE = "2026-09-17-receiving-water-history-v28"
 HOMEPAGE_ILLUSTRATION_DATA_URI = (
     "data:image/png;base64,"
     "iVBORw0KGgoAAAANSUhEUgAABLAAAAOECAIAAAA+D1+tAAEAAElEQVR42qz9adBu63YVhs2xvm/vfZrbSPeqb5AACYQEohOdaewqYmxXACPsYA"
@@ -17691,6 +17691,18 @@ elif page == "Priority locations":
                     mime="text/csv",
                     key="download_priority_2025_links",
                 )
+                # RECEIVING_WATER_HISTORY_EXPLORER_V1
+                try:
+                    from receiving_water_history import render_receiving_water_history_explorer
+
+                    render_receiving_water_history_explorer(
+                        high_risk_2025,
+                        company_column=focus_company,
+                        place_column=focus_place,
+                    )
+                except Exception as exc:
+                    st.warning(f"Historical receiving-water evidence explorer could not load: {exc}")
+
 
             st.divider()
             section_header(
