@@ -29,6 +29,9 @@ jobs:
       - name: Patch dashboard
         run: python tools/patch_receiving_water_history.py
 
+      - name: Validate Python syntax
+        run: python -m py_compile app.py receiving_water_history.py
+
       - name: Commit dashboard changes
         shell: bash
         run: |
