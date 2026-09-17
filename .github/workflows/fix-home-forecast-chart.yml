@@ -1,0 +1,62 @@
+name: Update home forecast chart
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  update-chart:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Replace old 2026 forecast chart with final rainfall-enhanced forecast
+        shell: python
+        run: |
+          from pathlib import Path
+
+          path = Path("app.py")
+          text = path.read_text(encoding="utf-8")
+          original = text
+
+          replacements = {
+              'forecast_overview = load_table("forecast_map_points")':
+                  'forecast_overview = load_table("rainfall_risk_predictions_2026_ytd")',
+              'and "predicted_2026_risk" in forecast_overview.columns':
+                  'and "predicted_2026_risk_category" in forecast_overview.columns',
+              '                "predicted_2026_risk",\n                "Predicted risk categories for mapped discharge outlets, 2026",':
+                  '                "predicted_2026_risk_category",\n                "Predicted 2026 risk categories (rainfall-enhanced forecast)",',
+              '          Each percentage is the share of <b>mapped discharge outlets</b> in a risk category.\n          Recorded 2021–2025 evidence and predicted 2026 risk are deliberately kept separate.':
+                  '          Recorded percentages show the share of <b>mapped discharge outlets</b> in each 2021–2025 risk category.\n          The 2026 chart uses the <b>final rainfall-enhanced forecast population of 15,596 eligible outlets</b>.',
+              '        "Compare the recorded evidence with the separately labelled 2026 forecast.",':
+                  '        "Compare recorded 2021–2025 evidence with the final rainfall-enhanced 2026 forecast.",',
+          }
+
+          for old, new in replacements.items():
+              count = text.count(old)
+              print(f"Replacing {count} occurrence(s): {old[:80]}")
+              text = text.replace(old, new)
+
+          if text == original:
+              print("No changes needed.")
+          else:
+              path.write_text(text, encoding="utf-8")
+              print("Updated app.py")
+
+      - name: Commit dashboard update
+        run: |
+          if git diff --quiet -- app.py; then
+            echo "No app.py changes to commit."
+            exit 0
+          fi
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add app.py
+          git commit -m "Use final rainfall-enhanced 2026 forecast on home chart"
+          git push
