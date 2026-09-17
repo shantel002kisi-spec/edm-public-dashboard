@@ -17417,13 +17417,13 @@ elif page == "Explore the map":
                     for year in OBSERVED_YEARS
                 }
                 annual_spill_note = (
-                    f"{selected_map_company} · combined EDM dataset · "
+                    f"{selected_map_company} · "
                     "exact duplicate rows removed"
                 )
             else:
                 annual_spills = audited_dataset_annual_spill_totals()
                 annual_spill_note = (
-                    "All water companies · combined EDM dataset · "
+                    "All water companies · "
                     "exact duplicate rows removed"
                 )
 
