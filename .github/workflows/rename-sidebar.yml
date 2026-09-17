@@ -1,0 +1,44 @@
+name: Rename sidebar heading
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  rename-sidebar:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Change Sewage Overflow Insights to Storm Overflow Insights
+        shell: python
+        run: |
+          from pathlib import Path
+
+          path = Path("app.py")
+          text = path.read_text(encoding="utf-8")
+          old = "Sewage Overflow<br>Insights"
+          new = "Storm Overflow<br>Insights"
+
+          if old in text:
+              text = text.replace(old, new)
+              path.write_text(text, encoding="utf-8")
+              print("Updated sidebar heading.")
+          else:
+              print("Sidebar heading is already updated or the target text was not found.")
+
+      - name: Commit change
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add app.py
+          if git diff --cached --quiet; then
+            echo "No app.py change needed."
+          else
+            git commit -m "Rename sidebar to Storm Overflow Insights"
+            git push
+          fi
