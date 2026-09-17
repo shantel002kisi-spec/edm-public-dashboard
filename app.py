@@ -17277,10 +17277,37 @@ elif page == "Explore the map":
                 ]
             )
         else:
-            # Keep the annual spill cards tied to the audited combined EDM
-            # dataset rather than re-summing town/city totals after mapping.
-            # Map filters still control which receiving-water outlets are shown.
-            annual_spills = audited_dataset_annual_spill_totals()
+            # The annual spill cards follow the selected water company while
+            # remaining tied to the workbook-audited combined EDM totals.
+            # Other map filters (risk, town/city, search and year) continue to
+            # control the mapped outlets without changing a company's annual
+            # spill-event total.
+            selected_map_company = st.session_state.get(
+                "observed_company",
+                "All companies",
+            )
+            if (
+                selected_map_company != "All companies"
+                and selected_map_company in AUDITED_COMPANY_ANNUAL_SPILLS
+            ):
+                annual_spills = {
+                    year: AUDITED_COMPANY_ANNUAL_SPILLS[selected_map_company].get(
+                        year,
+                        0.0,
+                    )
+                    for year in OBSERVED_YEARS
+                }
+                annual_spill_note = (
+                    f"{selected_map_company} · combined EDM dataset · "
+                    "exact duplicate rows removed"
+                )
+            else:
+                annual_spills = audited_dataset_annual_spill_totals()
+                annual_spill_note = (
+                    "All water companies · combined EDM dataset · "
+                    "exact duplicate rows removed"
+                )
+
             recorded_cards = [
                 {
                     "label": "Receiving-water outlets shown",
@@ -17294,7 +17321,7 @@ elif page == "Explore the map":
                 {
                     "label": f"{year} counted spills",
                     "value": value_text(annual_spills[year]),
-                    "note": "Combined EDM dataset · exact duplicate rows removed",
+                    "note": annual_spill_note,
                     "accent": accent,
                 }
                 for year, accent in zip(OBSERVED_YEARS, year_accents)
