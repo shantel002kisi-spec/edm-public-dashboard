@@ -17910,15 +17910,6 @@ elif page == "Priority locations":
                     margin=dict(l=190, r=45, t=85, b=65),
                 )
                 persistent_company_figure.update_yaxes(title="")
-                st.plotly_chart(
-                    plot_style(
-                        persistent_company_figure,
-                        max(470, 48 * persistent_sites[focus_company].nunique() + 180),
-                    ),
-                    use_container_width=True,
-                    key="priority_persistent_company_chart",
-                    config={"displayModeBar": False},
-                )
                 st.caption(persistence_note)
 
                 persistent_columns = [
