@@ -1,0 +1,26 @@
+name: Inspect map provider
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  inspect-map:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Inspect map setup
+        shell: python
+        run: |
+          from pathlib import Path
+
+          path = Path("app.py")
+          lines = path.read_text(encoding="utf-8").splitlines()
+          needles = ("carto", "tile", "folium", "basemap", "apikey", "api key", "st_folium", "leaflet")
+          for i, line in enumerate(lines, 1):
+              if any(n in line.lower() for n in needles):
+                  print(f"{i}: {line}")
