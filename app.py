@@ -12410,7 +12410,7 @@ st.set_page_config(
     page_title="Storm Overflow Risk Insights",
     page_icon="💧",
     layout="wide",
-    initial_sidebar_state="expanded",
+    initial_sidebar_state="locked",
 )
 
 ROOT = Path(__file__).resolve().parent
@@ -12510,27 +12510,6 @@ st.markdown(
         background:
           linear-gradient(180deg, rgba(227, 244, 239, 0.98), rgba(232, 244, 249, 0.98));
         border-right: 1px solid rgba(54, 121, 112, 0.18);
-      }
-
-      /* Keep the dashboard navigation permanently available on desktop.
-         Streamlit can persist a collapsed sidebar in browser storage; because
-         the developer toolbar is intentionally hidden, force the navigation
-         panel back into view instead of relying on the hidden reopen control. */
-      @media (min-width: 769px) {
-        section[data-testid="stSidebar"] {
-          display: block !important;
-          visibility: visible !important;
-          width: 20rem !important;
-          min-width: 20rem !important;
-          max-width: 20rem !important;
-          transform: none !important;
-          flex-shrink: 0 !important;
-        }
-
-        [data-testid="stSidebarCollapseButton"],
-        [data-testid="stSidebarCollapsedControl"] {
-          display: none !important;
-        }
       }
 
       section[data-testid="stSidebar"] > div {
