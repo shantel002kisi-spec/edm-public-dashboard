@@ -17615,7 +17615,7 @@ elif page == "Priority locations":
                 st.html(
                     f"""
                     <div class="edm-priority-flow" role="img"
-                      aria-label="2025 relationship diagram linking {priority_2025_company_count} water companies, {priority_2025_treatment_count} treatment or operational sites, {len(high_risk_2025)} High-risk mapped outlets and {priority_2025_water_count} receiving waters.">
+                      aria-label="2025 relationship diagram linking {priority_2025_company_count} water companies, {priority_2025_treatment_count} treatment or operational sites and {priority_2025_water_count} receiving waters.">
                       <div class="edm-priority-node">
                         <span class="edm-priority-node-icon" aria-hidden="true">🏢</span>
                         <strong>{priority_2025_company_count:,}</strong>
@@ -17626,12 +17626,6 @@ elif page == "Priority locations":
                         <span class="edm-priority-node-icon" aria-hidden="true">⚙️</span>
                         <strong>{priority_2025_treatment_count:,}</strong>
                         <span>treatment or operational sites</span>
-                      </div>
-                      <div class="edm-priority-arrow" aria-hidden="true">→</div>
-                      <div class="edm-priority-node">
-                        <span class="edm-priority-node-icon" aria-hidden="true">🔺</span>
-                        <strong>{len(high_risk_2025):,}</strong>
-                        <span>outlets recorded High in 2025</span>
                       </div>
                       <div class="edm-priority-arrow" aria-hidden="true">→</div>
                       <div class="edm-priority-node">
