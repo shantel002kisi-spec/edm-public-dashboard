@@ -1,0 +1,59 @@
+name: Remove redundant 2025 outlet card
+
+on:
+  push:
+    paths:
+      - '.github/workflows/remove-outlet-card.yml'
+
+permissions:
+  contents: write
+
+jobs:
+  patch-dashboard:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v4
+
+      - name: Remove redundant outlet card
+        shell: bash
+        run: |
+          python - <<'PY'
+          from pathlib import Path
+
+          path = Path('app.py')
+          text = path.read_text(encoding='utf-8')
+
+          outlet_card = '''                      <div class="edm-priority-arrow" aria-hidden="true">→</div>
+                      <div class="edm-priority-node">
+                        <span class="edm-priority-node-icon" aria-hidden="true">🔺</span>
+                        <strong>{len(high_risk_2025):,}</strong>
+                        <span>outlets recorded High in 2025</span>
+                      </div>
+'''
+
+          aria_old = '''aria-label="2025 relationship diagram linking {priority_2025_company_count} water companies, {priority_2025_treatment_count} treatment or operational sites, {len(high_risk_2025)} High-risk mapped outlets and {priority_2025_water_count} receiving waters."'''
+          aria_new = '''aria-label="2025 relationship diagram linking {priority_2025_company_count} water companies, {priority_2025_treatment_count} treatment or operational sites and {priority_2025_water_count} receiving waters."'''
+
+          card_count = text.count(outlet_card)
+          if card_count == 0:
+              raise SystemExit('Expected 2025 outlet card block was not found; app.py left unchanged.')
+
+          text = text.replace(outlet_card, '')
+          text = text.replace(aria_old, aria_new)
+          path.write_text(text, encoding='utf-8')
+          print(f'Removed {card_count} matching 2025 outlet card block(s).')
+          PY
+
+      - name: Commit dashboard update
+        shell: bash
+        run: |
+          if git diff --quiet -- app.py; then
+            echo "No change to commit."
+            exit 0
+          fi
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add app.py
+          git commit -m "Remove redundant 2025 high-risk outlet card"
+          git push
