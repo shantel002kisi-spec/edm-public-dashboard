@@ -2,54 +2,69 @@ name: Remove redundant 2025 outlet card
 
 on:
   push:
-    paths:
-      - '.github/workflows/remove-outlet-card.yml'
+    branches: [main]
+  workflow_dispatch:
 
 permissions:
   contents: write
 
 jobs:
-  patch-dashboard:
+  patch:
     runs-on: ubuntu-latest
     steps:
-      - name: Check out repository
-        uses: actions/checkout@v4
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
 
-      - name: Remove redundant outlet card
-        shell: bash
+      - name: Remove redundant 2025 outlet card
+        shell: python
         run: |
-          python - <<'PY'
           from pathlib import Path
 
-          path = Path('app.py')
-          text = path.read_text(encoding='utf-8')
+          path = Path("app.py")
+          text = path.read_text(encoding="utf-8")
+          marker = "<span>outlets recorded High in 2025</span>"
+          removed = 0
 
-          outlet_card = '''                      <div class="edm-priority-arrow" aria-hidden="true">→</div>
-                      <div class="edm-priority-node">
-                        <span class="edm-priority-node-icon" aria-hidden="true">🔺</span>
-                        <strong>{len(high_risk_2025):,}</strong>
-                        <span>outlets recorded High in 2025</span>
-                      </div>
-'''
+          while marker in text:
+              marker_pos = text.find(marker)
+              node_start = text.rfind('<div class="edm-priority-node">', 0, marker_pos)
+              if node_start == -1:
+                  raise SystemExit("Could not find the outlet card start")
 
-          aria_old = '''aria-label="2025 relationship diagram linking {priority_2025_company_count} water companies, {priority_2025_treatment_count} treatment or operational sites, {len(high_risk_2025)} High-risk mapped outlets and {priority_2025_water_count} receiving waters."'''
-          aria_new = '''aria-label="2025 relationship diagram linking {priority_2025_company_count} water companies, {priority_2025_treatment_count} treatment or operational sites and {priority_2025_water_count} receiving waters."'''
+              arrow_start = text.rfind('<div class="edm-priority-arrow"', 0, node_start)
+              if arrow_start == -1:
+                  raise SystemExit("Could not find the arrow before the outlet card")
 
-          card_count = text.count(outlet_card)
-          if card_count == 0:
-              raise SystemExit('Expected 2025 outlet card block was not found; app.py left unchanged.')
+              line_start = text.rfind("\n", 0, arrow_start) + 1
+              node_end = text.find("</div>", marker_pos)
+              if node_end == -1:
+                  raise SystemExit("Could not find the outlet card end")
+              node_end += len("</div>")
 
-          text = text.replace(outlet_card, '')
-          text = text.replace(aria_old, aria_new)
-          path.write_text(text, encoding='utf-8')
-          print(f'Removed {card_count} matching 2025 outlet card block(s).')
-          PY
+              while node_end < len(text) and text[node_end] in " \t":
+                  node_end += 1
+              if node_end < len(text) and text[node_end] == "\n":
+                  node_end += 1
+
+              text = text[:line_start] + text[node_end:]
+              removed += 1
+
+          if removed == 0:
+              print("2025 outlet card already removed; nothing to do.")
+              raise SystemExit(0)
+
+          old_aria = 'aria-label="2025 relationship diagram linking {priority_2025_company_count} water companies, {priority_2025_treatment_count} treatment or operational sites, {len(high_risk_2025)} High-risk mapped outlets and {priority_2025_water_count} receiving waters."'
+          new_aria = 'aria-label="2025 relationship diagram linking {priority_2025_company_count} water companies, {priority_2025_treatment_count} treatment or operational sites and {priority_2025_water_count} receiving waters."'
+          text = text.replace(old_aria, new_aria)
+
+          path.write_text(text, encoding="utf-8")
+          print(f"Removed {removed} matching 2025 outlet card block(s).")
 
       - name: Commit dashboard update
-        shell: bash
         run: |
           if git diff --quiet -- app.py; then
-            echo "No change to commit."
+            echo "No app.py changes to commit."
             exit 0
           fi
           git config user.name "github-actions[bot]"
