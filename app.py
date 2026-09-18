@@ -17333,34 +17333,24 @@ if page == "Start here":
 
     with poster_high:
         st.error(
-            "⚠️ Highest observed spill site in 2025
+            """⚠️ Highest observed spill site in 2025
 
-"
-            "**Nearby town:** South Molton  
-"
-            "**Treatment site:** South Molton WWTW  
-"
-            "**Water company:** South West Water  
-"
-            "**Receiving water:** River Mole  
-"
-            "**2025 highest spill:** 261"
+**Nearby town:** South Molton  
+**Treatment site:** South Molton WWTW  
+**Water company:** South West Water  
+**Receiving water:** River Mole  
+**2025 highest spill:** 261"""
         )
 
     with poster_low:
         st.success(
-            "✅ Lowest observed spill site in 2025
+            """✅ Lowest observed spill site in 2025
 
-"
-            "**Nearby town:** Chester  
-"
-            "**Overflow site:** BATCHE TANKS CSO  
-"
-            "**Water company:** Dwr Cymru Welsh Water  
-"
-            "**Receiving water:** Bache Brook  
-"
-            "**2025 lowest spill:** 0"
+**Nearby town:** Chester  
+**Overflow site:** BATCHE TANKS CSO  
+**Water company:** Dwr Cymru Welsh Water  
+**Receiving water:** Bache Brook  
+**2025 lowest spill:** 0"""
         )
 
     st.caption(
