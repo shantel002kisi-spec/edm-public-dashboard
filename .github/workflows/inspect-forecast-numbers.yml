@@ -17,29 +17,38 @@ jobs:
         shell: python
         run: |
           from pathlib import Path
-          import pandas as pd
+          import csv, gzip
+          from collections import Counter
+
+          def read_gz_csv(path):
+              with gzip.open(path, "rt", encoding="utf-8-sig", newline="") as f:
+                  return list(csv.DictReader(f))
 
           print("=== FORECAST KPI FILE ===")
           p = Path("data/forecast_kpis.csv.gz")
           if p.exists():
-              df = pd.read_csv(p)
-              print(df.to_string(index=False))
-              print("columns:", list(df.columns))
+              rows = read_gz_csv(p)
+              print("rows:", len(rows))
+              if rows:
+                  print("columns:", list(rows[0].keys()))
+                  for row in rows[:20]:
+                      print(row)
 
           print("\n=== FORECAST MAP POINTS ===")
           p = Path("data/forecast_map_points.csv.gz")
           if p.exists():
-              df = pd.read_csv(p)
-              print("shape:", df.shape)
-              print("columns:", list(df.columns))
-              for c in df.columns:
-                  lc = c.lower()
-                  if any(k in lc for k in ["risk","pred","class","label","confidence","agree"]):
-                      try:
+              rows = read_gz_csv(p)
+              print("rows:", len(rows))
+              if rows:
+                  cols = list(rows[0].keys())
+                  print("columns:", cols)
+                  for c in cols:
+                      lc = c.lower()
+                      if any(k in lc for k in ["risk","pred","class","label","confidence","agree"]):
+                          counts = Counter(row.get(c, "") for row in rows)
                           print("\nCOLUMN", c)
-                          print(df[c].value_counts(dropna=False).head(20).to_string())
-                      except Exception as e:
-                          print("ERR", c, e)
+                          for value, count in counts.most_common(20):
+                              print(repr(value), count)
 
           print("\n=== APP MATCHES ===")
           lines = Path("app.py").read_text(encoding="utf-8").splitlines()
