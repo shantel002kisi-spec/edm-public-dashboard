@@ -1,0 +1,158 @@
+name: Align dashboard with dissertation poster
+
+on:
+  push:
+    paths:
+      - '.github/workflows/align-dashboard-poster-results.yml'
+
+permissions:
+  contents: write
+
+jobs:
+  patch:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Add poster-aligned key results to Start here page
+        shell: python
+        run: |
+          from pathlib import Path
+
+          path = Path("app.py")
+          text = path.read_text(encoding="utf-8")
+
+          marker = '''    else:
+        st.info("The risk-percentage charts will appear when the dashboard data is available.")
+
+
+# =============================================================================
+# PAGE 2 — COMBINED OBSERVED/PREDICTED MAP EXPERIENCE
+# =============================================================================
+'''
+
+          if "Key results from the dissertation poster" in text:
+              print("Poster-aligned section already present.")
+              raise SystemExit(0)
+
+          if marker not in text:
+              raise SystemExit("Could not find the Start here insertion point")
+
+          insert = '''    else:
+        st.info("The risk-percentage charts will appear when the dashboard data is available.")
+
+    section_header(
+        "Key results from the dissertation poster",
+        "The summary below uses the same 2021–2025 results shown on the completed poster.",
+    )
+
+    poster_top_five = audited_company_spill_summary().head(5).copy()
+    if not poster_top_five.empty:
+        poster_top_five = poster_top_five[
+            [
+                "spill_rank_2021_2025",
+                "water_company_name",
+                "total_counted_spills_2021_2025",
+            ]
+        ].rename(
+            columns={
+                "spill_rank_2021_2025": "Rank",
+                "water_company_name": "Water company",
+                "total_counted_spills_2021_2025": "2021–2025 counted spills",
+            }
+        )
+        poster_top_five["Rank"] = poster_top_five["Rank"].astype(int)
+        poster_top_five["2021–2025 counted spills"] = (
+            poster_top_five["2021–2025 counted spills"]
+            .round(0)
+            .astype(int)
+            .map(lambda value: f"{value:,}")
+        )
+
+        st.markdown("#### Companies with the highest five-year spill totals")
+        st.dataframe(
+            poster_top_five,
+            use_container_width=True,
+            hide_index=True,
+        )
+
+    poster_high, poster_low = st.columns(2)
+
+    with poster_high:
+        st.markdown(
+            """
+            <div style="
+                border:1px solid #e8b3b3;
+                border-radius:16px;
+                padding:18px 20px;
+                background:#fff5f5;
+                min-height:245px;
+            ">
+              <div style="font-size:1.1rem;font-weight:800;color:#c93d3d;margin-bottom:10px;">
+                ⚠️ Highest observed spill site in 2025
+              </div>
+              <div><b>Nearby town:</b> South Molton</div>
+              <div><b>Treatment site:</b> South Molton WWTW</div>
+              <div><b>Water company:</b> South West Water</div>
+              <div><b>Receiving water:</b> River Mole</div>
+              <div style="margin-top:14px;font-size:1.15rem;font-weight:850;color:#d83b3b;">
+                2025 highest spill: 261
+              </div>
+            </div>
+            """,
+            unsafe_allow_html=True,
+        )
+
+    with poster_low:
+        st.markdown(
+            """
+            <div style="
+                border:1px solid #acd8b2;
+                border-radius:16px;
+                padding:18px 20px;
+                background:#f3fbf4;
+                min-height:245px;
+            ">
+              <div style="font-size:1.1rem;font-weight:800;color:#348c48;margin-bottom:10px;">
+                ✅ Lowest observed spill site in 2025
+              </div>
+              <div><b>Nearby town:</b> Chester</div>
+              <div><b>Overflow site:</b> BATCHE TANKS CSO</div>
+              <div><b>Water company:</b> Dwr Cymru Welsh Water</div>
+              <div><b>Receiving water:</b> Bache Brook</div>
+              <div style="margin-top:14px;font-size:1.15rem;font-weight:850;color:#348c48;">
+                2025 lowest spill: 0
+              </div>
+            </div>
+            """,
+            unsafe_allow_html=True,
+        )
+
+    st.caption(
+        "Poster-aligned dissertation results. Company totals use the audited counted-spill "
+        "values already built into this dashboard."
+    )
+
+
+# =============================================================================
+# PAGE 2 — COMBINED OBSERVED/PREDICTED MAP EXPERIENCE
+# =============================================================================
+'''
+
+          updated = text.replace(marker, insert, 1)
+          path.write_text(updated, encoding="utf-8")
+          print("Added poster-aligned results to Start here page")
+
+      - name: Commit dashboard update
+        run: |
+          if git diff --quiet -- app.py; then
+            echo "No app.py changes to commit."
+            exit 0
+          fi
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add app.py
+          git commit -m "Align dashboard key results with dissertation poster"
+          git push
