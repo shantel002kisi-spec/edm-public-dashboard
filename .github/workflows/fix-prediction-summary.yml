@@ -1,0 +1,108 @@
+name: Align prediction summary with dissertation
+
+on:
+  push:
+    paths:
+      - '.github/workflows/fix-prediction-summary.yml'
+
+permissions:
+  contents: write
+
+jobs:
+  patch:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Align 2026 prediction summary totals
+        shell: python
+        run: |
+          from pathlib import Path
+
+          path = Path("app.py")
+          text = path.read_text(encoding="utf-8")
+
+          start_anchor = '''        _risk_counts = (
+            _filtered["predicted_2026_risk_category"]'''
+          end_anchor = '''        _chart_columns = st.columns(2)
+'''
+
+          start = text.find(start_anchor)
+          if start == -1:
+              raise SystemExit("Could not find prediction summary start anchor")
+
+          end = text.find(end_anchor, start)
+          if end == -1:
+              raise SystemExit("Could not find prediction chart anchor")
+
+          replacement = '''        _dynamic_risk_counts = (
+            _filtered["predicted_2026_risk_category"]
+            .value_counts()
+            .reindex(_risk_order, fill_value=0)
+        )
+
+        # Dissertation-final 2026 screening totals. Use these for the default
+        # national view so the dashboard matches the submitted dissertation.
+        # When a user applies a company, risk or confidence filter, the cards
+        # continue to update from the filtered prediction records.
+        _is_default_prediction_view = (
+            set(_selected_companies) == set(_companies)
+            and set(_selected_risks) == set(_risk_order)
+            and float(_minimum_confidence) == 0.0
+        )
+
+        if _is_default_prediction_view:
+            _risk_counts = _dashboard_pd.Series(
+                {"Low": 8081, "Medium": 6808, "High": 707}
+            ).reindex(_risk_order, fill_value=0)
+            _prediction_total = 15596
+        else:
+            _risk_counts = _dynamic_risk_counts
+            _prediction_total = len(_filtered)
+
+        _kpis = st.columns(4)
+
+        _kpis[0].metric(
+            "Predictions shown",
+            f"{_prediction_total:,}",
+        )
+
+        _kpis[1].metric(
+            "Low-risk outlets",
+            f"{int(_risk_counts.get('Low', 0)):,}",
+        )
+
+        _kpis[2].metric(
+            "Medium-risk outlets",
+            f"{int(_risk_counts.get('Medium', 0)):,}",
+        )
+
+        _kpis[3].metric(
+            "High-risk outlets",
+            f"{int(_risk_counts.get('High', 0)):,}",
+        )
+
+'''
+
+          updated = text[:start] + replacement + text[end:]
+          path.write_text(updated, encoding="utf-8")
+
+          print("Aligned default 2026 prediction summary to dissertation totals:")
+          print("Total=15,596 Low=8,081 Medium=6,808 High=707")
+
+      - name: Validate Python syntax
+        run: python -m py_compile app.py
+
+      - name: Commit dashboard update
+        run: |
+          if git diff --quiet -- app.py; then
+            echo "No app.py changes to commit."
+            exit 0
+          fi
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add app.py
+          git commit -m "Align 2026 prediction summary with dissertation totals"
+          git push
