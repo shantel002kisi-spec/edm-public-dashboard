@@ -17353,10 +17353,6 @@ if page == "Start here":
 **2025 lowest spill:** 0"""
         )
 
-    st.caption(
-        "Poster-aligned dissertation results. The company ranking uses the audited "
-        "counted-spill totals already built into this dashboard."
-    )
 
 
 # =============================================================================
