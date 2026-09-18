@@ -13,12 +13,27 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-      - name: Show prediction code ranges
+      - name: Inspect final 2026 prediction file
         shell: python
         run: |
+          import csv, gzip
+          from collections import Counter
           from pathlib import Path
-          lines = Path("app.py").read_text(encoding="utf-8").splitlines()
-          for start, end in [(17345,17420),(20380,20540),(20540,20780)]:
-              print(f"=== LINES {start}-{end} ===")
-              for i in range(start, min(end, len(lines))+1):
-                  print(f"{i}: {lines[i-1]}")
+
+          p = Path("data/rainfall_risk_predictions_2026_ytd.csv.gz")
+          with gzip.open(p, "rt", encoding="utf-8-sig", newline="") as f:
+              rows = list(csv.DictReader(f))
+
+          print("ROWS", len(rows))
+          print("COLUMNS", list(rows[0].keys()))
+          for c in [
+              "predicted_2026_risk_category",
+              "random_forest_predicted_risk",
+              "gradient_boosting_predicted_risk",
+              "xgboost_predicted_risk",
+              "catboost_predicted_risk",
+              "models_agreeing",
+          ]:
+              if c in rows[0]:
+                  print("\nCOLUMN", c)
+                  print(Counter(r.get(c,"") for r in rows))
