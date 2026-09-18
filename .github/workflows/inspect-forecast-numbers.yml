@@ -13,46 +13,12 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-      - name: Inspect forecast datasets and app references
+      - name: Show prediction code ranges
         shell: python
         run: |
           from pathlib import Path
-          import csv, gzip
-          from collections import Counter
-
-          def read_gz_csv(path):
-              with gzip.open(path, "rt", encoding="utf-8-sig", newline="") as f:
-                  return list(csv.DictReader(f))
-
-          print("=== FORECAST KPI FILE ===")
-          p = Path("data/forecast_kpis.csv.gz")
-          if p.exists():
-              rows = read_gz_csv(p)
-              print("rows:", len(rows))
-              if rows:
-                  print("columns:", list(rows[0].keys()))
-                  for row in rows[:20]:
-                      print(row)
-
-          print("\n=== FORECAST MAP POINTS ===")
-          p = Path("data/forecast_map_points.csv.gz")
-          if p.exists():
-              rows = read_gz_csv(p)
-              print("rows:", len(rows))
-              if rows:
-                  cols = list(rows[0].keys())
-                  print("columns:", cols)
-                  for c in cols:
-                      lc = c.lower()
-                      if any(k in lc for k in ["risk","pred","class","label","confidence","agree"]):
-                          counts = Counter(row.get(c, "") for row in rows)
-                          print("\nCOLUMN", c)
-                          for value, count in counts.most_common(20):
-                              print(repr(value), count)
-
-          print("\n=== APP MATCHES ===")
           lines = Path("app.py").read_text(encoding="utf-8").splitlines()
-          needles = ["Predictions shown","High-risk outlets","Mean confidence","All four models agree","701","707","forecast_kpis","forecast_map_points","confidence","agree"]
-          for i,line in enumerate(lines,1):
-              if any(n.lower() in line.lower() for n in needles):
-                  print(f"{i}: {line[:500]}")
+          for start, end in [(17345,17420),(20380,20540),(20540,20780)]:
+              print(f"=== LINES {start}-{end} ===")
+              for i in range(start, min(end, len(lines))+1):
+                  print(f"{i}: {lines[i-1]}")
