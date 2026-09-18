@@ -1,0 +1,45 @@
+name: Inspect poster result sections
+
+on:
+  push:
+    paths:
+      - '.github/workflows/inspect-poster-result-sections.yml'
+
+permissions:
+  contents: read
+
+jobs:
+  inspect:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Find poster result labels in app
+        shell: python
+        run: |
+          from pathlib import Path
+          lines = Path("app.py").read_text(encoding="utf-8").splitlines()
+          needles = [
+              "five-year spill",
+              "highest observed spill",
+              "lowest observed spill",
+              "United Utilities",
+              "South Molton",
+              "BATCHE TANKS",
+              "Bache Brook",
+              "Northumbrian Water",
+          ]
+          hits = []
+          for i, line in enumerate(lines, 1):
+              if any(n.lower() in line.lower() for n in needles):
+                  hits.append(i)
+          print("HITS", hits)
+          shown = []
+          for hit in hits:
+              if any(abs(hit - x) < 180 for x in shown):
+                  continue
+              shown.append(hit)
+              start = max(1, hit - 90)
+              end = min(len(lines), hit + 180)
+              print(f"=== {start}:{end} ===")
+              for i in range(start, end + 1):
+                  print(f"{i}: {lines[i-1]}")
