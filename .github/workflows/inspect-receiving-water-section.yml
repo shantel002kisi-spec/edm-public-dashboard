@@ -1,32 +1,44 @@
-name: Inspect receiving water section
+name: Remove poster caption
 
 on:
   push:
     branches: [main]
-  workflow_dispatch:
 
 permissions:
-  contents: read
+  contents: write
 
 jobs:
-  inspect:
+  patch:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-      - name: Show treatment and receiving water snippets
+        with:
+          fetch-depth: 0
+
+      - name: Remove poster caption
         shell: python
         run: |
           from pathlib import Path
-          lines = Path('app.py').read_text(encoding='utf-8').splitlines()
-          needles = ('treatment', 'operational', 'receiving water', 'water companies', 'outlets recorded High')
-          hits = [i for i, line in enumerate(lines, 1) if any(n.lower() in line.lower() for n in needles)]
-          print('HITS', hits[:200])
-          shown=[]
-          for hit in hits:
-              if any(abs(hit-x)<90 for x in shown):
-                  continue
-              shown.append(hit)
-              start=max(1,hit-45); end=min(len(lines),hit+90)
-              print(f'--- {start}:{end} ---')
-              for i in range(start,end+1):
-                  print(f'{i}: {lines[i-1]}')
+
+          path = Path("app.py")
+          text = path.read_text(encoding="utf-8")
+
+          old = '''    st.caption(
+        "Poster-aligned dissertation results. The company ranking uses the audited "
+        "counted-spill totals already built into this dashboard."
+    )
+'''
+
+          if old not in text:
+              raise SystemExit("Poster caption block not found")
+
+          path.write_text(text.replace(old, "", 1), encoding="utf-8")
+          print("Removed poster caption.")
+
+      - name: Commit change
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add app.py
+          git commit -m "Remove poster alignment caption"
+          git push
