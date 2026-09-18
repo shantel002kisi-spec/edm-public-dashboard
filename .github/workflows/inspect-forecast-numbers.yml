@@ -1,0 +1,49 @@
+name: Inspect forecast numbers
+
+on:
+  push:
+    paths:
+      - '.github/workflows/inspect-forecast-numbers.yml'
+
+permissions:
+  contents: read
+
+jobs:
+  inspect:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Inspect forecast datasets and app references
+        shell: python
+        run: |
+          from pathlib import Path
+          import pandas as pd
+
+          print("=== FORECAST KPI FILE ===")
+          p = Path("data/forecast_kpis.csv.gz")
+          if p.exists():
+              df = pd.read_csv(p)
+              print(df.to_string(index=False))
+              print("columns:", list(df.columns))
+
+          print("\n=== FORECAST MAP POINTS ===")
+          p = Path("data/forecast_map_points.csv.gz")
+          if p.exists():
+              df = pd.read_csv(p)
+              print("shape:", df.shape)
+              print("columns:", list(df.columns))
+              for c in df.columns:
+                  lc = c.lower()
+                  if any(k in lc for k in ["risk","pred","class","label","confidence","agree"]):
+                      try:
+                          print("\nCOLUMN", c)
+                          print(df[c].value_counts(dropna=False).head(20).to_string())
+                      except Exception as e:
+                          print("ERR", c, e)
+
+          print("\n=== APP MATCHES ===")
+          lines = Path("app.py").read_text(encoding="utf-8").splitlines()
+          needles = ["Predictions shown","High-risk outlets","Mean confidence","All four models agree","701","707","forecast_kpis","forecast_map_points","confidence","agree"]
+          for i,line in enumerate(lines,1):
+              if any(n.lower() in line.lower() for n in needles):
+                  print(f"{i}: {line[:500]}")
