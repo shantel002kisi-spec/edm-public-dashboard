@@ -13,12 +13,12 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-      - name: Show likely result ranges
+      - name: Show company results page
         shell: python
         run: |
           from pathlib import Path
           lines = Path("app.py").read_text(encoding="utf-8").splitlines()
-          for start,end in [(13840,14030),(14930,15040),(16580,16650),(17430,17520),(18900,18970)]:
+          for start,end in [(18680,18940),(17180,17340)]:
               print(f"=== {start}:{end} ===")
               for i in range(start, min(end,len(lines))+1):
                   print(f"{i}: {lines[i-1]}")
