@@ -17295,6 +17295,80 @@ if page == "Start here":
         st.info("The risk-percentage charts will appear when the dashboard data is available.")
 
 
+    section_header(
+        "Key results from the dissertation poster",
+        "These are the same 2021–2025 results shown on the completed dissertation poster.",
+    )
+
+    poster_top_five = audited_company_spill_summary().head(5).copy()
+    poster_top_five = poster_top_five[
+        [
+            "spill_rank_2021_2025",
+            "water_company_name",
+            "total_counted_spills_2021_2025",
+        ]
+    ].rename(
+        columns={
+            "spill_rank_2021_2025": "Rank",
+            "water_company_name": "Water company",
+            "total_counted_spills_2021_2025": "2021–2025 counted spills",
+        }
+    )
+    poster_top_five["Rank"] = poster_top_five["Rank"].astype(int)
+    poster_top_five["2021–2025 counted spills"] = (
+        poster_top_five["2021–2025 counted spills"]
+        .round(0)
+        .astype(int)
+        .map(lambda value: f"{value:,}")
+    )
+
+    st.markdown("#### Companies with the highest five-year spill totals")
+    st.dataframe(
+        poster_top_five,
+        use_container_width=True,
+        hide_index=True,
+    )
+
+    poster_high, poster_low = st.columns(2)
+
+    with poster_high:
+        st.error(
+            "⚠️ Highest observed spill site in 2025
+
+"
+            "**Nearby town:** South Molton  
+"
+            "**Treatment site:** South Molton WWTW  
+"
+            "**Water company:** South West Water  
+"
+            "**Receiving water:** River Mole  
+"
+            "**2025 highest spill:** 261"
+        )
+
+    with poster_low:
+        st.success(
+            "✅ Lowest observed spill site in 2025
+
+"
+            "**Nearby town:** Chester  
+"
+            "**Overflow site:** BATCHE TANKS CSO  
+"
+            "**Water company:** Dwr Cymru Welsh Water  
+"
+            "**Receiving water:** Bache Brook  
+"
+            "**2025 lowest spill:** 0"
+        )
+
+    st.caption(
+        "Poster-aligned dissertation results. The company ranking uses the audited "
+        "counted-spill totals already built into this dashboard."
+    )
+
+
 # =============================================================================
 # PAGE 2 — COMBINED OBSERVED/PREDICTED MAP EXPERIENCE
 # =============================================================================
