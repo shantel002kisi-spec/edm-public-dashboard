@@ -13,33 +13,12 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-      - name: Find dashboard result sections
+      - name: Show likely result ranges
         shell: python
         run: |
           from pathlib import Path
           lines = Path("app.py").read_text(encoding="utf-8").splitlines()
-          needles = [
-              "AUDITED_COMPANY_ANNUAL_SPILLS",
-              "company ranking",
-              "spill totals",
-              "highest spill",
-              "lowest spill",
-              "key findings",
-              "render_home",
-              "homepage",
-          ]
-          hits = []
-          for i, line in enumerate(lines, 1):
-              if any(n.lower() in line.lower() for n in needles):
-                  hits.append(i)
-          print("HITS", hits)
-          shown = []
-          for hit in hits:
-              if any(abs(hit - x) < 140 for x in shown):
-                  continue
-              shown.append(hit)
-              start = max(1, hit - 70)
-              end = min(len(lines), hit + 140)
+          for start,end in [(13840,14030),(14930,15040),(16580,16650),(17430,17520),(18900,18970)]:
               print(f"=== {start}:{end} ===")
-              for i in range(start, end + 1):
+              for i in range(start, min(end,len(lines))+1):
                   print(f"{i}: {lines[i-1]}")
